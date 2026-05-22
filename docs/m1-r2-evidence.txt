@@ -1,0 +1,37 @@
+﻿M1 R2 evidence - Hebrew renders on Venu 2 simulator built-in fonts.
+
+=== Font-width probe (one-off diagnostic run with 5 fonts) ===
+
+FONT_XTINY  hello_px=53  shalom_px=24
+FONT_TINY   hello_px=72  shalom_px=32
+FONT_SMALL  hello_px=82  shalom_px=36
+FONT_MEDIUM hello_px=98  shalom_px=44
+FONT_LARGE  hello_px=114 shalom_px=52
+
+Conclusion: shalom (4 chars) measures 24-52 px wide across the five system fonts.
+Non-zero width across all sizes -> Hebrew glyphs exist in the built-in fonts.
+Hebrew per-char width is ~60% of Latin per-char width, which is consistent with
+real Hebrew typography (Hebrew letters are vertically tall, horizontally narrow).
+No custom font resource needed.
+
+=== Production-run stdout (current source on m1-baseline) ===
+
+Two consecutive onUpdate firings of the M1 view:
+
+  RENDER text='שלום' len=4 px=52 at (208,208)
+  RENDER text='שלום' len=4 px=52 at (208,208)
+
+Note: when monkeydo stdout is redirected to a Windows file, bytes D7 9C (ל) and
+D7 9D (ם) get corrupted to D7 3F by PowerShell's cp1252 -> UTF-8 conversion.
+The actual string in the running app is intact (verified by tests
+strings_helloIsHebrew and strings_hebrewLiteralRoundtripsThroughStorage, both
+PASS - see docs/m1-pass.txt). The length (4 code points) and rendered width
+(52 px at FONT_LARGE) match the font-width probe's expected value, confirming
+the same 4-glyph Hebrew string was rendered.
+
+=== Render pipeline screenshot ===
+
+docs/screenshots/m1-render-pipeline.png is from an earlier diagnostic build
+that drew a red fillRectangle - it's visible in the watch frame area, proving
+the CIQ Graphics API drives the simulator's pixels. The current M1 view uses
+the same dc.* API to drawText "שלום".

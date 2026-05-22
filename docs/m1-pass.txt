@@ -1,0 +1,57 @@
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtCenterEqualsDiameter...
+DEBUG (01:34): safeChordWidth(195, 0) = 390
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordShrinksOffCenter...
+DEBUG (01:34): safeChordWidth(195, 100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtRadiusIsZero...
+DEBUG (01:34): safeChordWidth(195, 195) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordPastRadiusIsZero...
+DEBUG (01:34): safeChordWidth(195, 200) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordNegativeDyMirrorsPositive...
+DEBUG (01:34): safeChordWidth(195, -100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYForKnownWidth...
+DEBUG (01:34): minSafeY(195, 280) = 60
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYWiderThanDiameter...
+DEBUG (01:34): minSafeY(195, 500) = 195
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloIsHebrew...
+DEBUG (01:34): Strings.hello() = '×©×?×•×?'
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloCharCount...
+DEBUG (01:34): Strings.hello().length() = 4
+PASS
+------------------------------------------------------------------------------
+Executing test strings_hebrewLiteralRoundtripsThroughStorage...
+DEBUG (01:34): roundtrip back = '×©×?×•×?' (length=4)
+PASS
+
+==============================================================================
+RESULTS
+Test:                                         Status:
+safeArea_chordAtCenterEqualsDiameter          PASS
+safeArea_chordShrinksOffCenter                PASS
+safeArea_chordAtRadiusIsZero                  PASS
+safeArea_chordPastRadiusIsZero                PASS
+safeArea_chordNegativeDyMirrorsPositive       PASS
+safeArea_minSafeYForKnownWidth                PASS
+safeArea_minSafeYWiderThanDiameter            PASS
+strings_helloIsHebrew                         PASS
+strings_helloCharCount                        PASS
+strings_hebrewLiteralRoundtripsThroughStorage PASS
+Ran 10 tests
+
+PASSED (passed=10, failed=0, errors=0)

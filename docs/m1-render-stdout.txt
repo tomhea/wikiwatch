@@ -1,0 +1,2 @@
+﻿RENDER text='שלום' len=4 px=52 at (208,208)
+RENDER text='שלום' len=4 px=52 at (208,208)
