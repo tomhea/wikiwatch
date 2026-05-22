@@ -1,0 +1,12 @@
+------------------------------------------------------------------------------
+Executing test tdd_returns42...
+DEBUG (00:16): Tdd.alwaysReturns42() = 42
+PASS
+
+==============================================================================
+RESULTS
+Test:                               Status:
+tdd_returns42                       PASS
+Ran 1 test
+
+PASSED (passed=1, failed=0, errors=0)
