@@ -1,8 +1,0 @@
-<layout id="MainLayout" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
-    <!-- Venu 2 = 390x390 round display. Title placed at y=70: SafeArea.minSafeY(195, 280)
-         = 60; using 70 for 10 px headroom against font-metric drift between sim and real
-         watch. font=FONT_TINY so the prompt fits inside the round chord. Monkey moved to
-         y=140 to clear the title baseline with margin. -->
-    <label x="center" y="70" text="@Strings.prompt" color="Graphics.COLOR_WHITE" font="Graphics.FONT_TINY" justification="Graphics.TEXT_JUSTIFY_CENTER" />
-    <bitmap id="id_monkey" x="center" y="140" filename="../drawables/monkey.png" />
-</layout>
