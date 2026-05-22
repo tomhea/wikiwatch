@@ -1,0 +1,47 @@
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtCenterEqualsDiameter...
+DEBUG (00:56): safeChordWidth(195, 0) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_chordShrinksOffCenter...
+DEBUG (00:56): safeChordWidth(195, 100) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtRadiusIsZero...
+DEBUG (00:56): safeChordWidth(195, 195) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_chordPastRadiusIsZero...
+DEBUG (00:56): safeChordWidth(195, 200) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_chordNegativeDyMirrorsPositive...
+DEBUG (00:56): safeChordWidth(195, -100) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYForKnownWidth...
+DEBUG (00:56): minSafeY(195, 280) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYWiderThanDiameter...
+DEBUG (00:56): minSafeY(195, 500) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test tdd_returns42...
+DEBUG (00:56): Tdd.alwaysReturns42() = 42
+PASS
+
+==============================================================================
+RESULTS
+Test:                                   Status:
+safeArea_chordAtCenterEqualsDiameter    FAIL
+safeArea_chordShrinksOffCenter          FAIL
+safeArea_chordAtRadiusIsZero            FAIL
+safeArea_chordPastRadiusIsZero          FAIL
+safeArea_chordNegativeDyMirrorsPositive FAIL
+safeArea_minSafeYForKnownWidth          FAIL
+safeArea_minSafeYWiderThanDiameter      FAIL
+tdd_returns42                           PASS
+Ran 8 tests
+
+FAILED (passed=1, failed=7, errors=0)

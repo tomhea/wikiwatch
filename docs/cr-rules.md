@@ -40,8 +40,8 @@ Anything that touches those APIs MUST NOT live in `source/models/`.
 Easy test: a module under `source/models/` should be unit-testable without a simulator runtime.
 
 ## R7 - Branch & PR naming
-- Branch: `mN-feature-slug` (lowercase, kebab) for milestone branches, `sN-...` for spikes.
-- PR title: exact format `M<N>: <feature>` for milestone PRs, `Spike: <topic>` for spikes.
+- Branch: `mN-feature-slug` (lowercase, kebab) for milestone branches, `sN-...` for spikes, `fix/<slug>` for hotfix or resource-only PRs.
+- PR title: exact format `M<N>: <feature>` for milestone PRs, `Spike: <topic>` for spikes, `Fix: <short>` for hotfix or resource-only PRs.
 - PR body contains a `## TDD evidence` section (R1) and a `## Simulator evidence` section (R2 if applicable).
 
 ## R8 - Zero new warnings
