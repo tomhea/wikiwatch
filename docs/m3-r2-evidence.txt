@@ -1,0 +1,8 @@
+M3 keys.size=30 screen=416x416
+  letters=22 space=1 back=1 del=1 search=1 empty=4
+  keyAt(82,91) = '×?'
+  keyAt(332,299) = '<null>'
+  keyAt(208,200) = '×¢'
+  keyAt(0,0) = '<null>'
+  keyAt(208,10) = '<null>'
+:>
