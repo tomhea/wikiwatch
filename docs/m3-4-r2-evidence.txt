@@ -1,0 +1,4 @@
+M3_4 R_INNER=146 R_HIT_INNER=131 ringDepth=59 hitDepth=84
+  band: y=113 h=40 y+h=153 vcenter=133
+  halo r=135 hit: WEDGE
+  outside r=125: <null>
