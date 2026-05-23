@@ -1,91 +1,120 @@
 import Toybox.Lang;
+import Toybox.Math;
 
-// Static Hebrew keyboard layout. Pure module (no Toybox.WatchUi / Storage /
-// Application / Communications imports per R6). 5 rows x 6 cols = 30 cells:
-// 22 Hebrew letters (alphabet order, row-major), 4 specials (space /
-// backspace / delete-all / search), 4 empty cells in the tails of rows 3+4.
-//
-// The grid sits inside the inscribed rectangle of the round display, below
-// the buffer area at the top. _gridBounds (inlined in keyAt) derives the
-// rectangle from the screen size + a SafeArea chord check so the corners
-// stay inside the bezel on both the 416-px simulator and the 390-px real
-// watch.
+// M3.1 Circular T9-style keyboard layout. Pure module (Toybox.Lang + Math
+// only; no WatchUi / Storage / Communications per R6). See plan for design.
 module KeyboardLayout {
-    const ROWS = 5;
-    const COLS = 6;
-    const BUFFER_H = 50;     // px reserved at top for the typing buffer
-    const GRID_TOP_GAP = 15; // gap between buffer and first row
-    const GRID_H = 260;      // total grid height (5 rows of 52 px each)
+    const NUM_BUTTONS = 10;
+    const WEDGE_ARC_DEG = 36;
+    const R_INNER = 105;
+    const R_OUTER = 205;
+    const R_EXPANSION_INNER = 50;
 
-    // Returns the 30 key dictionaries in row-major order.
-    function keys() as Array<Dictionary> {
+    function buttons() as Array<Dictionary> {
         return [
-            // Row 0: alef-vav (first 6 letters)
-            { :label => "א", :type => :LETTER, :row => 0, :col => 0 },
-            { :label => "ב", :type => :LETTER, :row => 0, :col => 1 },
-            { :label => "ג", :type => :LETTER, :row => 0, :col => 2 },
-            { :label => "ד", :type => :LETTER, :row => 0, :col => 3 },
-            { :label => "ה", :type => :LETTER, :row => 0, :col => 4 },
-            { :label => "ו", :type => :LETTER, :row => 0, :col => 5 },
-            // Row 1: zayin-lamed (letters 7-12)
-            { :label => "ז", :type => :LETTER, :row => 1, :col => 0 },
-            { :label => "ח", :type => :LETTER, :row => 1, :col => 1 },
-            { :label => "ט", :type => :LETTER, :row => 1, :col => 2 },
-            { :label => "י", :type => :LETTER, :row => 1, :col => 3 },
-            { :label => "כ", :type => :LETTER, :row => 1, :col => 4 },
-            { :label => "ל", :type => :LETTER, :row => 1, :col => 5 },
-            // Row 2: mem-tzadi (letters 13-18)
-            { :label => "מ", :type => :LETTER, :row => 2, :col => 0 },
-            { :label => "נ", :type => :LETTER, :row => 2, :col => 1 },
-            { :label => "ס", :type => :LETTER, :row => 2, :col => 2 },
-            { :label => "ע", :type => :LETTER, :row => 2, :col => 3 },
-            { :label => "פ", :type => :LETTER, :row => 2, :col => 4 },
-            { :label => "צ", :type => :LETTER, :row => 2, :col => 5 },
-            // Row 3: kuf-tav (letters 19-22) + 2 empty
-            { :label => "ק", :type => :LETTER, :row => 3, :col => 0 },
-            { :label => "ר", :type => :LETTER, :row => 3, :col => 1 },
-            { :label => "ש", :type => :LETTER, :row => 3, :col => 2 },
-            { :label => "ת", :type => :LETTER, :row => 3, :col => 3 },
-            { :label => "", :type => :EMPTY, :row => 3, :col => 4 },
-            { :label => "", :type => :EMPTY, :row => 3, :col => 5 },
-            // Row 4: 4 specials + 2 empty (ASCII labels until we probe the
-            // built-in fonts for prettier glyphs; see M1 width-probe pattern)
-            { :label => "space", :type => :SPACE, :row => 4, :col => 0 },
-            { :label => "<-", :type => :BACKSPACE, :row => 4, :col => 1 },
-            { :label => "X", :type => :DELETE_ALL, :row => 4, :col => 2 },
-            { :label => ">", :type => :SEARCH, :row => 4, :col => 3 },
-            { :label => "", :type => :EMPTY, :row => 4, :col => 4 },
-            { :label => "", :type => :EMPTY, :row => 4, :col => 5 }
+            { :label => "_",    :type => :SPACE,        :letters => [],                              :centerAngleDeg => 0 },
+            { :label => "X",    :type => :BACKSPACE,    :letters => [],                              :centerAngleDeg => 36 },
+            { :label => "אבג",  :type => :LETTER_GROUP, :letters => ["א","ב","ג"],                   :centerAngleDeg => 72 },
+            { :label => "דהו",  :type => :LETTER_GROUP, :letters => ["ד","ה","ו"],                   :centerAngleDeg => 108 },
+            { :label => "זחט",  :type => :LETTER_GROUP, :letters => ["ז","ח","ט"],                   :centerAngleDeg => 144 },
+            { :label => "יכל",  :type => :LETTER_GROUP, :letters => ["י","כ","ל"],                   :centerAngleDeg => 180 },
+            { :label => "מנס",  :type => :LETTER_GROUP, :letters => ["מ","נ","ס"],                   :centerAngleDeg => 216 },
+            { :label => "עפצ",  :type => :LETTER_GROUP, :letters => ["ע","פ","צ"],                   :centerAngleDeg => 252 },
+            { :label => "קרשת", :type => :LETTER_GROUP, :letters => ["ק","ר","ש","ת"],               :centerAngleDeg => 288 },
+            { :label => "0-9",  :type => :DIGITS,       :letters => ["0","1","2","3","4","5","6","7","8","9"], :centerAngleDeg => 324 }
         ];
     }
 
-    // Returns the key whose cell contains (x, y) on a screenW x screenH
-    // display, or null if outside the grid (bezel / buffer area / empty cell).
-    function keyAt(x as Number, y as Number, screenW as Number, screenH as Number) as Dictionary or Null {
-        var gridY = BUFFER_H + GRID_TOP_GAP;
-        var gridH = GRID_H;
-        var r = screenH / 2;
-        // Narrowest chord across the grid height determines gridW.
-        var topHalf = SafeArea.safeChordHalfWidth(r, gridY - r);
-        var botHalf = SafeArea.safeChordHalfWidth(r, gridY + gridH - r);
-        var gridHalfW = (topHalf < botHalf) ? topHalf : botHalf;
-        var gridW = 2 * gridHalfW;
-        var gridX = (screenW - gridW) / 2;
-        if (x < gridX || x >= gridX + gridW) { return null; }
-        if (y < gridY || y >= gridY + gridH) { return null; }
-        var cellW = gridW / COLS;
-        var cellH = gridH / ROWS;
-        if (cellW < 1) { cellW = 1; }
-        if (cellH < 1) { cellH = 1; }
-        var col = (x - gridX) / cellW;
-        var row = (y - gridY) / cellH;
-        if (col >= COLS) { col = COLS - 1; }
-        if (row >= ROWS) { row = ROWS - 1; }
-        var ks = keys();
-        var idx = row * COLS + col;
-        if (idx >= ks.size()) { return null; }
-        var k = ks[idx] as Dictionary;
-        if (k[:type] == :EMPTY) { return null; }
-        return k;
+    // Polar hit-test against the outer ring. Returns the wedge whose
+    // r in [R_INNER, R_OUTER] and angular slot contains (x, y), or null.
+    function buttonAt(x as Number, y as Number, screenW as Number, screenH as Number) as Dictionary or Null {
+        var cx = screenW / 2;
+        var cy = screenH / 2;
+        var dx = x - cx;
+        var dy = y - cy;
+        var rSq = dx * dx + dy * dy;
+        if (rSq < R_INNER * R_INNER || rSq > R_OUTER * R_OUTER) {
+            return null;
+        }
+        var thetaDeg = _angleDeg(dx, dy);
+        var idx = ((thetaDeg + WEDGE_ARC_DEG / 2) / WEDGE_ARC_DEG) % NUM_BUTTONS;
+        var bs = buttons();
+        return bs[idx];
+    }
+
+    function subButtons(parent as Dictionary, screenW as Number, screenH as Number) as Array<Dictionary> {
+        var t = parent[:type] as Symbol;
+        if (t == :DIGITS) {
+            var digits = parent[:letters] as Array<String>;
+            var result = [];
+            for (var i = 0; i < 10; i++) {
+                result.add({
+                    :label => digits[i],
+                    :centerAngleDeg => i * WEDGE_ARC_DEG,
+                    :rInner => R_INNER,
+                    :rOuter => R_OUTER,
+                    :arcDeg => WEDGE_ARC_DEG
+                });
+            }
+            return result;
+        }
+        if (t == :LETTER_GROUP) {
+            var letters = parent[:letters] as Array<String>;
+            var n = letters.size();
+            var centerAngle = parent[:centerAngleDeg] as Number;
+            var firstOffset = -((n - 1) * WEDGE_ARC_DEG) / 2;
+            var result = [];
+            for (var i = 0; i < n; i++) {
+                var ang = centerAngle + firstOffset + i * WEDGE_ARC_DEG;
+                if (ang < 0) { ang = ang + 360; }
+                if (ang >= 360) { ang = ang - 360; }
+                result.add({
+                    :label => letters[i],
+                    :centerAngleDeg => ang,
+                    :rInner => R_EXPANSION_INNER,
+                    :rOuter => R_INNER,
+                    :arcDeg => WEDGE_ARC_DEG
+                });
+            }
+            return result;
+        }
+        return [];
+    }
+
+    function subButtonAt(x as Number, y as Number, parent as Dictionary, screenW as Number, screenH as Number) as Dictionary or Null {
+        var subs = subButtons(parent, screenW, screenH);
+        if (subs.size() == 0) { return null; }
+        var s0 = subs[0] as Dictionary;
+        var rIn = s0[:rInner] as Number;
+        var rOut = s0[:rOuter] as Number;
+        var cx = screenW / 2;
+        var cy = screenH / 2;
+        var dx = x - cx;
+        var dy = y - cy;
+        var rSq = dx * dx + dy * dy;
+        if (rSq < rIn * rIn || rSq > rOut * rOut) {
+            return null;
+        }
+        var thetaDeg = _angleDeg(dx, dy);
+        for (var i = 0; i < subs.size(); i++) {
+            var s = subs[i] as Dictionary;
+            var sAngle = s[:centerAngleDeg] as Number;
+            var diff = thetaDeg - sAngle;
+            while (diff < -180) { diff = diff + 360; }
+            while (diff > 180) { diff = diff - 360; }
+            if (diff >= -(WEDGE_ARC_DEG / 2) && diff < (WEDGE_ARC_DEG / 2)) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    // Polar angle in [0, 360) degrees, clockwise from 12 o'clock (up).
+    // dx > 0 = right, dy < 0 = up. 12 o'clock direction = (dx=0, dy=-r).
+    function _angleDeg(dx as Number, dy as Number) as Number {
+        var rad = Math.atan2(dx, -dy);
+        var deg = (rad * 180 / Math.PI).toNumber();
+        if (deg < 0) { deg = deg + 360; }
+        return deg;
     }
 }

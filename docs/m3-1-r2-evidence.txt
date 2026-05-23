@@ -1,0 +1,21 @@
+M3_1 screen=416x416 buttons=10
+  [0] _ type=symbol (88) angle=0 letters.size=0
+  [1] X type=symbol (89) angle=36 letters.size=0
+  [2] �?בג type=symbol (90) angle=72 letters.size=3
+  [3] דהו type=symbol (90) angle=108 letters.size=3
+  [4] זחט type=symbol (90) angle=144 letters.size=3
+  [5] יכ�? type=symbol (90) angle=180 letters.size=3
+  [6] �?נס type=symbol (90) angle=216 letters.size=3
+  [7] עפצ type=symbol (90) angle=252 letters.size=3
+  [8] קרשת type=symbol (90) angle=288 letters.size=4
+  [9] 0-9 type=symbol (91) angle=324 letters.size=10
+  hit(208,53) = _ (expected _)
+  hit(299,82) = X (expected X)
+  hit(355,160) = �?בג (expected �?בג)
+  hit(355,255) = דהו (expected דהו)
+  hit(299,333) = זחט (expected זחט)
+  hit(207,363) = יכ�? (expected יכ�?)
+  hit(116,333) = �?נס (expected �?נס)
+  hit(60,255) = עפצ (expected עפצ)
+  hit(60,160) = קרשת (expected קרשת)
+  hit(116,82) = 0-9 (expected 0-9)
