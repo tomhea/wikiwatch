@@ -1,0 +1,152 @@
+------------------------------------------------------------------------------
+Executing test wrap_emptyInput...
+DEBUG (03:06): wrap('', 10) = [STUB]
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_singleWordFits...
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_twoWordsFitOnOneLine...
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_twoWordsSecondOverflows...
+DEBUG (03:06): wrap('hello world', 7) = [STUB]
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_greedyFill...
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_singleLongWordOverflowsAlone...
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_longWordThenShort...
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_hebrewWords...
+DEBUG (03:06): wrap hebrew result size=1 [0]=STUB [1]=(none)
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_extraSpacesCollapse...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_h1...
+DEBUG (03:06): parse('# Title') = {symbol (8389346)=>STUB, symbol (63)=>999}
+FAIL
+------------------------------------------------------------------------------
+Executing test md_h2...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_h3...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_h4...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_fiveHashesIsBody...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_emptyHeader...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_plainBody...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_hashWithoutSpaceIsBody...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_emptyString...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_hebrewHeader...
+FAIL
+------------------------------------------------------------------------------
+Executing test md_hashAlone...
+FAIL
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtCenterEqualsDiameter...
+DEBUG (03:06): safeChordWidth(195, 0) = 390
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordShrinksOffCenter...
+DEBUG (03:06): safeChordWidth(195, 100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtRadiusIsZero...
+DEBUG (03:06): safeChordWidth(195, 195) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordPastRadiusIsZero...
+DEBUG (03:06): safeChordWidth(195, 200) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordNegativeDyMirrorsPositive...
+DEBUG (03:06): safeChordWidth(195, -100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYForKnownWidth...
+DEBUG (03:06): minSafeY(195, 280) = 60
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYWiderThanDiameter...
+DEBUG (03:06): minSafeY(195, 500) = 195
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloIsHebrew...
+DEBUG (03:06): Strings.hello() = '×©×?×•×?'
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloCharCount...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_hebrewLiteralRoundtripsThroughStorage...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleStartsWithH1...
+DEBUG (03:06): sampleArticle prefix: 'STUB...'
+FAIL
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleHasH4...
+FAIL
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleIsMultiline...
+FAIL
+
+==============================================================================
+RESULTS
+Test:                                         Status:
+wrap_emptyInput                               FAIL
+wrap_singleWordFits                           FAIL
+wrap_twoWordsFitOnOneLine                     FAIL
+wrap_twoWordsSecondOverflows                  FAIL
+wrap_greedyFill                               FAIL
+wrap_singleLongWordOverflowsAlone             FAIL
+wrap_longWordThenShort                        FAIL
+wrap_hebrewWords                              FAIL
+wrap_extraSpacesCollapse                      FAIL
+md_h1                                         FAIL
+md_h2                                         FAIL
+md_h3                                         FAIL
+md_h4                                         FAIL
+md_fiveHashesIsBody                           FAIL
+md_emptyHeader                                FAIL
+md_plainBody                                  FAIL
+md_hashWithoutSpaceIsBody                     FAIL
+md_emptyString                                FAIL
+md_hebrewHeader                               FAIL
+md_hashAlone                                  FAIL
+safeArea_chordAtCenterEqualsDiameter          PASS
+safeArea_chordShrinksOffCenter                PASS
+safeArea_chordAtRadiusIsZero                  PASS
+safeArea_chordPastRadiusIsZero                PASS
+safeArea_chordNegativeDyMirrorsPositive       PASS
+safeArea_minSafeYForKnownWidth                PASS
+safeArea_minSafeYWiderThanDiameter            PASS
+strings_helloIsHebrew                         PASS
+strings_helloCharCount                        PASS
+strings_hebrewLiteralRoundtripsThroughStorage PASS
+strings_sampleArticleStartsWithH1             FAIL
+strings_sampleArticleHasH4                    FAIL
+strings_sampleArticleIsMultiline              FAIL
+Ran 33 tests
+
+FAILED (passed=10, failed=23, errors=0)
