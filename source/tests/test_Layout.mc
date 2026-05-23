@@ -1,23 +1,23 @@
 import Toybox.Lang;
 import Toybox.Test;
 
-// Tests for Layout.middleWidth. Two cases: the M2.5 input that produced
-// _middleWidth=421, and the M2.6 input that produces 406. Both are real
-// configurations used by the view, so this also serves as a regression net
-// for any future margin tweak.
+// Tests for Layout.middleWidth. M2.7 semantics: both leftMargin and
+// rightMargin are CLEAN gaps (subtracted from screen width). Case 1 is the
+// real M2.7 configuration (the regression target); Case 2 uses a different
+// screen size to exercise the formula independently of the sim screen.
 
 (:test)
-function layout_middleWidthM25Baseline(logger as Logger) as Boolean {
-    // M2.5: screenW=416, leftMargin=15, rightBleed=20 -> 421.
-    var v = Layout.middleWidth(416, 15, 20);
-    logger.debug("Layout.middleWidth(416, 15, 20) = " + v);
-    return v == 421;
+function layout_middleWidthM27Baseline(logger as Logger) as Boolean {
+    // M2.7: screenW=416, leftMargin=25, rightMargin=100 -> 291.
+    var v = Layout.middleWidth(416, 25, 100);
+    logger.debug("Layout.middleWidth(416, 25, 100) = " + v);
+    return v == 291;
 }
 
 (:test)
-function layout_middleWidthM26Inputs(logger as Logger) as Boolean {
-    // M2.6: screenW=416, leftMargin=30, rightBleed=20 -> 406.
-    var v = Layout.middleWidth(416, 30, 20);
-    logger.debug("Layout.middleWidth(416, 30, 20) = " + v);
-    return v == 406;
+function layout_middleWidthDifferentScreen(logger as Logger) as Boolean {
+    // Sanity at a different screen size: 400, 20, 80 -> 300.
+    var v = Layout.middleWidth(400, 20, 80);
+    logger.debug("Layout.middleWidth(400, 20, 80) = " + v);
+    return v == 300;
 }

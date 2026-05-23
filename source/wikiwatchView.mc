@@ -3,7 +3,7 @@ import Toybox.Lang;
 import Toybox.WatchUi;
 
 class wikiwatchView extends WatchUi.View {
-    private const _RIGHT_BLEED = 20;
+    private const _RIGHT_MARGIN = 100;
 
     private var _scrollY as Number;
     private var _lines as Array?;
@@ -18,7 +18,7 @@ class wikiwatchView extends WatchUi.View {
         _lines = null;
         _contentHeight = 0;
         _screenHeight = 0;
-        _leftMargin = 30;
+        _leftMargin = 25;
         _middleWidth = 0;
     }
 
@@ -31,12 +31,12 @@ class wikiwatchView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.clear();
         var centerX = screenW / 2;
-        // Right anchor sits _RIGHT_BLEED px past the right screen edge so the
-        // text's visual right edge bleeds slightly past the round bezel (the
-        // 20 px right bleed budget). Combined with _middleWidth = screenW -
-        // _leftMargin + _RIGHT_BLEED, a full-width middle line's visual left
-        // edge lands exactly at _leftMargin = 30 px.
-        var rightAnchorX = screenW + _RIGHT_BLEED;
+        // Right anchor sits _RIGHT_MARGIN px INSIDE the right screen edge so the
+        // leaving a wide clean gap near the physical Back / Up buttons.
+        // Combined with _middleWidth = screenW - _leftMargin - _RIGHT_MARGIN,
+        // a full-width middle line's visual left
+        // edge lands exactly at _leftMargin = 25 px.
+        var rightAnchorX = screenW - _RIGHT_MARGIN;
 
         var lines = _lines as Array<Dictionary>;
         var n = lines.size();
@@ -93,28 +93,28 @@ class wikiwatchView extends WatchUi.View {
         return _screenHeight;
     }
 
-    // M2.6 layout. Per-raw strategy unchanged from M2.5:
+    // M2.7 layout. Per-raw strategy unchanged from M2.5:
     //   firstRaw (H1) -> widths [narrowEdge, narrowSecond, middleWidth, ...]
     //                    every sub-line tagged :isH1 => true
     //   middleRaws    -> widths [middleWidth]
     //   lastRaw       -> LineWrap.wrapWithNarrowTail(...) so the absolute LAST
-    //                    sub-line is at 160 px and the PENULTIMATE at 300 px.
+    //                    sub-line is at 160 px and the PENULTIMATE at 250 px.
     //
-    // Justify (in onUpdate, M2.4 hybrid pattern restored, with the M2.5 :isH1
+    // Justify (in onUpdate, M2.4 hybrid pattern, with the M2.5 :isH1
     // override preserved):
     //   :isH1 sub-line                  -> CENTER at screenW/2
     //   non-H1 narrow (w < middleWidth) -> CENTER at screenW/2 (the last 2
     //                                       sub-lines of the last raw at 160 /
-    //                                       300 - stays inside the chord at
+    //                                       250 - stays inside the chord at
     //                                       the bottom of the round screen)
-    //   non-H1 middle (w == middleWidth)-> RIGHT-justify at screenW +
-    //                                       _RIGHT_BLEED (Hebrew first-
+    //   non-H1 middle (w == middleWidth)-> RIGHT-justify at screenW -
+    //                                       _RIGHT_MARGIN (Hebrew first-
     //                                       codepoint sits at the stable
     //                                       right edge per line)
     //
-    // Margins (M2.6): _leftMargin = 30 (clean left), _RIGHT_BLEED = 20 (text
-    // may extend up to 20 px past the right screen edge). _middleWidth comes
-    // from Layout.middleWidth(screenW, _leftMargin, _RIGHT_BLEED).
+    // Margins (M2.7): _leftMargin = 25 (clean left), _RIGHT_MARGIN = 100 (wide clean gap near the physical Back/Up buttons; text
+    // right edge stays 100 px clear). _middleWidth comes
+    // from Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN).
     private function _layout(dc as Dc) as Void {
         var article = Strings.sampleArticle();
         var rawLines = _splitLines(article);
@@ -122,8 +122,8 @@ class wikiwatchView extends WatchUi.View {
         var spacing = 4;
         var sectionGap = 4;
         var narrowEdge = 160;
-        var narrowSecond = 300;
-        _middleWidth = Layout.middleWidth(screenW, _leftMargin, _RIGHT_BLEED);
+        var narrowSecond = 250;
+        _middleWidth = Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN);
 
         var meta = [];
         for (var i = 0; i < rawLines.size(); i++) {

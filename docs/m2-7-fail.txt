@@ -1,0 +1,288 @@
+BUILD SUCCESSFUL
+WARNING: C:\Users\tomhe\Documents\Garmin\wikiwatch\manifest.xml: No supported languages are defined. Language-specific resources will be ignored unless language support is added to the manifest file.
+WARNING: venu2: The launcher icon (24x24) isn't compatible with the specified launcher icon size of the device 'venu2' (70x70). The image will be scaled to the target size.
+------------------------------------------------------------------------------
+Executing test doubleTap_noPreviousTapReturnsFalse...
+DEBUG (16:57): noPrev: isDoubleTap(0,0,100,50,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_timeTooFarApartReturnsFalse...
+DEBUG (16:57): timeFar: isDoubleTap(100,50,600,50,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_yTooFarApartReturnsFalse...
+DEBUG (16:57): yFar: isDoubleTap(100,50,200,250,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_withinBothWindowsReturnsTrue...
+DEBUG (16:57): inWindow: isDoubleTap(100,50,250,70,300,80) = true
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_negativeTimeDeltaReturnsFalse...
+DEBUG (16:57): negDelta: isDoubleTap(500,50,100,50,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_intervalBoundaryIsInclusive...
+DEBUG (16:57): boundary: at=400ms -> true, past=401ms -> false
+PASS
+------------------------------------------------------------------------------
+Executing test layout_middleWidthM27Baseline...
+DEBUG (16:57): Layout.middleWidth(416, 25, 100) = 0
+FAIL
+------------------------------------------------------------------------------
+Executing test layout_middleWidthDifferentScreen...
+DEBUG (16:57): Layout.middleWidth(400, 20, 80) = 0
+FAIL
+------------------------------------------------------------------------------
+Executing test wrap_emptyInput...
+DEBUG (16:57): wrap('', 10) = []
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_singleWordFits...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_twoWordsFitOnOneLine...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_twoWordsSecondOverflows...
+DEBUG (16:57): wrap('hello world', 7) = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_greedyFill...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_singleLongWordOverflowsAlone...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_longWordThenShort...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_hebrewWords...
+DEBUG (16:57): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_extraSpacesCollapse...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_emptyText...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_uniformWidthsWrapsOnOverflow...
+DEBUG (16:57): wtw_uniform = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_variableWidthsNarrowsFirst...
+DEBUG (16:57): wtw_variable = [a, b c, d e]
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_startIndexOffsetSkipsEarlyEntries...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_defaultBeyondArray...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_hebrewWithVariableWidths...
+DEBUG (16:57): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_emptyText...
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_singleShortWord...
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_twoWords...
+DEBUG (16:57): twoWords = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_middlePlusTailPattern...
+DEBUG (16:57): middlePlusTail = [a b c d e, f g h, i j]
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_longTextMultipleMiddleLines...
+DEBUG (16:57): longText size=5
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_oversizedSingleWord...
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_hebrewLongLastRaw...
+DEBUG (16:57): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
+PASS
+------------------------------------------------------------------------------
+Executing test md_h1...
+DEBUG (16:57): parse('# Title') = {symbol (8389346)=>Title, symbol (118)=>1}
+PASS
+------------------------------------------------------------------------------
+Executing test md_h2...
+PASS
+------------------------------------------------------------------------------
+Executing test md_h3...
+PASS
+------------------------------------------------------------------------------
+Executing test md_h4...
+PASS
+------------------------------------------------------------------------------
+Executing test md_fiveHashesIsBody...
+PASS
+------------------------------------------------------------------------------
+Executing test md_emptyHeader...
+PASS
+------------------------------------------------------------------------------
+Executing test md_plainBody...
+PASS
+------------------------------------------------------------------------------
+Executing test md_hashWithoutSpaceIsBody...
+PASS
+------------------------------------------------------------------------------
+Executing test md_emptyString...
+PASS
+------------------------------------------------------------------------------
+Executing test md_hebrewHeader...
+PASS
+------------------------------------------------------------------------------
+Executing test md_hashAlone...
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtCenterEqualsDiameter...
+DEBUG (16:58): safeChordWidth(195, 0) = 390
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordShrinksOffCenter...
+DEBUG (16:58): safeChordWidth(195, 100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtRadiusIsZero...
+DEBUG (16:58): safeChordWidth(195, 195) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordPastRadiusIsZero...
+DEBUG (16:58): safeChordWidth(195, 200) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordNegativeDyMirrorsPositive...
+DEBUG (16:58): safeChordWidth(195, -100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYForKnownWidth...
+DEBUG (16:58): minSafeY(195, 280) = 60
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYWiderThanDiameter...
+DEBUG (16:58): minSafeY(195, 500) = 195
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_centerEqualsFullDiameterMinusPadding...
+DEBUG (16:58): linePaddedWidth(208, 208, 25) = 366
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_offCenterReducesByChord...
+DEBUG (16:58): linePaddedWidth(208, 108, 25) = 314
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_clampsToZeroAtEdge...
+DEBUG (16:58): linePaddedWidth(208, 0, 25) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_clampsToZeroWhenPaddingExceedsChord...
+DEBUG (16:58): linePaddedWidth(208, 1, 25) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_symmetricAboveBelowCenter...
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_realWatchRadius...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloIsHebrew...
+DEBUG (16:58): Strings.hello() = 'ש�?ו�?'
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloCharCount...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_hebrewLiteralRoundtripsThroughStorage...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleStartsWithH1...
+DEBUG (16:58): sampleArticle prefix: '# ש�?ו�? הי�?...'
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleHasH4...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleIsMultiline...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleHasManyLines...
+DEBUG (16:58): newline count = 48
+PASS
+
+==============================================================================
+RESULTS
+Test:                                         Status:
+doubleTap_noPreviousTapReturnsFalse           PASS
+doubleTap_timeTooFarApartReturnsFalse         PASS
+doubleTap_yTooFarApartReturnsFalse            PASS
+doubleTap_withinBothWindowsReturnsTrue        PASS
+doubleTap_negativeTimeDeltaReturnsFalse       PASS
+doubleTap_intervalBoundaryIsInclusive         PASS
+layout_middleWidthM27Baseline                 FAIL
+layout_middleWidthDifferentScreen             FAIL
+wrap_emptyInput                               PASS
+wrap_singleWordFits                           PASS
+wrap_twoWordsFitOnOneLine                     PASS
+wrap_twoWordsSecondOverflows                  PASS
+wrap_greedyFill                               PASS
+wrap_singleLongWordOverflowsAlone             PASS
+wrap_longWordThenShort                        PASS
+wrap_hebrewWords                              PASS
+wrap_extraSpacesCollapse                      PASS
+wtw_emptyText                                 PASS
+wtw_uniformWidthsWrapsOnOverflow              PASS
+wtw_variableWidthsNarrowsFirst                PASS
+wtw_startIndexOffsetSkipsEarlyEntries         PASS
+wtw_defaultBeyondArray                        PASS
+wtw_hebrewWithVariableWidths                  PASS
+wnt_emptyText                                 PASS
+wnt_singleShortWord                           PASS
+wnt_twoWords                                  PASS
+wnt_middlePlusTailPattern                     PASS
+wnt_longTextMultipleMiddleLines               PASS
+wnt_oversizedSingleWord                       PASS
+wnt_hebrewLongLastRaw                         PASS
+md_h1                                         PASS
+md_h2                                         PASS
+md_h3                                         PASS
+md_h4                                         PASS
+md_fiveHashesIsBody                           PASS
+md_emptyHeader                                PASS
+md_plainBody                                  PASS
+md_hashWithoutSpaceIsBody                     PASS
+md_emptyString                                PASS
+md_hebrewHeader                               PASS
+md_hashAlone                                  PASS
+safeArea_chordAtCenterEqualsDiameter          PASS
+safeArea_chordShrinksOffCenter                PASS
+safeArea_chordAtRadiusIsZero                  PASS
+safeArea_chordPastRadiusIsZero                PASS
+safeArea_chordNegativeDyMirrorsPositive       PASS
+safeArea_minSafeYForKnownWidth                PASS
+safeArea_minSafeYWiderThanDiameter            PASS
+lpw_centerEqualsFullDiameterMinusPadding      PASS
+lpw_offCenterReducesByChord                   PASS
+lpw_clampsToZeroAtEdge                        PASS
+lpw_clampsToZeroWhenPaddingExceedsChord       PASS
+lpw_symmetricAboveBelowCenter                 PASS
+lpw_realWatchRadius                           PASS
+strings_helloIsHebrew                         PASS
+strings_helloCharCount                        PASS
+strings_hebrewLiteralRoundtripsThroughStorage PASS
+strings_sampleArticleStartsWithH1             PASS
+strings_sampleArticleHasH4                    PASS
+strings_sampleArticleIsMultiline              PASS
+strings_sampleArticleHasManyLines             PASS
+Ran 61 tests
+
+FAILED (passed=59, failed=2, errors=0)
+
