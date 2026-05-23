@@ -66,6 +66,7 @@ module KeyboardLayout {
             var centerAngle = parent[:centerAngleDeg] as Number;
             var firstOffset = -((n - 1) * WEDGE_ARC_DEG) / 2;
             var result = [];
+            // Level-1 sub-zones (regular letters) at r ∈ [R_EXPANSION_INNER, R_INNER].
             for (var i = 0; i < n; i++) {
                 var ang = centerAngle + firstOffset + i * WEDGE_ARC_DEG;
                 if (ang < 0) { ang = ang + 360; }
@@ -78,6 +79,24 @@ module KeyboardLayout {
                     :arcDeg => WEDGE_ARC_DEG
                 });
             }
+            // M3.5 level-2 (sofit) sub-zones — for each letter with a final form,
+            // add an inner sub-zone at r ∈ [10, R_EXPANSION_INNER] at the same angle.
+            for (var i = 0; i < n; i++) {
+                var letter = letters[i] as String;
+                var finalForm = _finalFormFor(letter);
+                if (!finalForm.equals("")) {
+                    var ang = centerAngle + firstOffset + i * WEDGE_ARC_DEG;
+                    if (ang < 0) { ang = ang + 360; }
+                    if (ang >= 360) { ang = ang - 360; }
+                    result.add({
+                        :label => finalForm,
+                        :centerAngleDeg => ang,
+                        :rInner => 10,
+                        :rOuter => R_EXPANSION_INNER,
+                        :arcDeg => WEDGE_ARC_DEG
+                    });
+                }
+            }
             return result;
         }
         return [];
@@ -86,29 +105,42 @@ module KeyboardLayout {
     function subButtonAt(x as Number, y as Number, parent as Dictionary, screenW as Number, screenH as Number) as Dictionary or Null {
         var subs = subButtons(parent, screenW, screenH);
         if (subs.size() == 0) { return null; }
-        var s0 = subs[0] as Dictionary;
-        var rIn = s0[:rInner] as Number;
-        var rOut = s0[:rOuter] as Number;
         var cx = screenW / 2;
         var cy = screenH / 2;
         var dx = x - cx;
         var dy = y - cy;
         var rSq = dx * dx + dy * dy;
-        if (rSq < rIn * rIn || rSq > rOut * rOut) {
-            return null;
-        }
         var thetaDeg = _angleDeg(dx, dy);
+        // M3.5: each sub-zone has its own r range (level-1 vs level-2 finals),
+        // so check radial bounds per sub-zone rather than using subs[0]'s range.
         for (var i = 0; i < subs.size(); i++) {
             var s = subs[i] as Dictionary;
+            var sRin = s[:rInner] as Number;
+            var sRout = s[:rOuter] as Number;
+            if (rSq < sRin * sRin || rSq > sRout * sRout) {
+                continue;
+            }
             var sAngle = s[:centerAngleDeg] as Number;
+            var sArc = s[:arcDeg] as Number;
             var diff = thetaDeg - sAngle;
             while (diff < -180) { diff = diff + 360; }
             while (diff > 180) { diff = diff - 360; }
-            if (diff >= -(WEDGE_ARC_DEG / 2) && diff < (WEDGE_ARC_DEG / 2)) {
+            if (diff >= -(sArc / 2) && diff < (sArc / 2)) {
                 return s;
             }
         }
         return null;
+    }
+
+    // Returns the final-form (sofit) of a Hebrew letter, or "" if none.
+    // M3.5: drives level-2 sub-zones in subButtons.
+    function _finalFormFor(letter as String) as String {
+        if (letter.equals("כ")) { return "ך"; }
+        if (letter.equals("מ")) { return "ם"; }
+        if (letter.equals("נ")) { return "ן"; }
+        if (letter.equals("פ")) { return "ף"; }
+        if (letter.equals("צ")) { return "ץ"; }
+        return "";
     }
 
     // Polar angle in [0, 360) degrees, clockwise from 12 o'clock (up).
