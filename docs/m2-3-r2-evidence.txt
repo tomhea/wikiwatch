@@ -1,0 +1,48 @@
+﻿M2.3 evidence - smaller headers + fixed per-line widths.
+
+=== Per-line widths (one-off diagnostic captured from a build with println) ===
+
+M2_3 N=51 contentH=2249
+  [0]   w=160 font=FONT_MEDIUM     <- first rendered line (H1 sub 1)
+  [1]   w=250 font=FONT_MEDIUM     <- second rendered line (H1 sub 2)
+  ... (47 middle lines all at w=416, the full simulator screen width) ...
+  [N-2] w=250 font=FONT_XTINY      <- second-to-last (last raw, sub 1)
+  [N-1] w=160 font=FONT_XTINY      <- last (last raw, sub 2)
+
+contentH 2249 vs M2.2's 2716 -> 467 px less vertical scroll, thanks to the
+smaller header fonts. Same article, fewer pixels needed.
+
+=== Font mapping changes ===
+
+       M2.2 (chord-aware)     -> M2.3 (smaller)
+H1     FONT_LARGE  (67 px tall) -> FONT_MEDIUM (58 px tall, -13%)
+H2     FONT_MEDIUM (58 px)      -> FONT_SMALL  (49 px,  -15%)
+H3     FONT_SMALL  (49 px)      -> FONT_TINY   (43 px,  -12%)
+H4     FONT_TINY   (43 px)      -> FONT_XTINY  (32 px,  -25%)
+body   FONT_XTINY  (32 px)      -> FONT_XTINY  (unchanged)
+
+H4 now renders identical to body (XTINY); the markdown source still
+distinguishes the levels but the visual hierarchy collapses at H4.
+
+=== Width strategy (vs M2.2 chord-aware) ===
+
+M2.2 derived every line's width from the chord at its expected on-screen
+y position - complex, position-dependent, two-pass with bookkeeping.
+
+M2.3 picks a width based purely on which raw line you are in:
+- raw 0 (the title)              -> wraps with [160, 250, screen-width, ...]
+- raws 1..N-2 (middle paragraphs) -> wraps with [screen-width]
+- raw N-1 (the last paragraph)   -> wraps with [250, 160]
+
+Net effect: first 2 rendered sub-lines are 160/250 (top bezel of the
+round screen), last 2 are 250/160 (bottom bezel), everyone in between
+uses the full screen width. No global iteration, no oscillation.
+
+=== Trade-off ===
+
+If the last raw paragraph is shorter than the 250-px first sub-line can
+hold, the entire paragraph collapses to a single sub-line at width 250 -
+the user's "last is 160" never materialises. For the sample article's
+last paragraph (51 Hebrew chars) it wraps cleanly to 2 sub-lines at the
+intended widths. Future article corpus may need a longer closing line
+to fully exercise both narrow tail widths.

@@ -65,3 +65,48 @@ function wrap_extraSpacesCollapse(logger as Logger) as Boolean {
     var l = LineWrap.wrap("a  b", 10);
     return l.size() == 1 && l[0].equals("a b");
 }
+(:test)
+function wtw_emptyText(logger as Logger) as Boolean {
+    var l = LineWrap.wrapToWidths("", 6, [60], 0);
+    return l.size() == 1 && l[0].equals("");
+}
+
+(:test)
+function wtw_uniformWidthsWrapsOnOverflow(logger as Logger) as Boolean {
+    // 60 px / 6 px-per-char = 10 char max. "hello world" = 11 chars - wraps.
+    var l = LineWrap.wrapToWidths("hello world", 6, [60], 0);
+    logger.debug("wtw_uniform = " + l);
+    return l.size() == 2 && l[0].equals("hello") && l[1].equals("world");
+}
+
+(:test)
+function wtw_variableWidthsNarrowsFirst(logger as Logger) as Boolean {
+    // widths = [12, 24, 60]. line 0 max 2 chars; line 1 max 4 chars; line 2 max 10.
+    // "a b c d e" greedy pack: "a" / "b c" / "d e".
+    var l = LineWrap.wrapToWidths("a b c d e", 6, [12, 24, 60], 0);
+    logger.debug("wtw_variable = " + l);
+    return l.size() == 3 && l[0].equals("a") && l[1].equals("b c") && l[2].equals("d e");
+}
+
+(:test)
+function wtw_startIndexOffsetSkipsEarlyEntries(logger as Logger) as Boolean {
+    // startIndex = 2 -> first output uses widths[2] = 60 (10 chars). "a b c d e" = 9 chars fits.
+    var l = LineWrap.wrapToWidths("a b c d e", 6, [12, 24, 60], 2);
+    return l.size() == 1 && l[0].equals("a b c d e");
+}
+
+(:test)
+function wtw_defaultBeyondArray(logger as Logger) as Boolean {
+    // widths has only 1 entry. wrap beyond uses last entry (= 60).
+    var l = LineWrap.wrapToWidths("hello world", 6, [60], 0);
+    return l.size() == 2;
+}
+
+(:test)
+function wtw_hebrewWithVariableWidths(logger as Logger) as Boolean {
+    // "שלום שלום שלום" = 14 chars (4+1+4+1+4). widths = [24, 60] -> 4 chars / 10 chars.
+    // Line 0 (max 4): "שלום". Line 1 (max 10): "שלום שלום" = 9 chars.
+    var l = LineWrap.wrapToWidths("שלום שלום שלום", 6, [24, 60], 0);
+    logger.debug("wtw_hebrew = " + l);
+    return l.size() == 2 && l[0].equals("שלום") && l[1].equals("שלום שלום");
+}
