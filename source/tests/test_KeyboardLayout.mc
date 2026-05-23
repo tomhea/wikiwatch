@@ -99,12 +99,23 @@ function kbd_buttonAtInsideHitHaloReturnsWedge(logger as Logger) as Boolean {
 
 (:test)
 function kbd_buttonAtJustOutsideHaloReturnsNull(logger as Logger) as Boolean {
-    // r=140 is just inside R_HIT_INNER=145 - actually wait, 140 < 145 so it's
-    // OUTSIDE the halo. Should return null.
-    // (208 + 140*sin(72°), 208 - 140*cos(72°)) ~ (208+133, 208-43) = (341, 165).
-    var k = KeyboardLayout.buttonAt(341, 165, 416, 416);
-    logger.debug("buttonAt(341,165) = " + k);
+    // M3.4: R_HIT_INNER=131 (was 145). r=125 is just outside the new halo.
+    // (208 + 125*sin(72°), 208 - 125*cos(72°)) ~ (208+119, 208-39) = (327, 169).
+    var k = KeyboardLayout.buttonAt(327, 169, 416, 416);
+    logger.debug("buttonAt(327,169) = " + k);
     return k == null;
+}
+
+(:test)
+function kbd_buttonAtNewWiderHaloReturnsWedge(logger as Logger) as Boolean {
+    // M3.4 widened ring + halo: R_HIT_INNER=131 (was 145). A tap at r=135
+    // (between old and new halos) at angle 72° should now hit the אבג wedge.
+    // (208 + 135*sin(72°), 208 - 135*cos(72°)) ~ (208+128, 208-42) = (336, 166).
+    var k = KeyboardLayout.buttonAt(336, 166, 416, 416);
+    if (k == null) { logger.debug("buttonAt(336,166) returned null"); return false; }
+    var d = k as Dictionary;
+    logger.debug("buttonAt(336,166)=" + d[:label]);
+    return d[:type] == :LETTER_GROUP && (d[:centerAngleDeg] as Number) == 72;
 }
 
 (:test)
