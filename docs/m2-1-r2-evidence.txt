@@ -1,0 +1,41 @@
+﻿M2.1 evidence — live drag-scroll + full-width article wrapping.
+
+=== Layout change ===
+
+M2 wrap budget: maxWidth = 280 (hardcoded; safe chord at central band only).
+M2.1 wrap budget: maxWidth = dc.getWidth() - 4 (~412 px on simulator, 386 on real watch).
+
+For per-Hebrew-char width 6 px (FONT_XTINY): body maxChars went from 46 to 68 (~48% more).
+For per-Hebrew-char width 13 px (FONT_LARGE): H1 maxChars went from 21 to 31 (~48% more).
+
+The long title "שלום היא מילה שימושית בהחלט" is 25 Hebrew code points = ~325 px wide
+at FONT_LARGE. In M2 this would wrap to 2 lines (limit 21 chars/line); in M2.1 it
+fits on a single line when the title is scrolled into the central band.
+
+=== Scroll range change ===
+
+M2 clamp: scrollY in [0, max(0, contentH - screenH)].
+M2.1 clamp: scrollY in [-extraMargin, contentH - screenH + extraMargin] where
+  extraMargin = (screenH / 2) - 8.
+
+On a 416-tall simulator screen with extraMargin = 200:
+  - scrollY can go to -200 — the first line at y=8 lands at screen y=208 (center).
+  - scrollY can go to contentH - 216 — the last line lands at center.
+Result: every line in the article can be scrolled into the wide central chord,
+where the full diameter is available.
+
+=== Live drag ===
+
+wikiwatchDelegate now overrides WatchUi.InputDelegate.onDrag(event) (inherited
+via BehaviorDelegate). The handler tracks the last drag-Y per gesture and forwards
+each DRAG_TYPE_CONTINUE delta to view.scrollBy(-delta). Result: content tracks
+the finger in real time during the gesture, not just on release.
+
+onNextPage / onPreviousPage are kept as a button/swipe-page fallback (60 px step).
+
+=== Sample article ===
+
+M2: 9 lines, ~250 bytes Hebrew.
+M2.1: 49 lines (>= 30 newlines per the new test), 5 H2 sections + multiple H3/H4,
+several multi-line body paragraphs, ~2.5 KB Hebrew.
+Long H1: "שלום היא מילה שימושית בהחלט" (5 words, 25 Hebrew chars).

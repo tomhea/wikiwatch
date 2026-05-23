@@ -38,9 +38,16 @@ class wikiwatchView extends WatchUi.View {
 
     function scrollBy(delta as Number) as Void {
         _scrollY += delta;
-        if (_scrollY < 0) { _scrollY = 0; }
-        var maxScroll = _contentHeight - _screenHeight;
-        if (maxScroll < 0) { maxScroll = 0; }
+        // M2.1: extended clamp range so every line can be scrolled into the
+        // central horizontal band, where the full-diameter chord is available.
+        // The first line can scroll DOWN to center (scrollY negative, blank
+        // above); the last line can scroll UP to center (scrollY beyond
+        // contentH - screenH, blank below).
+        var extraMargin = (_screenHeight / 2) - 8;
+        var minScroll = -extraMargin;
+        var maxScroll = _contentHeight - _screenHeight + extraMargin;
+        if (maxScroll < minScroll) { maxScroll = minScroll; }
+        if (_scrollY < minScroll) { _scrollY = minScroll; }
         if (_scrollY > maxScroll) { _scrollY = maxScroll; }
         WatchUi.requestUpdate();
     }
@@ -48,11 +55,11 @@ class wikiwatchView extends WatchUi.View {
     private function _layout(dc as Dc) as Void {
         var article = Strings.sampleArticle();
         var rawLines = _splitLines(article);
-        // 280 px width budget keeps text inside the safe chord at the central
-        // vertical band of the round display (SafeArea.minSafeY(195, 280) = 60).
-        // Lines drawn near the top/bottom of the article may run slightly wider
-        // than the chord, but scrolling exposes them in the central band.
-        var maxWidth = 280;
+        // M2.1: full-diameter wrap budget. Lines passing through the round
+        // bezel get clipped at the edges; users can scroll a line into the
+        // central band to read it clearly. Headers and body share this budget;
+        // LineWrap still wraps lines that exceed it.
+        var maxWidth = dc.getWidth() - 4;
         var spacing = 4;
         var sectionGap = 4;
         _lines = [];
