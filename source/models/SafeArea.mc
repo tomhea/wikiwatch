@@ -37,4 +37,14 @@ module SafeArea {
         }
         return r;
     }
+
+    // Max text width (px) that fits at `screenY` on a 2r-tall round screen,
+    // with `padding` px reserved on each side. Returns 0 when the chord at
+    // screenY is too narrow for the padding (clamped non-negative). M2.2
+    // calls this once per laid-out line to derive a position-aware wrap budget.
+    function linePaddedWidth(r as Number, screenY as Number, padding as Number) as Number {
+        var dy = screenY - r;
+        var w = safeChordWidth(r, dy) - 2 * padding;
+        return w < 0 ? 0 : w;
+    }
 }
