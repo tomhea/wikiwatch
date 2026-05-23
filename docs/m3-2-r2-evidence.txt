@@ -1,0 +1,3 @@
+M3_2 R_INNER=170 R_OUTER=205 ringDepth=35
+  buttonAt(386,150) at new midRadius = �?בג
+  buttonAt(355,161) at old midRadius = <null> (should be <null>)
