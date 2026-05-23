@@ -79,8 +79,11 @@ module KeyboardLayout {
                     :arcDeg => WEDGE_ARC_DEG
                 });
             }
-            // M3.5 level-2 (sofit) sub-zones — for each letter with a final form,
-            // add an inner sub-zone at r ∈ [10, R_EXPANSION_INNER] at the same angle.
+            // M3.6 final-form (sofit) sub-zones — flipped OUTWARD from M3.5.
+            // Each final-form button now sits in the outer-ring band
+            // (r ∈ [R_INNER, R_OUTER]) at the parent letter's angle,
+            // visually covering whichever outer-ring button is at that angle.
+            // Much larger tap target than the M3.5 inward sub-zones at r=[10, 50].
             for (var i = 0; i < n; i++) {
                 var letter = letters[i] as String;
                 var finalForm = _finalFormFor(letter);
@@ -91,8 +94,8 @@ module KeyboardLayout {
                     result.add({
                         :label => finalForm,
                         :centerAngleDeg => ang,
-                        :rInner => 10,
-                        :rOuter => R_EXPANSION_INNER,
+                        :rInner => R_INNER,
+                        :rOuter => R_OUTER,
                         :arcDeg => WEDGE_ARC_DEG
                     });
                 }

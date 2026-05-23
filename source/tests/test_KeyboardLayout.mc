@@ -204,9 +204,9 @@ function kbd_subButtonAtOutsideExpansionReturnsNull(logger as Logger) as Boolean
 
 (:test)
 function kbd_subButtonsForYudKafLamedHasFinalKaf(logger as Logger) as Boolean {
-    // יכל parent at angle 180°. Level-1 sub-zones: י at 144°, כ at 180°, ל at 216°.
-    // Level-2: ך at 180° (under כ), r ∈ [10, 50].
-    // Expect 4 total sub-zones, with ך at parent's angle and a smaller r range.
+    // M3.6: ך sits OUTWARD now (r in [R_INNER=146, R_OUTER=205]), in the
+    // outer-ring area at the parent letter's angle (180° for כ). The
+    // adjacent outer wedge at 180° (יכל itself) is hidden underneath.
     var parent = { :label => "יכל", :type => :LETTER_GROUP, :letters => ["י", "כ", "ל"], :centerAngleDeg => 180 };
     var subs = KeyboardLayout.subButtons(parent, 416, 416);
     logger.debug("subButtons(יכל).size=" + subs.size());
@@ -222,13 +222,12 @@ function kbd_subButtonsForYudKafLamedHasFinalKaf(logger as Logger) as Boolean {
     if (finalEntry == null) { logger.debug("ך not found"); return false; }
     logger.debug("ך angle=" + finalEntry[:centerAngleDeg] + " rInner=" + finalEntry[:rInner] + " rOuter=" + finalEntry[:rOuter]);
     return (finalEntry[:centerAngleDeg] as Number) == 180
-        && (finalEntry[:rOuter] as Number) <= 50;
+        && (finalEntry[:rInner] as Number) >= 100;
 }
 
 (:test)
 function kbd_subButtonsForMemNunSamekhHasTwoFinals(logger as Logger) as Boolean {
-    // מנס parent at 216°. Level-1: מ at 180°, נ at 216°, ס at 252°.
-    // Level-2: ם at 180°, ן at 216°. Total 5 sub-zones.
+    // M3.6: ם at 180° and ן at 216° both sit OUTWARD now (r in [R_INNER, R_OUTER]).
     var parent = { :label => "מנס", :type => :LETTER_GROUP, :letters => ["מ", "נ", "ס"], :centerAngleDeg => 216 };
     var subs = KeyboardLayout.subButtons(parent, 416, 416);
     logger.debug("subButtons(מנס).size=" + subs.size());
@@ -238,21 +237,21 @@ function kbd_subButtonsForMemNunSamekhHasTwoFinals(logger as Logger) as Boolean 
     for (var i = 0; i < subs.size(); i++) {
         var s = subs[i] as Dictionary;
         var label = s[:label] as String;
-        var isLevelTwo = ((s[:rOuter] as Number) <= 50);
-        if (label.equals("ם") && isLevelTwo && (s[:centerAngleDeg] as Number) == 180) { hasFinalMem = true; }
-        if (label.equals("ן") && isLevelTwo && (s[:centerAngleDeg] as Number) == 216) { hasFinalNun = true; }
+        var isOuter = ((s[:rInner] as Number) >= 100);
+        if (label.equals("ם") && isOuter && (s[:centerAngleDeg] as Number) == 180) { hasFinalMem = true; }
+        if (label.equals("ן") && isOuter && (s[:centerAngleDeg] as Number) == 216) { hasFinalNun = true; }
     }
     return hasFinalMem && hasFinalNun;
 }
 
 (:test)
 function kbd_subButtonAtInsideLevelTwoFinalReturnsLabel(logger as Logger) as Boolean {
-    // For יכל parent, ך is at angle 180°, r ∈ [10, 50]. Tap at angle 180°, r=30:
-    // (208 + 30*sin(180°), 208 - 30*cos(180°)) = (208 + 0, 208 - (-30)) = (208, 238).
+    // M3.6: ך at outer ring, angle 180°, r in [146, 205]. midR=175.
+    // (208 + 175*sin(180°), 208 - 175*cos(180°)) = (208, 208 - (-175)) = (208, 383).
     var parent = { :label => "יכל", :type => :LETTER_GROUP, :letters => ["י", "כ", "ל"], :centerAngleDeg => 180 };
-    var s = KeyboardLayout.subButtonAt(208, 238, parent, 416, 416);
-    if (s == null) { logger.debug("subButtonAt(208,238) returned null"); return false; }
+    var s = KeyboardLayout.subButtonAt(208, 383, parent, 416, 416);
+    if (s == null) { logger.debug("subButtonAt(208,383) returned null"); return false; }
     var d = s as Dictionary;
-    logger.debug("subButtonAt(208,238) = " + d[:label]);
+    logger.debug("subButtonAt(208,383) = " + d[:label]);
     return (d[:label] as String).equals("ך");
 }
