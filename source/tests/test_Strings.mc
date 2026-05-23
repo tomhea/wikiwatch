@@ -47,3 +47,20 @@ function strings_sampleArticleIsMultiline(logger as Logger) as Boolean {
     var rest = a.substring(firstNl + 1, a.length());
     return rest.find("\n") != null;
 }
+(:test)
+function strings_sampleArticleHasManyLines(logger as Logger) as Boolean {
+    // M2.1: the long article must have at least 30 newlines so scrolling has
+    // distance to cover. The original M2 article had only 8.
+    var a = Strings.sampleArticle();
+    var count = 0;
+    var i = 0;
+    while (true) {
+        var rest = a.substring(i, a.length());
+        var nl = rest.find("\n");
+        if (nl == null) { break; }
+        count++;
+        i = i + nl + 1;
+    }
+    logger.debug("newline count = " + count);
+    return count >= 30;
+}
