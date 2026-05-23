@@ -1,0 +1,11 @@
+M2_7 N=75 contentH=3113 middleWidth=291 rightAnchorX=316
+  [0] w=160 isH1=true
+  [1] w=250 isH1=true
+  [2] w=291 isH1=false
+  [3] w=291 isH1=false
+  [4] w=291 isH1=false
+  [70] w=291 isH1=false
+  [71] w=291 isH1=false
+  [72] w=291 isH1=false
+  [73] w=250 isH1=false
+  [74] w=160 isH1=false
