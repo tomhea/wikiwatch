@@ -14,9 +14,12 @@ class wikiwatchApp extends Application.AppBase {
     function onStop(state as Dictionary?) as Void {
     }
 
+    // M3: initial view is the static Hebrew keyboard. The article reader
+    // (wikiwatchView / wikiwatchDelegate) stays in source for M6 to push
+    // on top of the view stack when a word is long-pressed in an article.
     function getInitialView() as [Views] or [Views, InputDelegates] {
-        var view = new wikiwatchView();
-        return [ view, new wikiwatchDelegate(view) ];
+        var view = new wikiwatchKeyboardView();
+        return [ view, new wikiwatchKeyboardDelegate(view) ];
     }
 
 }
