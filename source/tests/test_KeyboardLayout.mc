@@ -85,13 +85,25 @@ function kbd_buttonAtInsideAlefGroupReturnsIt(logger as Logger) as Boolean {
 }
 
 (:test)
-function kbd_buttonAtInsideOldMidRingReturnsNull(logger as Logger) as Boolean {
-    // M3.2 raised R_INNER from 105 to 170 (thinner outer ring). A point at
-    // r=154 (which used to be inside the M3.1 ring at midRadius 155) is now
-    // in the inner area and returns null.
-    // (208 + 147, 208 - 47) = (355, 161), r = sqrt(147^2+47^2) ~ 154.
-    var k = KeyboardLayout.buttonAt(355, 161, 416, 416);
-    logger.debug("buttonAt(355,161) = " + k);
+function kbd_buttonAtInsideHitHaloReturnsWedge(logger as Logger) as Boolean {
+    // M3.3 added a hit halo: visual ring R_INNER=160..R_OUTER=205, but buttonAt
+    // accepts r >= R_HIT_INNER=145. A point at angle 72°, r=150 (inside halo,
+    // outside visual ring) should still return the אבג wedge.
+    // (208 + 150*sin(72°), 208 - 150*cos(72°)) ~ (208+143, 208-46) = (351, 162).
+    var k = KeyboardLayout.buttonAt(351, 162, 416, 416);
+    if (k == null) { logger.debug("buttonAt(351,162) returned null"); return false; }
+    var d = k as Dictionary;
+    logger.debug("buttonAt(351,162)=" + d[:label] + " angle=" + d[:centerAngleDeg]);
+    return d[:type] == :LETTER_GROUP && (d[:centerAngleDeg] as Number) == 72;
+}
+
+(:test)
+function kbd_buttonAtJustOutsideHaloReturnsNull(logger as Logger) as Boolean {
+    // r=140 is just inside R_HIT_INNER=145 - actually wait, 140 < 145 so it's
+    // OUTSIDE the halo. Should return null.
+    // (208 + 140*sin(72°), 208 - 140*cos(72°)) ~ (208+133, 208-43) = (341, 165).
+    var k = KeyboardLayout.buttonAt(341, 165, 416, 416);
+    logger.debug("buttonAt(341,165) = " + k);
     return k == null;
 }
 

@@ -6,7 +6,9 @@ import Toybox.Math;
 module KeyboardLayout {
     const NUM_BUTTONS = 10;
     const WEDGE_ARC_DEG = 36;
-    const R_INNER = 170;
+    const R_INNER = 160;
+    const R_HIT_INNER = 145;
+    const R_HIT_OUTER = 215;
     const R_OUTER = 205;
     const R_EXPANSION_INNER = 50;
 
@@ -26,14 +28,14 @@ module KeyboardLayout {
     }
 
     // Polar hit-test against the outer ring. Returns the wedge whose
-    // r in [R_INNER, R_OUTER] and angular slot contains (x, y), or null.
+    // r in [R_HIT_INNER, R_HIT_OUTER] and angular slot contains (x, y), or null.
     function buttonAt(x as Number, y as Number, screenW as Number, screenH as Number) as Dictionary or Null {
         var cx = screenW / 2;
         var cy = screenH / 2;
         var dx = x - cx;
         var dy = y - cy;
         var rSq = dx * dx + dy * dy;
-        if (rSq < R_INNER * R_INNER || rSq > R_OUTER * R_OUTER) {
+        if (rSq < R_HIT_INNER * R_HIT_INNER || rSq > R_HIT_OUTER * R_HIT_OUTER) {
             return null;
         }
         var thetaDeg = _angleDeg(dx, dy);

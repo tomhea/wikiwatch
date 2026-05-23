@@ -1,0 +1,3 @@
+M3_3 R_INNER=160 R_OUTER=205 R_HIT_INNER=145 R_HIT_OUTER=215
+  halo r=150 angle=72: �?בג
+  r=140 (outside halo): <null>
