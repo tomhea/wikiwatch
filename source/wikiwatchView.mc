@@ -37,44 +37,90 @@ class wikiwatchView extends WatchUi.View {
     }
 
     function scrollBy(delta as Number) as Void {
+        // M2.2: reverted to standard clamp. The per-line wrap budget already
+        // narrows top/bottom lines so they read cleanly at the article's
+        // natural endpoints - no need to scroll past the content boundaries.
         _scrollY += delta;
-        // M2.1: extended clamp range so every line can be scrolled into the
-        // central horizontal band, where the full-diameter chord is available.
-        // The first line can scroll DOWN to center (scrollY negative, blank
-        // above); the last line can scroll UP to center (scrollY beyond
-        // contentH - screenH, blank below).
-        var extraMargin = (_screenHeight / 2) - 8;
-        var minScroll = -extraMargin;
-        var maxScroll = _contentHeight - _screenHeight + extraMargin;
-        if (maxScroll < minScroll) { maxScroll = minScroll; }
-        if (_scrollY < minScroll) { _scrollY = minScroll; }
+        var maxScroll = _contentHeight - _screenHeight;
+        if (maxScroll < 0) { maxScroll = 0; }
+        if (_scrollY < 0) { _scrollY = 0; }
         if (_scrollY > maxScroll) { _scrollY = maxScroll; }
         WatchUi.requestUpdate();
     }
 
+    // Two-pass position-aware layout (M2.2).
+    //
+    // Pass 1: walk raw lines once assuming no wrap, accumulating fh+spacing
+    // per raw line. The end value is an estimate of contentH used solely to
+    // bucket each line into "top zone / middle zone / bottom zone" so we
+    // can pick the right wrap budget.
+    //
+    // Pass 2: for each raw line, the closest screen_y the line can reach
+    // given default scroll range [0, estContentH - screenH] determines the
+    // chord width available there; we wrap to that chord minus 25 px padding
+    // on each side. Top-zone lines (estY < center) stick to screen-top with
+    // a narrow chord; bottom-zone lines (estY > maxScroll + center) stick
+    // to screen-bottom with a narrow chord; middle lines reach center and
+    // get the full diameter minus padding.
     private function _layout(dc as Dc) as Void {
         var article = Strings.sampleArticle();
         var rawLines = _splitLines(article);
-        // M2.1: full-diameter wrap budget. Lines passing through the round
-        // bezel get clipped at the edges; users can scroll a line into the
-        // central band to read it clearly. Headers and body share this budget;
-        // LineWrap still wraps lines that exceed it.
-        var maxWidth = dc.getWidth() - 4;
+        var screenW = dc.getWidth();
+        var screenH = dc.getHeight();
+        var r = screenW / 2;
+        var center = screenH / 2;
+        var padding = 25;
         var spacing = 4;
         var sectionGap = 4;
-        _lines = [];
-        var y = 8;
+        var minWrapWidth = 60;
+
+        var meta = [];
+        var estY = 8;
         for (var i = 0; i < rawLines.size(); i++) {
             var token = MarkdownTokens.parse(rawLines[i] as String);
-            var level = token[:level] as Number;
-            var text = token[:text] as String;
-            var font = _fontForLevel(level);
+            var font = _fontForLevel(token[:level] as Number);
             var fh = dc.getFontHeight(font);
             var charWidth = dc.getTextWidthInPixels("ש", font);
             if (charWidth < 1) { charWidth = 8; }
-            var maxChars = maxWidth / charWidth;
+            meta.add({
+                :token => token,
+                :font => font,
+                :fh => fh,
+                :charWidth => charWidth,
+                :estY => estY
+            });
+            estY += fh + spacing + sectionGap;
+        }
+        var estContentH = estY;
+        var maxScroll = estContentH - screenH;
+        if (maxScroll < 0) { maxScroll = 0; }
+
+        _lines = [];
+        var y = 8;
+        for (var i = 0; i < meta.size(); i++) {
+            var m = meta[i] as Dictionary;
+            var token = m[:token] as Dictionary;
+            var font = m[:font];
+            var fh = m[:fh] as Number;
+            var charWidth = m[:charWidth] as Number;
+            var lineEstY = m[:estY] as Number;
+
+            var targetScroll = lineEstY - center;
+            var closestSY;
+            if (targetScroll < 0) {
+                closestSY = lineEstY;
+            } else if (targetScroll > maxScroll) {
+                closestSY = lineEstY - maxScroll;
+            } else {
+                closestSY = center;
+            }
+
+            var wrapBudget = SafeArea.linePaddedWidth(r, closestSY, padding);
+            if (wrapBudget < minWrapWidth) { wrapBudget = minWrapWidth; }
+            var maxChars = wrapBudget / charWidth;
             if (maxChars < 1) { maxChars = 1; }
-            var subLines = LineWrap.wrap(text, maxChars);
+
+            var subLines = LineWrap.wrap(token[:text] as String, maxChars);
             for (var j = 0; j < subLines.size(); j++) {
                 _lines.add({
                     :text => subLines[j],

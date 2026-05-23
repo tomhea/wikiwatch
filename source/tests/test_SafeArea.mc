@@ -61,3 +61,52 @@ function safeArea_minSafeYWiderThanDiameter(logger as Logger) as Boolean {
     logger.debug("minSafeY(195, 500) = " + v);
     return v == 195;
 }
+(:test)
+function lpw_centerEqualsFullDiameterMinusPadding(logger as Logger) as Boolean {
+    // At screenY = r (center on a 2r-tall screen), chord == 2r (full diameter).
+    // padded = 2r - 2*padding. For r=208, padding=25: 416 - 50 = 366.
+    var v = SafeArea.linePaddedWidth(208, 208, 25);
+    logger.debug("linePaddedWidth(208, 208, 25) = " + v);
+    return v == 366;
+}
+
+(:test)
+function lpw_offCenterReducesByChord(logger as Logger) as Boolean {
+    // dy = -100 from center r=208: chord = 2*floor(sqrt(208^2 - 100^2))
+    // = 2*floor(sqrt(33264)) = 2*floor(182.38) = 2*182 = 364. Padded = 364 - 50 = 314.
+    var v = SafeArea.linePaddedWidth(208, 108, 25);
+    logger.debug("linePaddedWidth(208, 108, 25) = " + v);
+    return v == 314;
+}
+
+(:test)
+function lpw_clampsToZeroAtEdge(logger as Logger) as Boolean {
+    // screenY=0 -> dy=-r -> chord=0 -> padded = -50 -> clamped to 0.
+    var v = SafeArea.linePaddedWidth(208, 0, 25);
+    logger.debug("linePaddedWidth(208, 0, 25) = " + v);
+    return v == 0;
+}
+
+(:test)
+function lpw_clampsToZeroWhenPaddingExceedsChord(logger as Logger) as Boolean {
+    // screenY=1 -> dy=-207 -> chord = 2*floor(sqrt(208^2 - 207^2)) = 2*floor(sqrt(415))
+    // = 2*20 = 40. Padded = 40 - 50 = -10 -> clamped to 0.
+    var v = SafeArea.linePaddedWidth(208, 1, 25);
+    logger.debug("linePaddedWidth(208, 1, 25) = " + v);
+    return v == 0;
+}
+
+(:test)
+function lpw_symmetricAboveBelowCenter(logger as Logger) as Boolean {
+    // Chord is symmetric about center, so padded widths must match.
+    var above = SafeArea.linePaddedWidth(208, 108, 25);
+    var below = SafeArea.linePaddedWidth(208, 308, 25);
+    return above == below;
+}
+
+(:test)
+function lpw_realWatchRadius(logger as Logger) as Boolean {
+    // Real Venu 2: r=195. Center y=195, chord = 390. Padded = 340.
+    var v = SafeArea.linePaddedWidth(195, 195, 25);
+    return v == 340;
+}

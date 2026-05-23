@@ -1,0 +1,53 @@
+﻿M2.2 evidence — position-aware wrap with 25 px padding from each chord edge.
+
+=== Per-line wrap budget (live captured from a diagnostic build) ===
+
+SCREEN: 416x416, contentH: 2716 (49 raw lines, ~57 rendered lines after wrap)
+
+  line[0]  y=8     w=64   font=LARGE  ← H1 sub-line at top of article (narrow!)
+  line[1]  y=79    w=64   font=LARGE  ← H1 wraps to several narrow sub-lines
+  line[2]  y=150   w=64   font=LARGE
+  line[3]  y=221   w=64   font=LARGE
+  line[4]  y=292   w=64   font=LARGE
+  line[5]  y=367   w=282  font=XTINY  ← first body line, ~50% chord width
+  line[6]  y=403   w=282  font=XTINY
+  line[7]  y=443   w=328  font=XTINY  ← deeper, wider chord available
+  line[8]  y=483   w=356  font=SMALL  ← H3 ~90% chord
+  line[9]  y=549   w=366  font=XTINY  ← reached middle zone: full chord - 50 px
+  line[10] y=589   w=366  font=XTINY
+  ... (lines 11-50 all w=366: middle zone)
+  line[51] y=2488  w=326  font=XTINY  ← entering bottom zone
+  line[52] y=2524  w=326  font=XTINY
+  line[53] y=2564  w=276  font=XTINY
+  line[54] y=2600  w=276  font=XTINY
+  line[55] y=2640  w=194  font=XTINY  ← last body lines: narrow at bottom
+  line[56] y=2676  w=194  font=XTINY
+
+=== Interpretation ===
+
+The H1 title at the very top of the article (lines 0-4) gets wrapped to w=64 px wide
+sub-lines because its natural screen position is near the top bezel where the
+horizontal chord is only ~114 px wide; subtracting 25 px padding on each side
+leaves 64 px of safe text width.
+
+Lines in the middle of the article (line[9] onward in the example) reach the
+central horizontal band when scrolled there, so they wrap to w=366 px - the
+full chord minus 50 px total padding (25 each side).
+
+Lines near the end of the article (line[55+]) get narrowed again because their
+natural screen position (at scrollY=maxScroll) sits near the bottom bezel.
+
+=== Differences from M2.1 ===
+
+M2.1 used a single full-width budget for ALL lines (dc.getWidth() - 4), assuming
+the user would scroll any line into the central band to read it clearly - which
+required an extended scroll range past content boundaries.
+
+M2.2 reverts to the standard scroll range [0, contentH - screenH] and instead
+WRAPS each line at the chord-width available at its natural screen position.
+The first and last lines of the article display CLEANLY at their natural
+position (no scroll past content needed). Middle lines still use full diameter.
+
+This matches the user's spec: "actual start/end of each article should be in a
+'safe width' so that it will be displayed correctly on the top/bottom of the
+watch circular screen".
