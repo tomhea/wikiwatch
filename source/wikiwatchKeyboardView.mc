@@ -99,8 +99,12 @@ class wikiwatchKeyboardView extends WatchUi.View {
             for (var i = 0; i < subs.size(); i++) {
                 var s = subs[i] as Dictionary;
                 var midR = ((s[:rInner] as Number) + (s[:rOuter] as Number)) / 2;
+                // M3.5: level-2 sub-zones (finals, r in [10, 50]) are smaller —
+                // use FONT_XTINY so the Hebrew glyph fits in the tighter radial depth.
+                var font = ((s[:rOuter] as Number) <= 50)
+                    ? Graphics.FONT_XTINY : Graphics.FONT_TINY;
                 _drawText(dc, cx, cy, s[:centerAngleDeg] as Number, midR,
-                          s[:label] as String, Graphics.FONT_TINY, Graphics.COLOR_BLACK);
+                          s[:label] as String, font, Graphics.COLOR_BLACK);
             }
         }
     }
@@ -144,18 +148,28 @@ class wikiwatchKeyboardView extends WatchUi.View {
     }
 
     private function _drawCenterDisplay(dc as Dc, cx as Number, cy as Number) as Void {
-        // M3.4: bandH 26 -> 40 (fits FONT_TINY's full glyph height), and the
-        // text is drawn with TEXT_JUSTIFY_VCENTER so it sits centered inside
-        // the band (no overflow above or below).
-        var bandW = 180;
-        var bandH = 40;
+        // M3.5: 2-line band. bandW slightly wider (200), bandH 40 -> 64
+        // (room for 2 lines of FONT_TINY Hebrew, each ~30 px). bandY moved
+        // 15 px higher (was cy-95, now cy-110) per user "cut a bit from top".
+        // Text wraps onto a second line if it doesn't fit; last 2 lines shown.
+        var bandW = 200;
+        var bandH = 64;
         var bandX = cx - bandW / 2;
-        var bandY = cy - 95;
+        var bandY = cy - 110;
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.fillRectangle(bandX, bandY, bandW, bandH);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(bandX + bandW - 6, bandY + bandH / 2, Graphics.FONT_TINY, _buffer,
-                    Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+
+        // Wrap the buffer into char-fit lines; show the last 2.
+        var lines = _wrapBufferIntoLines(dc, _buffer, Graphics.FONT_TINY, bandW - 12);
+        var startIdx = (lines.size() > 2) ? (lines.size() - 2) : 0;
+        var rowH = bandH / 2;
+        for (var i = startIdx; i < lines.size(); i++) {
+            var rowIdx = i - startIdx;
+            var lineY = bandY + rowIdx * rowH + rowH / 2;
+            dc.drawText(bandX + bandW - 6, lineY, Graphics.FONT_TINY, lines[i] as String,
+                        Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
 
         // 5 stub suggestion lines below the input band.
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -167,6 +181,37 @@ class wikiwatchKeyboardView extends WatchUi.View {
                         "(suggestion " + i + ")", Graphics.TEXT_JUSTIFY_RIGHT);
             lineY = lineY + lineStep;
         }
+    }
+
+    // Greedy char-based wrap: build lines that fit in maxPx by measuring
+    // the candidate substring with dc.getTextWidthInPixels. Each char that
+    // doesn't fit triggers a new line. Returns empty array for empty input.
+    private function _wrapBufferIntoLines(dc as Dc, text as String, font as Graphics.FontType, maxPx as Number) as Array<String> {
+        var lines = [];
+        if (text.length() == 0) { return lines; }
+        var len = text.length();
+        var lineStart = 0;
+        var i = lineStart + 1;
+        while (i <= len) {
+            var candidate = text.substring(lineStart, i);
+            if (dc.getTextWidthInPixels(candidate, font) > maxPx) {
+                // Emit the substring up to i-1 if non-empty, else single char (overflow).
+                if (i - 1 > lineStart) {
+                    lines.add(text.substring(lineStart, i - 1));
+                    lineStart = i - 1;
+                } else {
+                    lines.add(text.substring(lineStart, i));
+                    lineStart = i;
+                }
+                i = lineStart + 1;
+            } else {
+                i = i + 1;
+            }
+        }
+        if (lineStart < len) {
+            lines.add(text.substring(lineStart, len));
+        }
+        return lines;
     }
 
     private function _drawWedge(dc as Dc, cx as Number, cy as Number,

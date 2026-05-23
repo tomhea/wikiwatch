@@ -1,0 +1,7 @@
+M3_5 subButtons(×™×›×?).size=4 (expected 4: ×™,×›,×?,×?)
+  [0] label=×™ angle=144 r=[50,146]
+  [1] label=×› angle=180 r=[50,146]
+  [2] label=×? angle=216 r=[50,146]
+  [3] label=×? angle=180 r=[10,50]
+M3_5 subButtons(×?× ×¡).size=5 (expected 5: ×?,× ,×¡,×?,×?)
+  subButtonAt(208,238) [r=30 a=180]: ×?
