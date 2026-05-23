@@ -1,0 +1,60 @@
+﻿M2.4 evidence — narrow-tail only at the absolute last sub-line + right-justify
+middle lines + onUpdate skip-ahead optimization.
+
+=== Per-line widths (one-off diagnostic from a build with println) ===
+
+M2_4 N=53 contentH=2321
+  [0]   w=160       <- first line (H1 sub 1, center-justified)
+  [1]   w=250       <- second line (H1 sub 2, center-justified)
+  ... (middle lines, all w=416, right-justified at screenW - 25) ...
+  [N-4] w=416       <- middle width near the bottom (right-justified)
+  [N-3] w=416       <- middle width
+  [N-2] w=250       <- penultimate (center-justified)
+  [N-1] w=160       <- last (center-justified)
+
+Compare M2.3's last-paragraph widths: every sub-line beyond index 1 in the
+last raw got w=160 because LineWrap.wrapToWidths.defaultWidth fell back to
+the LAST entry of widths=[250, 160]. With the longer last paragraph in
+M2.4, M2.3 would have produced 5-6 narrow sub-lines at the bottom.
+
+M2.4 introduces LineWrap.wrapWithNarrowTail(text, charW, middleW, secondW,
+edgeW). Algorithm:
+1. Reverse-pack the LAST sub-line at edgeWidth (greedy from text end).
+2. Reverse-pack the PENULTIMATE at secondWidth.
+3. Forward-pack the REMAINDER at middleWidth.
+Only the last 2 sub-lines are narrow; everything before stays at middle.
+
+=== Justify rules ===
+
+In wikiwatchView.onUpdate:
+  if (line.w >= middleWidth)  draw right-justified at x = screenW - 25
+  else                        draw center-justified at x = screenW / 2
+
+Narrow first/last sub-lines sit in the narrow horizontal chord at top/bottom
+of the round screen - center-justify keeps the text inside that chord.
+Middle sub-lines have the full diameter available - right-justify anchors
+the right edge of the text 25 px from the screen edge (clean finger margin
+for users who scroll with their right hand), and the wrap budget of
+screenW lets text bleed up to 25 px past the left edge as the user explicitly
+requested ("use that. Allow yourself to use 'a bit too much' if it makes
+the line nicer").
+
+=== onUpdate optimization ===
+
+The original onUpdate iterated all _lines unconditionally. M2.4 splits the
+loop in two:
+1. Skip-ahead while-loop: advance i past lines fully above the viewport.
+2. Draw while-loop: render until the first line at or below the viewport
+   bottom, then break.
+
+For a 50+ line article and a viewport showing ~6 lines, this drops the
+per-frame work from ~50 iterations to ~6. Helps scroll smoothness during
+fast drags.
+
+=== Sample article change ===
+
+The last paragraph was lengthened from 51 to ~150 Hebrew chars so that
+the narrow-tail pattern (multiple middle sub-lines + 250 + 160) is
+actually visible. The new paragraph still ends with the original sentence
+and adds a follow-up that wraps to 3-4 middle sub-lines plus the narrow
+tail. All existing Strings tests still pass.
