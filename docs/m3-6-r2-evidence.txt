@@ -1,0 +1,7 @@
+M3_6 subButtons(×™×›×?):
+  [0] ×™ angle=144 r=[50,146]
+  [1] ×› angle=180 r=[50,146]
+  [2] ×? angle=216 r=[50,146]
+  [3] ×? angle=180 r=[146,205]
+  subButtonAt(208,383) [r=175 a=180]: ×?
+  subButtonAt(208,238) [old r=30 inward]: <null>
