@@ -183,3 +183,95 @@ function wnt_hebrewLongLastRaw(logger as Logger) as Boolean {
     // Expect at least 1 line. Last line non-empty.
     return l.size() >= 1 && !l[l.size() - 1].equals("");
 }
+// M2.8 (option B): tests for the pixel-accurate wrap functions.
+
+(:test)
+function splitWords_empty(logger as Logger) as Boolean {
+    var w = LineWrap.splitWords("");
+    logger.debug("splitWords('') size=" + w.size());
+    return w.size() == 0;
+}
+
+(:test)
+function splitWords_collapsesMultiSpace(logger as Logger) as Boolean {
+    // Multi/leading/trailing spaces should collapse to no empty word entries.
+    var w = LineWrap.splitWords("  hello   world  ");
+    logger.debug("splitWords spaces = " + w);
+    return w.size() == 2 && w[0].equals("hello") && w[1].equals("world");
+}
+
+(:test)
+function splitWords_hebrew(logger as Logger) as Boolean {
+    var w = LineWrap.splitWords("שלום עולם");
+    logger.debug("splitWords hebrew size=" + w.size());
+    return w.size() == 2 && w[0].equals("שלום") && w[1].equals("עולם");
+}
+
+(:test)
+function wptw_empty(logger as Logger) as Boolean {
+    // Empty word list -> single empty output line so callers iterate uniformly.
+    var l = LineWrap.wrapPxToWidths([], [], 5, [100], 0);
+    logger.debug("wptw empty size=" + l.size());
+    return l.size() == 1 && l[0].equals("");
+}
+
+(:test)
+function wptw_singleWordFits(logger as Logger) as Boolean {
+    var l = LineWrap.wrapPxToWidths(["hello"], [50], 5, [100], 0);
+    logger.debug("wptw single = " + l);
+    return l.size() == 1 && l[0].equals("hello");
+}
+
+(:test)
+function wptw_twoWordsFitOnOneLine(logger as Logger) as Boolean {
+    // 20 + 5 + 20 = 45 <= 100, both fit.
+    var l = LineWrap.wrapPxToWidths(["a", "b"], [20, 20], 5, [100], 0);
+    logger.debug("wptw twoFit = " + l);
+    return l.size() == 1 && l[0].equals("a b");
+}
+
+(:test)
+function wptw_perLineWidthCascade(logger as Logger) as Boolean {
+    // Line 0 budget 50: "a"(30) fits; add "b"? 30+5+30=65 > 50. Emit "a". Carry "b".
+    // Line 1 budget 70: "b"(30) fits; add "c"? 30+5+30=65 <= 70. Emit "b c".
+    var l = LineWrap.wrapPxToWidths(["a", "b", "c"], [30, 30, 30], 5, [50, 70], 0);
+    logger.debug("wptw cascade = " + l);
+    return l.size() == 2 && l[0].equals("a") && l[1].equals("b c");
+}
+
+(:test)
+function wptw_oversizedWordOverflowsAlone(logger as Logger) as Boolean {
+    // Word "huge" (200 px) > budget (50). Must emit on its own line.
+    var l = LineWrap.wrapPxToWidths(["x", "huge", "y"], [10, 200, 10], 5, [50], 0);
+    logger.debug("wptw oversized = " + l);
+    return l.size() == 3 && l[0].equals("x") && l[1].equals("huge") && l[2].equals("y");
+}
+
+(:test)
+function wpnt_empty(logger as Logger) as Boolean {
+    var l = LineWrap.wrapPxWithNarrowTail([], [], 5, 100, 70, 60);
+    logger.debug("wpnt empty size=" + l.size());
+    return l.size() == 1 && l[0].equals("");
+}
+
+(:test)
+function wpnt_middlePlusTail(logger as Logger) as Boolean {
+    // 5 words of 20 px each, space 5. middle=100, second=50, edge=30.
+    // Reverse-pack last at edge=30: "e"(20) fits; "d"? 20+5+20=45 > 30. last="e".
+    // Reverse-pack penultimate at second=50: "d"(20) fits; "c"? 20+5+20=45 <= 50. fits. "b"? 45+5+20=70 > 50. penultimate="c d".
+    // Forward-pack remainder ["a","b"] at middle=100: "a"(20) + " " + "b"(20) = 45 <= 100. line = "a b".
+    // Result: ["a b", "c d", "e"].
+    var l = LineWrap.wrapPxWithNarrowTail(["a","b","c","d","e"], [20,20,20,20,20], 5, 100, 50, 30);
+    logger.debug("wpnt middlePlusTail = " + l);
+    return l.size() == 3 && l[0].equals("a b") && l[1].equals("c d") && l[2].equals("e");
+}
+
+(:test)
+function wpnt_oversizedLastWordOnly(logger as Logger) as Boolean {
+    // Last word 200 px overflows edge=30; emits alone. Penultimate "x" (10) fits in second=50.
+    // Forward remainder empty.
+    // Result: ["x", "verylongword"].
+    var l = LineWrap.wrapPxWithNarrowTail(["x", "verylongword"], [10, 200], 5, 100, 50, 30);
+    logger.debug("wpnt oversized = " + l);
+    return l.size() == 2 && l[0].equals("x") && l[1].equals("verylongword");
+}

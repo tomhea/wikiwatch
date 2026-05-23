@@ -1,0 +1,14 @@
+M2_8 N=67 contentH=2825 middleWidth=301 rightAnchorX=316
+  first 5 lines:
+    [0] chars=13 budget=160 actual=143 isH1=true
+    [1] chars=13 budget=250 actual=143 isH1=true
+    [2] chars=45 budget=301 actual=270 isH1=false
+    [3] chars=7 budget=301 actual=43 isH1=false
+    [4] chars=50 budget=301 actual=301 isH1=false
+  last 5 lines:
+    [62] chars=5 budget=301 actual=31 isH1=false
+    [63] chars=46 budget=301 actual=276 isH1=false
+    [64] chars=35 budget=301 actual=211 isH1=false
+    [65] chars=40 budget=250 actual=240 isH1=false
+    [66] chars=26 budget=160 actual=157 isH1=false
+  body avg fill: 90% over 35 non-tail body lines
