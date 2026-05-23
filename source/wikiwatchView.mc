@@ -37,9 +37,6 @@ class wikiwatchView extends WatchUi.View {
     }
 
     function scrollBy(delta as Number) as Void {
-        // M2.2: reverted to standard clamp. The per-line wrap budget already
-        // narrows top/bottom lines so they read cleanly at the article's
-        // natural endpoints - no need to scroll past the content boundaries.
         _scrollY += delta;
         var maxScroll = _contentHeight - _screenHeight;
         if (maxScroll < 0) { maxScroll = 0; }
@@ -48,98 +45,85 @@ class wikiwatchView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
-    // Two-pass position-aware layout (M2.2).
-    //
-    // Pass 1: walk raw lines once assuming no wrap, accumulating fh+spacing
-    // per raw line. The end value is an estimate of contentH used solely to
-    // bucket each line into "top zone / middle zone / bottom zone" so we
-    // can pick the right wrap budget.
-    //
-    // Pass 2: for each raw line, the closest screen_y the line can reach
-    // given default scroll range [0, estContentH - screenH] determines the
-    // chord width available there; we wrap to that chord minus 25 px padding
-    // on each side. Top-zone lines (estY < center) stick to screen-top with
-    // a narrow chord; bottom-zone lines (estY > maxScroll + center) stick
-    // to screen-bottom with a narrow chord; middle lines reach center and
-    // get the full diameter minus padding.
+    // M2.3 layout. Per-raw strategy (no global iteration):
+    //   firstRaw   -> widths [narrowEdge, narrowSecond, middleWidth, ...]
+    //                 greedy wrap consumes them in order, so the first
+    //                 rendered sub-line ends up 160 wide and the second 250.
+    //   middleRaws -> widths [middleWidth] (full screen width)
+    //   lastRaw    -> widths [narrowSecond, narrowEdge]
+    //                 forces last raw's sub-lines into the narrow tail; the
+    //                 typical body paragraph wraps to 2 sub-lines at 250/160.
     private function _layout(dc as Dc) as Void {
         var article = Strings.sampleArticle();
         var rawLines = _splitLines(article);
         var screenW = dc.getWidth();
-        var screenH = dc.getHeight();
-        var r = screenW / 2;
-        var center = screenH / 2;
-        var padding = 25;
         var spacing = 4;
         var sectionGap = 4;
-        var minWrapWidth = 60;
+        var narrowEdge = 160;
+        var narrowSecond = 250;
+        var middleWidth = screenW;
 
         var meta = [];
-        var estY = 8;
         for (var i = 0; i < rawLines.size(); i++) {
             var token = MarkdownTokens.parse(rawLines[i] as String);
             var font = _fontForLevel(token[:level] as Number);
             var fh = dc.getFontHeight(font);
-            var charWidth = dc.getTextWidthInPixels("ש", font);
-            if (charWidth < 1) { charWidth = 8; }
-            meta.add({
-                :token => token,
-                :font => font,
-                :fh => fh,
-                :charWidth => charWidth,
-                :estY => estY
-            });
-            estY += fh + spacing + sectionGap;
+            var charW = dc.getTextWidthInPixels("ש", font);
+            if (charW < 1) { charW = 8; }
+            meta.add({ :token => token, :font => font, :fh => fh, :charW => charW });
         }
-        var estContentH = estY;
-        var maxScroll = estContentH - screenH;
-        if (maxScroll < 0) { maxScroll = 0; }
+
+        var firstWidths = [narrowEdge, narrowSecond, middleWidth];
+        var middleOnly = [middleWidth];
+        var lastWidths = [narrowSecond, narrowEdge];
 
         _lines = [];
         var y = 8;
         for (var i = 0; i < meta.size(); i++) {
             var m = meta[i] as Dictionary;
-            var token = m[:token] as Dictionary;
-            var font = m[:font];
-            var fh = m[:fh] as Number;
-            var charWidth = m[:charWidth] as Number;
-            var lineEstY = m[:estY] as Number;
-
-            var targetScroll = lineEstY - center;
-            var closestSY;
-            if (targetScroll < 0) {
-                closestSY = lineEstY;
-            } else if (targetScroll > maxScroll) {
-                closestSY = lineEstY - maxScroll;
+            var text = (m[:token] as Dictionary)[:text] as String;
+            var charW = m[:charW] as Number;
+            var subs;
+            var widthsUsed;
+            if (i == 0) {
+                subs = LineWrap.wrapToWidths(text, charW, firstWidths, 0);
+                widthsUsed = firstWidths;
+            } else if (i == meta.size() - 1) {
+                subs = LineWrap.wrapToWidths(text, charW, lastWidths, 0);
+                widthsUsed = lastWidths;
             } else {
-                closestSY = center;
+                subs = LineWrap.wrapToWidths(text, charW, middleOnly, 0);
+                widthsUsed = middleOnly;
             }
-
-            var wrapBudget = SafeArea.linePaddedWidth(r, closestSY, padding);
-            if (wrapBudget < minWrapWidth) { wrapBudget = minWrapWidth; }
-            var maxChars = wrapBudget / charWidth;
-            if (maxChars < 1) { maxChars = 1; }
-
-            var subLines = LineWrap.wrap(token[:text] as String, maxChars);
-            for (var j = 0; j < subLines.size(); j++) {
+            for (var j = 0; j < subs.size(); j++) {
+                var w;
+                if (j < widthsUsed.size()) {
+                    w = widthsUsed[j];
+                } else {
+                    w = widthsUsed[widthsUsed.size() - 1];
+                }
                 _lines.add({
-                    :text => subLines[j],
-                    :font => font,
+                    :text => subs[j],
+                    :font => m[:font],
                     :y => y,
-                    :h => fh
+                    :h => m[:fh] as Number,
+                    :w => w
                 });
-                y += fh + spacing;
+                y += (m[:fh] as Number) + spacing;
             }
             y += sectionGap;
         }
         _contentHeight = y;
     }
 
+    // M2.3: shrunk header fonts by one notch so more content fits per screen.
+    // H4 collapses to body size (XTINY); markdown source still distinguishes
+    // them but they render with identical metrics.
     private function _fontForLevel(level as Number) as Graphics.FontType {
-        if (level == 1) { return Graphics.FONT_LARGE; }
-        if (level == 2) { return Graphics.FONT_MEDIUM; }
-        if (level == 3) { return Graphics.FONT_SMALL; }
-        if (level == 4) { return Graphics.FONT_TINY; }
+        if (level == 1) { return Graphics.FONT_MEDIUM; }
+        if (level == 2) { return Graphics.FONT_SMALL; }
+        if (level == 3) { return Graphics.FONT_TINY; }
+        if (level == 4) { return Graphics.FONT_XTINY; }
         return Graphics.FONT_XTINY;
     }
 
