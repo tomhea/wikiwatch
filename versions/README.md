@@ -27,6 +27,17 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M2.2 | `v0.M2.2` | `2377bd9` | 2026-05-23 | 110 KB | Position-aware per-line wrap (25 px padding); reverted scroll range | 40 |
 | M2.3 | `v0.M2.3` | `7967701` | 2026-05-23 | 111 KB | Smaller header fonts + fixed-width per-position wrap (160 / 250 / screen / 250 / 160) | 46 |
 | M2.4 | `v0.M2.4` | `cc04b79` | 2026-05-23 | 114 KB | Narrow tail at the **absolute last** sub-line only + hybrid justify (RIGHT middle, CENTER narrow) + `onUpdate` skip-ahead | 53 |
+| M2.5 | `v0.M2.5` | `99458f4` | 2026-05-23 | 116 KB | Left-justify body + `narrowSecond` 250 → 300 + H1 fully centered + double-tap-edge scroll-to-top/bottom (`DoubleTap` pure module) | 59 |
+| M2.6 | `v0.M2.6` | `fff787b` | 2026-05-23 | 116 KB | Right-justify body + 30 px clean-left margin — BiDi RTL fix for M2.5 (`Layout.middleWidth` pure module) | 61 |
+| M2.7 | `v0.M2.7` | `694168c` | 2026-05-23 | 116 KB | Wide right margin + tight right anchor (`_leftMargin=15`, `_rightMargin=20`) | 61 |
+| M2.8 | `v0.M2.8` | `cec8de8` | 2026-05-23 | 119 KB | Per-word pixel wrap (`splitWords` + `wrapPxToWidths` + `wrapPxWithNarrowTail`) — fills lines more tightly than the char-count estimate | 72 |
+| M3 | `v0.M3` | `362748d` | 2026-05-23 | 124 KB | Static Hebrew touch keyboard — 22 letters + space + backspace + delete-all + search; 6×5 grid (`KeyboardLayout` + `InputBuffer` modules) | 86 |
+| M3.1 | `v0.M3.1` | `a5835bd` | 2026-05-23 | 128 KB | Circular T9-style keyboard — 10 wedges around perimeter, polar hit-test, expansion sub-zones | 92 |
+| M3.2 | `v0.M3.2` | `cddadf3` | 2026-05-23 | 129 KB | Thin outer ring (R_INNER 105 → 170) + tri-button cells (mini letter labels) + dim outer during letter expansion | 93 |
+| M3.3 | `v0.M3.3` | `c74511d` | 2026-05-23 | 131 KB | Wider ring + hit halo + SPACE/BACKSPACE press flash + DIGITS 4-cell + buffer band font fit | 94 |
+| M3.4 | `v0.M3.4` | `e66491b` | 2026-05-24 | 131 KB | 1.3× wider ring (R_INNER 160 → 146) + buffer band sizing | 95 |
+| M3.5 | `v0.M3.5` | `99b3638` | 2026-05-24 | 132 KB | Final-letter (sofit) sub-zones ך/ם/ן/ף/ץ (level-2, inward) + multi-line buffer wrap | 98 |
+| M3.6 | `v0.M3.6` | `206e343` | 2026-05-24 | 132 KB | Flip final-form sub-buttons OUTWARD onto the outer ring (level-0 tier, ~9× bigger tap area) | 98 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -271,20 +282,267 @@ Only the last 2 sub-lines are narrow. Compared to M2.3 (and earlier), this fixes
 - The CIQ watchdog tripped initially because the per-character `text.substring(i, i+1)` in `wrapToWidths` was too slow under iteration. The fix: `text.toCharArray()` once + integer indexing.
 - A transient "unused local `lh`" compiler warning was introduced and fixed before commit (R8 baseline preserved).
 
-**Artifact:** `wikiwatch-M2.4.prg` (113 916 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M2.4.prg` (113 916 bytes).
 
 ---
 
-## What''s missing (planned but not yet built)
+## M2.5 — Left-justify body + `narrowSecond` 300 + H1 fully centered + double-tap nav (tag `v0.M2.5`)
 
-The bigger ladder beyond M2.x is documented in the project memory (`memory/project_ladder.md`):
+Four user-driven changes after testing M2.4:
 
-- **M3** — Static Hebrew touch keyboard (22 letters + space + backspace + delete-all + search). No search wiring yet.
+1. **H1 fully centered.** M2.4 centered the first 2 narrow H1 sub-lines (widths 160, 250) but right-justified any *additional* H1 sub-lines (full width), so a 3-line H1 looked inconsistently aligned. Fix: tag every sub-line produced by `meta[0]` with `:isH1 => true` and always `TEXT_JUSTIFY_CENTER` for those.
+2. **Swap margins.** M2.4 had a clean right margin (`screenW - 25`) and a bleed-left. User asked to swap that and resize: `_leftMargin = 15`, `_rightBleed = 20`, `_middleWidth = screenW - 15 + 20 ≈ 421`. Non-H1 sub-lines anchor at `max(chord_left_at(y), _leftMargin)` with `TEXT_JUSTIFY_LEFT`.
+3. **`narrowSecond` 250 → 300.** Second and second-to-last sub-line widths get 50 more pixels. `narrowEdge` stays at 160.
+4. **Double-tap nav.** Fast double-tap on the top 50 px edge → `scrollY = 0`; on the bottom 50 px edge → `scrollY = contentH - screenH`. Double-tap in the middle does nothing. Single tap is silent.
+
+**What landed:**
+- `source/models/DoubleTap.mc` — NEW pure module. `isDoubleTap(prevMs, prevY, currentMs, currentY, intervalMs, yTolerance) -> Boolean`. **6 new `(:test)` cases** (no-prev, time-too-far, y-too-far, both-windows-ok, negative-delta defensive, boundary).
+- `wikiwatchView.mc` — `:isH1` tagging in `_layout`, `_leftMargin=15`, `_rightBleed=20`, `_middleWidth = screenW - 15 + 20`, `narrowSecond=300`, left-anchored justify with adaptive `chord_left`, `scrollToTop`/`scrollToBottom`/`getScreenHeight` accessors.
+- `wikiwatchDelegate.mc` — `onTap(event)` override with `_lastTapMs` / `_lastTapY` fields; constants `DOUBLE_TAP_INTERVAL_MS=300`, `DOUBLE_TAP_Y_TOLERANCE=80`, `EDGE_ZONE_PX=50`.
+
+**R1 evidence:** `docs/m2-5-fail.txt` (5 of 6 new `DoubleTap` tests fail on stub returning `false`) → `docs/m2-5-pass.txt` (59/59 pass).
+
+**R2 evidence:** `docs/m2-5-r2-evidence.txt` — diagnostic build printed every laid-out line's `{y, h, w, isH1}`. Confirms all H1 sub-lines now carry `isH1=true` and last 2 lines have `w ∈ {160, 300}` (was `{160, 250}` in M2.4).
+
+**Caveat surfaced after merge:** CIQ's BiDi layer under `TEXT_JUSTIFY_LEFT` anchors the run's *visual* left edge, which for Hebrew RTL flips the reading order visually — fixed in M2.6.
+
+**Artifact:** `wikiwatch-M2.5.prg` (115 516 bytes).
+
+---
+
+## M2.6 — Right-justify body + 30 px clean-left margin (tag `v0.M2.6`)
+
+Hotfix for the M2.5 BiDi caveat. User reported "the text appears backwards" — under `TEXT_JUSTIFY_LEFT`, Hebrew runs flip visually.
+
+**What landed:**
+- Reverted body justify to `TEXT_JUSTIFY_RIGHT` anchored at `screenW - _rightMargin`. Hebrew reading order now displays correctly (right-to-left visually, matching reading order).
+- `_leftMargin` raised 25 → 30 (more breathing room before text bleeds into the left bezel).
+- `_rightMargin` stays at 25.
+- `source/models/Layout.mc` — NEW pure module. `middleWidth(screenW, leftMargin, rightMargin) = screenW - leftMargin + rightMargin`. (Despite the name, M2.6 still subtracts both margins; later M2.7 adds back a right bleed.) **2 new `(:test)` cases**: standard and degenerate (margin > screenW).
+- H1 centering unchanged.
+- `narrowSecond=300`, `narrowEdge=160` unchanged.
+
+**R1 evidence:** `docs/m2-6-fail.txt` (2/2 new `Layout` tests fail on stub returning `0`) → `docs/m2-6-pass.txt` (61/61 pass).
+
+**R2 evidence:** `docs/m2-6-r2-evidence.txt` — diagnostic confirms anchor x = `screenW - 25 = 391` and justify mode `RIGHT` for body lines.
+
+**Artifact:** `wikiwatch-M2.6.prg` (115 772 bytes).
+
+---
+
+## M2.7 — Wide right margin + tight right anchor (tag `v0.M2.7`)
+
+Two user adjustments:
+- "The right Margin is great, keep it that way! But the text should continue all the way to the left, and stop 20 px before the screen ends."
+- "I still need more words per line. So make the left margin smaller (15 px)."
+
+**What landed:**
+- `_leftMargin = 15` (was 30; "smaller left margin → more chars/line").
+- `_rightMargin = 20` (was 25; "stop 20 px before screen ends").
+- `_middleWidth = Layout.middleWidth(screenW, 15, 20) = screenW - 15 + 20 = screenW + 5`. (M2.7 keeps the `Layout.middleWidth` signature from M2.6 but the *callers* swap left/right semantics — the result is an effective bleed.)
+- Anchor stays at `screenW - _rightMargin`, justify stays `RIGHT`.
+- `narrowSecond=300`, `narrowEdge=160` unchanged.
+
+`Layout.middleWidth` tests updated to reflect the new (leftMargin, rightMargin) calling convention.
+
+**R1 evidence:** `docs/m2-7-fail.txt` (2/2 `Layout` tests fail on M2.6's stubbed return) → `docs/m2-7-pass.txt` (61/61 pass — same total as M2.6 since no new tests were added, only existing ones rewritten).
+
+**R2 evidence:** `docs/m2-7-r2-evidence.txt` — diagnostic confirms middleWidth = 421 (= 416 - 15 + 20) on the sim.
+
+**Artifact:** `wikiwatch-M2.7.prg` (115 772 bytes — identical size to M2.6, byte-for-byte different due to constant changes).
+
+---
+
+## M2.8 — Per-word pixel wrap (tag `v0.M2.8`)
+
+User feedback after M2.7: "I want more words per line." The char-count wrap (M2.x..M2.7) overestimates Hebrew widths because Hebrew chars are narrower than the worst-case `charWidth` constant. Switching to a per-word pixel-measured wrap fills lines more tightly — typically one more word per line.
+
+**What landed (pure module additions):**
+- `LineWrap.splitWords(text) as Array<String>` — splits on spaces, collapses runs, handles leading/trailing whitespace.
+- `LineWrap.wrapPxToWidths(words, wordPx, spacePx, widthsPx, startIndex) as Array<String>` — pixel-accurate sibling of `wrapToWidths`. Caller pre-measures each word with `dc.getTextWidthInPixels(word, font)` and the space width once; pure module then forward-packs by px arithmetic.
+- `LineWrap.wrapPxWithNarrowTail(words, wordPx, spacePx, middlePx, secondPx, edgePx) as Array<String>` — pixel-accurate sibling of `wrapWithNarrowTail`. Reverse-packs the absolute last + penultimate by px, then forward-packs the remainder.
+- **11 new `(:test)` cases** covering the px variants (empty, single word, multi-word fit, oversized word, narrow-tail patterns, default width fallback).
+
+**View refactor (`wikiwatchView._layout`):** every per-line wrap call now pre-measures words with `dc.getTextWidthInPixels`, then calls the px variants. The char-count path stays alive in `LineWrap` for the modules' tests but the view no longer uses it.
+
+**R1 evidence:** `docs/m2-8-fail.txt` (11 px-wrap tests fail on `["STUB"]`-returning stubs) → `docs/m2-8-pass.txt` (72/72 pass).
+
+**R2 evidence:** `docs/m2-8-r2-evidence.txt` — fill-percentage comparison vs M2.7. The diagnostic confirms middle-line widths are now closer to `middleWidth` (typical ~95% fill vs M2.7's ~75% fill).
+
+**Artifact:** `wikiwatch-M2.8.prg` (118 860 bytes).
+
+---
+
+## M3 — Static Hebrew touch keyboard (tag `v0.M3`)
+
+First non-reader view. The reader (`wikiwatchView` + `wikiwatchDelegate`) stays in source but is no longer the initial view — M6 will push it on the view stack when a word is long-pressed.
+
+**Scope:** 22 Hebrew letters (`א..ת` minus final forms) + space + backspace + delete-all + search, laid out on a 6×5 grid (= 30 cells, 4 trailing empties). A typing buffer at the top of the screen shows what the user has typed so far (Hebrew right-aligned).
+
+**What landed (pure modules):**
+- `source/models/KeyboardLayout.mc` — `keys() as Array<Dictionary>` returns 30 cell dicts `{:label, :type, :row, :col}` where types are `:LETTER` (22), `:SPACE` (1), `:BACKSPACE` (1), `:DELETE_ALL` (1), `:SEARCH` (1), `:EMPTY` (4). `keyAt(x, y, screenW, screenH)` does a rect hit-test inside the inscribed-rectangle grid; returns `null` for off-grid taps.
+- `source/models/InputBuffer.mc` — `append(buf, ch) -> String`, `popLast(buf) -> String`, `clear(buf) -> String`. Pure string ops, Hebrew-safe (Monkey C `String.length()` returns codepoint count).
+- **14 new `(:test)` cases** across the two modules (`keys.size == 30`, letter ordering, special-key types, hit-test corners + interior probes, append/pop/clear + edge cases).
+
+**View / delegate:**
+- `source/wikiwatchKeyboardView.mc` — draws every key from `KeyboardLayout.keys()` as a labeled cell + the buffer at the top.
+- `source/wikiwatchKeyboardDelegate.mc` — `onTap` dispatches by `:type`: `:LETTER` appends, `:BACKSPACE` pops, `:DELETE_ALL` clears, `:SEARCH` is a no-op placeholder (M5 wires it).
+- `wikiwatchApp.getInitialView()` now returns the keyboard pair instead of the reader pair.
+
+**R1 evidence:** `docs/m3-fail.txt` (10+ of the new tests fail on sentinel-returning stubs) → `docs/m3-pass.txt` (86/86 pass).
+
+**R2 evidence:** `docs/m3-r2-evidence.txt` — diagnostic confirms `keys.size=30`, letter/special split (22/4/4), `keyAt` returns the expected key at sample interior points and `null` outside the grid.
+
+**Artifact:** `wikiwatch-M3.prg` (124 460 bytes).
+
+---
+
+## M3.1 — Circular T9-style keyboard (tag `v0.M3.1`)
+
+User feedback after M3: the 6×5 grid keys are way too small for finger taps on a 390 px circular display. Asked for a dictionary-style circular keyboard: 10 wedges around the perimeter, each LETTER_GROUP wedge holds 3-4 letters and expands inward on tap to reveal letter sub-zones.
+
+**What landed (geometry rewrite of `KeyboardLayout.mc`):**
+- Constants: `NUM_BUTTONS = 10`, `WEDGE_ARC_DEG = 36`, `R_INNER = 105`, `R_OUTER = 205`, `R_EXPANSION_INNER = 50`. (R_INNER moves in M3.2 to thin the ring.)
+- `buttons()` returns 10 wedge dicts, clockwise from 12 o'clock: `SPACE("_")`, `BACKSPACE("X")`, 7 `LETTER_GROUP` wedges (`אבג`, `דהו`, `זחט`, `יכל`, `מנס`, `עפצ`, `קרשת` — note `קרשת` is 4 letters), and `DIGITS("0-9")`.
+- `buttonAt(x, y, screenW, screenH)` — polar hit-test using `Math.atan2` / `sqrt`. Returns the wedge whose arc + radius range contains `(x, y)`, or `null`.
+- `subButtons(parent, ...)` — for a `LETTER_GROUP` parent, returns N tangentially-arranged sub-zones at `r ∈ [50, R_INNER]` covering the parent wedge's arc. For `DIGITS`, returns 10 outer-ring digit wedges.
+- `subButtonAt(x, y, expandedDict, screenW, screenH)` — polar hit-test within the expansion sub-zones.
+
+**View / delegate:**
+- `source/wikiwatchKeyboardView.mc` — annular-sector wedge rendering via `dc.fillPolygon` (10 vertices per wedge). White input band at the top center for the buffer. Center area shows the buffer + 5 stub suggestion lines.
+- `source/wikiwatchKeyboardDelegate.mc` — two-tap state machine. Tap a LETTER_GROUP or DIGITS wedge → store `_expanded` dict, view renders expansion. Tap a sub-zone → `InputBuffer.append(_buffer, sub[:label])`, clear expansion. `onBack` cancels expansion first, then backspaces the buffer, then pops the view.
+
+**R1 evidence:** `docs/m3-1-fail.txt` (6 new geometry tests fail on stubs) → `docs/m3-1-pass.txt` (92/92 pass).
+
+**R2 evidence:** `docs/m3-1-r2-evidence.txt` — diagnostic prints all 10 wedges' angles + letter counts + `hit(x,y)` probes at each wedge's expected center.
+
+**Artifact:** `wikiwatch-M3.1.prg` (127 740 bytes).
+
+---
+
+## M3.2 — Thin outer ring + tri-button cells + dim outer during expand (tag `v0.M3.2`)
+
+User feedback after M3.1:
+1. The outer ring is too thick (depth = 205 - 105 = 100 px). Should be much thinner so the center area is bigger.
+2. LETTER_GROUP wedges should visually show the 3-4 letters inside them (mini cells) instead of just rendering the symbol label.
+3. When a letter wedge is expanded, the rest of the outer ring should dim (not stay full-brightness) so the expansion is the visual focus.
+
+**What landed:**
+- `R_INNER`: **105 → 170** in `KeyboardLayout.mc`. Ring depth = 205 - 170 = 35 px (was 100). Center area = πr² = π·170² ≈ 90 700 px² (was π·105² ≈ 34 600 px²).
+- `subButtons` for LETTER_GROUP keeps `:rOuter => R_INNER` so sub-zones still fill the center cone (now bigger).
+- **Tri-button cell rendering** in `wikiwatchKeyboardView._drawButtonContent` — for LETTER_GROUP wedges, draw N (3 or 4) mini Hebrew letter labels tangentially across the wedge with `FONT_XTINY`, using cellGap=9° / cellGap=4.5° offsets. The whole wedge stays one tap target.
+- **Dim outer during letter expansion** — when `_expanded` is set and is a LETTER_GROUP (not DIGITS), other 9 wedges render with `COLOR_BLACK` fill + `COLOR_DK_GRAY` separators instead of `COLOR_DK_GRAY` fill + `COLOR_WHITE` separators.
+
+**Test changes:** 1 new boundary test, 1 existing test rewritten — `kbd_buttonAtInsideAlefGroupReturnsIt` now expects r=187 (within new ring) to return the wedge, `kbd_buttonAtInsideOldMidRingReturnsNull` now expects r=154 (outside new ring) to return null.
+
+**R1 evidence:** `docs/m3-2-fail.txt` (2 tests fail on the old R_INNER=105) → `docs/m3-2-pass.txt` (93/93 pass).
+
+**R2 evidence:** `docs/m3-2-r2-evidence.txt` — diagnostic confirms `R_INNER=170` and visual ring rendering at the new dimensions.
+
+**Artifact:** `wikiwatch-M3.2.prg` (129 228 bytes).
+
+---
+
+## M3.3 — Wider ring + hit halo + pressed feedback + DIGITS cells + buffer fit (tag `v0.M3.3`)
+
+Five fixes after M3.2:
+1. Outer ring slightly wider + hit halo. Ring depth 35 → 45 (R_INNER 170 → 160). Plus `R_HIT_INNER=145` and `R_HIT_OUTER=215` halo constants — taps just inside or outside the visual ring still register.
+2. Pressed-state visual feedback for SPACE / BACKSPACE — flash `COLOR_LT_GRAY` fill for ~200 ms via `Toybox.Timer.Timer` (held as instance field per `memory/reference_ciq_quirks.md` — local timers get GC'd before firing).
+3. Buffer font `FONT_SMALL` → `FONT_TINY`; `bandY` shifted up 20 px so the band sits cleanly within the inner area.
+4. **Draw order reversed**: center → outer ring → expansion (was outer → expansion → center). Expansion sub-zones now correctly cover any overlapping center display.
+5. **DIGITS wedge: 4 cells `"0  1  ·  9"`** (middle cell rendered as blank space) instead of single `"0-9"` label — mirrors the קרשת 4-letter tri-button rendering. Expansion still shows all 10 digits.
+
+**What landed:**
+- `KeyboardLayout.mc`: `R_INNER 170 → 160`. New constants `R_HIT_INNER=145`, `R_HIT_OUTER=215`. `buttonAt` radius check uses the halo constants; `subButtonAt` stays strict (only the outer ring complaint applies).
+- `wikiwatchKeyboardView.mc`: draw order reversed, buffer font/position fix, DIGITS 4-cell rendering, `_pressedAngleDeg` field + brighter pressed-wedge rendering.
+- `wikiwatchKeyboardDelegate.mc`: `import Toybox.Timer`, `_pressTimer` instance field, SPACE/BACKSPACE trigger `_flashPressed` for 200 ms.
+
+**Test changes:** −1 (the M3.2 `kbd_buttonAtInsideOldMidRingReturnsNull` asserts r=154 returns null — false now under halo) + 2 (one halo-inside-zone PASS test, one just-outside-halo NULL test). Net 93 → **94**.
+
+**R1 evidence:** `docs/m3-3-fail.txt` (2 new halo tests fail on M3.2 geometry) → `docs/m3-3-pass.txt` (94/94 pass).
+
+**R2 evidence:** `docs/m3-3-r2-evidence.txt` — diagnostic confirms `R_INNER=160`, `R_HIT_INNER=145`, `R_HIT_OUTER=215` and hit-halo behavior at sample boundary points.
+
+**Artifact:** `wikiwatch-M3.3.prg` (130 588 bytes).
+
+---
+
+## M3.4 — 1.3× wider ring + buffer band sizing (tag `v0.M3.4`)
+
+Two more fixes after M3.3:
+1. Outer ring still feels slightly thin — bump R_INNER 160 → 146 (depth 45 → 59, a 1.3× widening). Hit halo widens too: `R_HIT_INNER 145 → 131`.
+2. Buffer band needs more vertical room — increase `bandH` to fit FONT_TINY with comfortable padding; `bandW` adjusted to match.
+
+**What landed:**
+- `KeyboardLayout.mc`: `R_INNER 160 → 146`, `R_HIT_INNER 145 → 131`. `subButtons` for LETTER_GROUP keeps `:rOuter => R_INNER = 146`. 1 new test asserting `R_INNER=146` boundary; 1 updated test for the new halo inner bound.
+- `wikiwatchKeyboardView.mc`: `bandW=200`, `bandH=44`, `bandY` adjusted to clear the new (wider) outer ring.
+
+**Test changes:** 94 → **95** (one new boundary test).
+
+**R1 evidence:** `docs/m3-4-fail.txt` (1 new test fails on M3.3 geometry) → `docs/m3-4-pass.txt` (95/95 pass).
+
+**R2 evidence:** `docs/m3-4-r2-evidence.txt` — one-shot diagnostic injected in delegate `initialize` printed the runtime layout constants on first launch. Confirmed `R_INNER=146`, `R_HIT_INNER=131`, and the buffer band geometry at the new dimensions. (CR-ist initially failed R2 on prose-only evidence; fixed by injecting the diagnostic and re-reviewing.)
+
+**Artifact:** `wikiwatch-M3.4.prg` (130 588 bytes — same byte count as M3.3 due to compiler alignment).
+
+---
+
+## M3.5 — Final-letter (sofit) sub-zones + multi-line buffer (tag `v0.M3.5`)
+
+Hebrew has 5 final-form letters (sofit) that only appear at the end of words: `ך/ם/ן/ף/ץ` (final כ/מ/נ/פ/צ). They weren't typeable in M3.x. Also: the buffer was a single line — long inputs overflowed off the right.
+
+**What landed:**
+- `KeyboardLayout.mc`:
+  - `_finalFormFor(letter)` — pure helper mapping כ→ך, מ→ם, נ→ן, פ→ף, צ→ץ. Returns `null` for letters without a sofit form.
+  - `subButtons(parent, ...)` for LETTER_GROUP now returns level-1 sub-zones (3-4 regular letters at `r=[50, R_INNER=146]`, tangentially) **PLUS** level-2 final-form sub-zones (each at `r=[10, 50]`, same angle as its parent letter, only for letters that have a sofit).
+  - `subButtonAt` iterates ALL sub-zones (mixed levels), checking each one's own `rInner`/`rOuter`. The narrow r=[10,50] inner band is the level-2 tap target.
+- Tetris-`+`-shape semantics — for each LETTER_GROUP, the central area has 3-4 letters in a fan; below each letter (toward center) is a smaller sofit sub-zone (where applicable).
+- `wikiwatchKeyboardView.mc`:
+  - Renders level-2 sub-zones with `FONT_XTINY` (level-1 stays `FONT_TINY`).
+  - **Multi-line buffer wrap** — `_wrapBufferIntoLines(dc, text, font, maxPx)` char-by-char wrap. Buffer band `bandH=64` (was 44), shows the LAST 2 lines if the text overflows.
+- `InputBuffer.mc` unchanged.
+
+**Test changes:** 95 → **98** (3 new sub-zone tests for sofit presence, hit-test, and absence on no-sofit letters).
+
+**R1 evidence:** `docs/m3-5-fail.txt` (3 new sofit tests fail on M3.4 `subButtons`) → `docs/m3-5-pass.txt` (98/98 pass).
+
+**R2 evidence:** `docs/m3-5-r2-evidence.txt` — diagnostic confirms `יכל` parent yields `subButtons.size == 4` (`י`, `כ`, `ל`, plus `ך` final at level-2 r=[10,50]) and `subButtonAt(208, 238)` (r≈30, a=180°) returns `ך`.
+
+**Artifact:** `wikiwatch-M3.5.prg` (132 284 bytes).
+
+**Caveat surfaced after merge:** the level-2 sub-zones at `r=[10, 50]` are ~750 px² each — too small to tap reliably. Fixed in M3.6.
+
+---
+
+## M3.6 — Flip final-form sub-buttons OUTWARD to outer ring (tag `v0.M3.6`)
+
+User feedback after M3.5: "the final-letters' buttons are really small ... instead of the level-2, make it a level-0. Continue it to the outside of the screen."
+
+**What landed:**
+- `KeyboardLayout.mc`: sofit sub-zones flipped from `r=[10, 50]` (inward, ~750 px²) to `r=[R_INNER=146, R_OUTER=205]` (the outer-ring band, ~6500 px² — ~9× bigger tap area). Same angle as the parent letter. Each sofit sub-button visually covers whichever outer-ring wedge happens to be at its angle; outer ring is already dimmed during letter expansion (M3.2), so the visual overlap is intentional.
+- `wikiwatchKeyboardView.mc`: level-2 sofit rendering uses `FONT_TINY` (was `FONT_XTINY`) — there's enough room in the outer-ring band now.
+- `subButtonAt` is unchanged (it iterates sub-zones checking each one's own `rInner`/`rOuter`, so the new outward placement just works).
+- Single expansion state — level-1 letters + sofit sub-zones appear and disappear together.
+
+**Test changes:** 98 → 98 (1 existing test updated to assert the new outer-band geometry — `subButtons(יכל)[3].rInner == 146` and `rOuter == 205`).
+
+**R1 evidence:** `docs/m3-6-fail.txt` (1 test fails on M3.5 geometry) → `docs/m3-6-pass.txt` (98/98 pass).
+
+**R2 evidence:** `docs/m3-6-r2-evidence.txt` — diagnostic confirms `subButtons(יכל)[3]` (`ך`) has `r=[146, 205]` and `subButtonAt(208, 383)` (r≈175, a=180°) returns `ך`; the OLD inward probe `subButtonAt(208, 238)` (r≈30) now returns `null`.
+
+**Artifact:** `wikiwatch-M3.6.prg` (132 284 bytes — same byte count as M3.5 due to compiler alignment). Current head of `main`.
+
+---
+
+## What's missing (planned but not yet built)
+
+The bigger ladder beyond M3.x is documented in the project memory (`memory/project_ladder.md`):
+
 - **M4** — `ArticleStore` + `Manifest` modules; fixture article data persisted in `Application.Storage`.
-- **M5** — Live search (prefix + substring + popularity ranking), results list view.
+- **M5** — Live search (prefix + substring + popularity ranking), results list view; wires `:SEARCH` from the M3 keyboard.
 - **M6** — Long-press a word in the article → push a new keyboard layer pre-filled with that word. Layer stack pop/push.
 - **M7** — First-run chunked download from `wikiwatch.tomhe.app/` into `Application.Storage`; resumable.
-- **M8** — Digits page on the keyboard ("123" toggle).
+- **M8** — Digits page on the keyboard ("123" toggle). (M3.x already ships the DIGITS wedge with 0..9 expansion; M8 may evolve into a dedicated punctuation/symbols page.)
 - **M9** — Polish + measure corpus size; decide whether M10 is needed.
 - **M10** (conditional) — Static-dictionary compression if M9 shows storage-constrained.
 
@@ -294,7 +552,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 53 tests pass at v0.M2.4
+& scripts\test.ps1     # 98 tests pass at v0.M3.6
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
