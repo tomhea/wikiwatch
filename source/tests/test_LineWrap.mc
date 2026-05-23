@@ -110,3 +110,76 @@ function wtw_hebrewWithVariableWidths(logger as Logger) as Boolean {
     logger.debug("wtw_hebrew = " + l);
     return l.size() == 2 && l[0].equals("שלום") && l[1].equals("שלום שלום");
 }
+(:test)
+function wnt_emptyText(logger as Logger) as Boolean {
+    var l = LineWrap.wrapWithNarrowTail("", 6, 60, 30, 18);
+    return l.size() == 1 && l[0].equals("");
+}
+
+(:test)
+function wnt_singleShortWord(logger as Logger) as Boolean {
+    // "hi" fits in edgeWidth (18 / 6 = 3 chars). Single line at edge.
+    var l = LineWrap.wrapWithNarrowTail("hi", 6, 60, 30, 18);
+    return l.size() == 1 && l[0].equals("hi");
+}
+
+(:test)
+function wnt_twoWords(logger as Logger) as Boolean {
+    // "hello world" = 11 chars. edge=18 (3 max), second=30 (5 max), middle=60 (10 max).
+    // last sub: pack from end: "world" (5) > 3, but line empty so add anyway. last="world".
+    // penultimate: "hello" (5) ≤ 5 ✓. penultimate="hello".
+    // middle: empty.
+    // Result: ["hello", "world"].
+    var l = LineWrap.wrapWithNarrowTail("hello world", 6, 60, 30, 18);
+    logger.debug("twoWords = " + l);
+    return l.size() == 2 && l[0].equals("hello") && l[1].equals("world");
+}
+
+(:test)
+function wnt_middlePlusTailPattern(logger as Logger) as Boolean {
+    // "a b c d e f g h i j" = 10 single-char words = 19 chars.
+    // edge=18 (3 max): pack from end: "j" (1). + " i" → 3 ✓. + " h" → 5 > 3. Stop. last="i j".
+    // second=30 (5 max): pack from end: "h" (1). + " g" → 3 ✓. + " f" → 5 ✓. + " e" → 7 > 5. Stop. penultimate="f g h".
+    // middle: remaining "a b c d e". Wrap at 60 (10 max): all fits in one. ["a b c d e"].
+    // Final: ["a b c d e", "f g h", "i j"]
+    var l = LineWrap.wrapWithNarrowTail("a b c d e f g h i j", 6, 60, 30, 18);
+    logger.debug("middlePlusTail = " + l);
+    return l.size() == 3 && l[0].equals("a b c d e") && l[1].equals("f g h") && l[2].equals("i j");
+}
+
+(:test)
+function wnt_longTextMultipleMiddleLines(logger as Logger) as Boolean {
+    // 20 single-char words. edge max 3, second max 5, middle max 10.
+    // last: "s t" (3). penultimate: "p q r" (5). remaining 15 words "a b c ... o" (29 chars).
+    // wrap at middle 10: line1 max 10 chars: pack "a b c d e" (9). next " f" → 11 > 10. commit.
+    // line2: "f g h i j" (9). " k" → 11 > 10. commit.
+    // line3: "k l m n o" (9). end. commit.
+    // Total middle: ["a b c d e", "f g h i j", "k l m n o"]. + penultimate + last.
+    // Total 5 sub-lines.
+    var l = LineWrap.wrapWithNarrowTail("a b c d e f g h i j k l m n o p q r s t", 6, 60, 30, 18);
+    logger.debug("longText size=" + l.size());
+    return l.size() == 5 && l[0].equals("a b c d e") && l[3].equals("p q r") && l[4].equals("s t");
+}
+
+(:test)
+function wnt_oversizedSingleWord(logger as Logger) as Boolean {
+    // edge=18 (3 chars). "supercali" (9 chars). Can't fit in 3, but it's the only word.
+    // Reverse-pack last: word=supercali, line empty -> add anyway. last="supercali".
+    // No more words. penultimate, middle = empty.
+    // Result: ["supercali"]
+    var l = LineWrap.wrapWithNarrowTail("supercali", 6, 60, 30, 18);
+    return l.size() == 1 && l[0].equals("supercali");
+}
+
+(:test)
+function wnt_hebrewLongLastRaw(logger as Logger) as Boolean {
+    // Hebrew last-raw scenario. Use big article-style widths so semantics match production.
+    // text: 10 Hebrew words (~50 chars). middle=416 (69 max), second=250 (41 max), edge=160 (26 max).
+    // last: pack from end up to 26 chars.
+    // penultimate: pack next up to 41 chars.
+    // middle: rest at 69 max.
+    var l = LineWrap.wrapWithNarrowTail("שלום היא ברכה ופרידה בעברית עתיקה ובברית קדומה", 6, 416, 250, 160);
+    logger.debug("hebrewLongLastRaw size=" + l.size() + " lines=" + l);
+    // Expect at least 1 line. Last line non-empty.
+    return l.size() >= 1 && !l[l.size() - 1].equals("");
+}

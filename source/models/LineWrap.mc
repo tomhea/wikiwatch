@@ -39,11 +39,6 @@ module LineWrap {
         return lines;
     }
 
-    // Wrap `text` where the k-th output sub-line uses pixel budget
-    // widths[startIndex + k]; beyond the array's end, use the last entry.
-    // Optimized: pre-computes char array to avoid per-character substring()
-    // allocation in the hot loop. The earlier per-char `text.substring(i, i+1)`
-    // approach tripped the simulator watchdog on the long article.
     function wrapToWidths(text as String, charWidth as Number, widths as Array<Number>, startIndex as Number) as Array<String> {
         if (text.equals("") || widths.size() == 0 || charWidth <= 0) {
             return [""];
@@ -83,5 +78,101 @@ module LineWrap {
             lines.add("");
         }
         return lines;
+    }
+
+    // M2.4: wrap a text where the ABSOLUTE LAST sub-line uses edgeWidth, the
+    // PENULTIMATE uses secondWidth, and everything before uses middleWidth.
+    // Algorithm: reverse-pack the last sub-line at edgeWidth (greedy from the
+    // text's end), then reverse-pack the penultimate at secondWidth, then
+    // forward-pack the remainder at middleWidth. Pure module.
+    //
+    // Single oversized words (longer than the target width) still emit on
+    // their own line - never break inside a word.
+    function wrapWithNarrowTail(text as String, charWidth as Number, middleWidth as Number, secondWidth as Number, edgeWidth as Number) as Array<String> {
+        if (text.equals("") || charWidth <= 0) {
+            return [""];
+        }
+        var maxLast = edgeWidth / charWidth;
+        var maxSecond = secondWidth / charWidth;
+        var maxMiddle = middleWidth / charWidth;
+        if (maxLast < 1) { maxLast = 1; }
+        if (maxSecond < 1) { maxSecond = 1; }
+        if (maxMiddle < 1) { maxMiddle = 1; }
+
+        var words = [];
+        var chars = text.toCharArray();
+        var len = chars.size();
+        var wordStart = 0;
+        for (var i = 0; i <= len; i++) {
+            if (i == len || chars[i] == ' ') {
+                if (i > wordStart) {
+                    words.add(text.substring(wordStart, i));
+                }
+                wordStart = i + 1;
+            }
+        }
+
+        if (words.size() == 0) {
+            return [""];
+        }
+
+        // Reverse-pack the LAST sub-line at edgeWidth.
+        var lastSub = "";
+        var idx = words.size() - 1;
+        while (idx >= 0) {
+            var w = words[idx] as String;
+            var newLen = lastSub.length() + (lastSub.equals("") ? 0 : 1) + w.length();
+            if (newLen > maxLast && !lastSub.equals("")) {
+                break;
+            }
+            lastSub = lastSub.equals("") ? w : (w + " " + lastSub);
+            idx--;
+        }
+
+        // Reverse-pack the PENULTIMATE sub-line at secondWidth.
+        var penultimate = "";
+        while (idx >= 0) {
+            var w = words[idx] as String;
+            var newLen = penultimate.length() + (penultimate.equals("") ? 0 : 1) + w.length();
+            if (newLen > maxSecond && !penultimate.equals("")) {
+                break;
+            }
+            penultimate = penultimate.equals("") ? w : (w + " " + penultimate);
+            idx--;
+        }
+
+        // Forward-pack the REMAINDER at middleWidth.
+        var middleLines = [];
+        var line = "";
+        for (var j = 0; j <= idx; j++) {
+            var w = words[j] as String;
+            var sepLen = line.equals("") ? 0 : 1;
+            if (line.length() + sepLen + w.length() <= maxMiddle) {
+                line = line.equals("") ? w : (line + " " + w);
+            } else {
+                if (!line.equals("")) {
+                    middleLines.add(line);
+                }
+                line = w;
+            }
+        }
+        if (!line.equals("")) {
+            middleLines.add(line);
+        }
+
+        var result = [];
+        for (var j = 0; j < middleLines.size(); j++) {
+            result.add(middleLines[j]);
+        }
+        if (!penultimate.equals("")) {
+            result.add(penultimate);
+        }
+        if (!lastSub.equals("")) {
+            result.add(lastSub);
+        }
+        if (result.size() == 0) {
+            result.add("");
+        }
+        return result;
     }
 }
