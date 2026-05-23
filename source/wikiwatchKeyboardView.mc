@@ -144,16 +144,18 @@ class wikiwatchKeyboardView extends WatchUi.View {
     }
 
     private function _drawCenterDisplay(dc as Dc, cx as Number, cy as Number) as Void {
+        // M3.4: bandH 26 -> 40 (fits FONT_TINY's full glyph height), and the
+        // text is drawn with TEXT_JUSTIFY_VCENTER so it sits centered inside
+        // the band (no overflow above or below).
         var bandW = 180;
-        var bandH = 26;
+        var bandH = 40;
         var bandX = cx - bandW / 2;
-        var bandY = cy - 90;
+        var bandY = cy - 95;
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.fillRectangle(bandX, bandY, bandW, bandH);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        // Right-anchored Hebrew, FONT_TINY (was FONT_SMALL - too tall for bandH=26).
-        dc.drawText(bandX + bandW - 6, bandY + 1, Graphics.FONT_TINY, _buffer,
-                    Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(bandX + bandW - 6, bandY + bandH / 2, Graphics.FONT_TINY, _buffer,
+                    Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // 5 stub suggestion lines below the input band.
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
