@@ -1,92 +1,166 @@
 import Toybox.Lang;
 import Toybox.Test;
 
-// Tests for KeyboardLayout (M3). 8 cases covering keys() structure + keyAt
-// hit-testing on the 416-px simulator screen.
+// M3.1 tests for the rewritten KeyboardLayout (wedge geometry).
 
 (:test)
-function kbd_keysHas30Entries(logger as Logger) as Boolean {
-    var k = KeyboardLayout.keys();
-    logger.debug("keys size=" + k.size());
-    return k.size() == 30;
+function kbd_buttonsReturns10Wedges(logger as Logger) as Boolean {
+    var b = KeyboardLayout.buttons();
+    logger.debug("buttons.size=" + b.size());
+    return b.size() == 10;
 }
 
 (:test)
-function kbd_keysHas22Letters(logger as Logger) as Boolean {
-    var k = KeyboardLayout.keys();
-    var count = 0;
-    for (var i = 0; i < k.size(); i++) {
-        if ((k[i] as Dictionary)[:type] == :LETTER) { count++; }
-    }
-    logger.debug("letter count=" + count);
-    return count == 22;
+function kbd_buttonZeroIsSpace(logger as Logger) as Boolean {
+    var b = KeyboardLayout.buttons();
+    if (b.size() < 1) { return false; }
+    var k = b[0] as Dictionary;
+    logger.debug("[0] label=" + k[:label] + " type=" + k[:type] + " angle=" + k[:centerAngleDeg]);
+    return (k[:label] as String).equals("_") && k[:type] == :SPACE && (k[:centerAngleDeg] as Number) == 0;
 }
 
 (:test)
-function kbd_keysHasFourSpecials(logger as Logger) as Boolean {
-    var k = KeyboardLayout.keys();
-    var space = 0; var back = 0; var del = 0; var search = 0;
-    for (var i = 0; i < k.size(); i++) {
-        var t = (k[i] as Dictionary)[:type];
-        if (t == :SPACE) { space++; }
-        else if (t == :BACKSPACE) { back++; }
-        else if (t == :DELETE_ALL) { del++; }
-        else if (t == :SEARCH) { search++; }
-    }
-    logger.debug("specials: space=" + space + " back=" + back + " del=" + del + " search=" + search);
-    return space == 1 && back == 1 && del == 1 && search == 1;
+function kbd_buttonOneIsBackspace(logger as Logger) as Boolean {
+    var b = KeyboardLayout.buttons();
+    if (b.size() < 2) { return false; }
+    var k = b[1] as Dictionary;
+    logger.debug("[1] label=" + k[:label] + " type=" + k[:type] + " angle=" + k[:centerAngleDeg]);
+    return (k[:label] as String).equals("X") && k[:type] == :BACKSPACE && (k[:centerAngleDeg] as Number) == 36;
 }
 
 (:test)
-function kbd_firstLetterIsAlef(logger as Logger) as Boolean {
-    // Iterate row-major; the first :LETTER entry should be "א" (aleph).
-    var k = KeyboardLayout.keys();
-    for (var i = 0; i < k.size(); i++) {
-        if ((k[i] as Dictionary)[:type] == :LETTER) {
-            var label = (k[i] as Dictionary)[:label] as String;
-            logger.debug("first letter = '" + label + "'");
-            return label.equals("א");
-        }
-    }
-    return false;
+function kbd_buttonTwoIsAlefGroup(logger as Logger) as Boolean {
+    var b = KeyboardLayout.buttons();
+    if (b.size() < 3) { return false; }
+    var k = b[2] as Dictionary;
+    var letters = k[:letters] as Array<String>;
+    logger.debug("[2] label=" + k[:label] + " type=" + k[:type] + " letters=" + letters + " angle=" + k[:centerAngleDeg]);
+    return k[:type] == :LETTER_GROUP
+        && (k[:centerAngleDeg] as Number) == 72
+        && letters.size() == 3
+        && letters[0].equals("א")
+        && letters[1].equals("ב")
+        && letters[2].equals("ג");
 }
 
 (:test)
-function kbd_lastLetterIsTav(logger as Logger) as Boolean {
-    // The last :LETTER entry should be "ת" (tav, 22nd Hebrew letter).
-    var k = KeyboardLayout.keys();
-    var lastLabel = "";
-    for (var i = 0; i < k.size(); i++) {
-        if ((k[i] as Dictionary)[:type] == :LETTER) {
-            lastLabel = (k[i] as Dictionary)[:label] as String;
-        }
-    }
-    logger.debug("last letter = '" + lastLabel + "'");
-    return lastLabel.equals("ת");
+function kbd_buttonEightIsQuadLetter(logger as Logger) as Boolean {
+    // Position 8 is the 4-letter group קרשת at 288 degrees.
+    var b = KeyboardLayout.buttons();
+    if (b.size() < 9) { return false; }
+    var k = b[8] as Dictionary;
+    var letters = k[:letters] as Array<String>;
+    logger.debug("[8] letters=" + letters + " angle=" + k[:centerAngleDeg]);
+    return k[:type] == :LETTER_GROUP
+        && (k[:centerAngleDeg] as Number) == 288
+        && letters.size() == 4
+        && letters[0].equals("ק")
+        && letters[3].equals("ת");
 }
 
 (:test)
-function kbd_keyAtTopLeftLetterCell(logger as Logger) as Boolean {
-    // Center of cell (row 0, col 0) on the 416-px sim returns the first letter (א).
-    // Grid bounds: y=65, h=260; chord at y=65 (dy=-143) half=151; gridW=302; cellW=50.
-    // gridX = (416-302)/2 = 57. Cell (0,0) spans x=57..107, y=65..117. Center=(82, 91).
-    var k = KeyboardLayout.keyAt(82, 91, 416, 416);
-    logger.debug("keyAt(82, 91) = " + k);
-    return k != null && ((k as Dictionary)[:label] as String).equals("א");
+function kbd_buttonNineIsDigits(logger as Logger) as Boolean {
+    var b = KeyboardLayout.buttons();
+    if (b.size() < 10) { return false; }
+    var k = b[9] as Dictionary;
+    var letters = k[:letters] as Array<String>;
+    logger.debug("[9] label=" + k[:label] + " type=" + k[:type] + " letters.size=" + letters.size());
+    return k[:type] == :DIGITS
+        && (k[:centerAngleDeg] as Number) == 324
+        && letters.size() == 10
+        && letters[0].equals("0")
+        && letters[9].equals("9");
 }
 
 (:test)
-function kbd_keyAtOutsideGridReturnsNull(logger as Logger) as Boolean {
-    // Top-left bezel corner is outside any cell.
-    var k = KeyboardLayout.keyAt(0, 0, 416, 416);
-    logger.debug("keyAt(0, 0) = " + k);
+function kbd_buttonAtInsideAlefGroupReturnsIt(logger as Logger) as Boolean {
+    // אבג wedge center: angle 72°, radius 155 on the 416-px sim.
+    // Tap at (cx + 155*sin(72°), cy - 155*cos(72°)) = (208+147, 208-47) = (355, 161).
+    var k = KeyboardLayout.buttonAt(355, 161, 416, 416);
+    if (k == null) { logger.debug("buttonAt returned null"); return false; }
+    var d = k as Dictionary;
+    logger.debug("buttonAt(355,161)=" + d[:label] + " type=" + d[:type]);
+    return d[:type] == :LETTER_GROUP && (d[:centerAngleDeg] as Number) == 72;
+}
+
+(:test)
+function kbd_buttonAtCenterReturnsNull(logger as Logger) as Boolean {
+    // Screen center (208, 208) is at radius 0 - inside R_INNER=105. No wedge.
+    var k = KeyboardLayout.buttonAt(208, 208, 416, 416);
+    logger.debug("buttonAt(208,208) = " + k);
     return k == null;
 }
 
 (:test)
-function kbd_keyAtBufferAreaReturnsNull(logger as Logger) as Boolean {
-    // y=10 is in the buffer area (above gridY=65). No key.
-    var k = KeyboardLayout.keyAt(208, 10, 416, 416);
-    logger.debug("keyAt(208, 10) = " + k);
+function kbd_buttonAtOffRingReturnsNull(logger as Logger) as Boolean {
+    // Top-left corner of bezel (0, 0) is far past R_OUTER=205 from center.
+    var k = KeyboardLayout.buttonAt(0, 0, 416, 416);
+    logger.debug("buttonAt(0,0) = " + k);
     return k == null;
+}
+
+(:test)
+function kbd_subButtonsLetterGroupReturnsThree(logger as Logger) as Boolean {
+    // For אבג parent (centerAngleDeg=72), expansion is 3 sub-zones at
+    // 72-36=36, 72, 72+36=108 degrees.
+    var parent = { :label => "אבג", :type => :LETTER_GROUP, :letters => ["א", "ב", "ג"], :centerAngleDeg => 72 };
+    var subs = KeyboardLayout.subButtons(parent, 416, 416);
+    logger.debug("subButtons(אבג).size=" + subs.size());
+    if (subs.size() != 3) { return false; }
+    var s0 = subs[0] as Dictionary;
+    var s1 = subs[1] as Dictionary;
+    var s2 = subs[2] as Dictionary;
+    return (s0[:label] as String).equals("א") && (s0[:centerAngleDeg] as Number) == 36
+        && (s1[:label] as String).equals("ב") && (s1[:centerAngleDeg] as Number) == 72
+        && (s2[:label] as String).equals("ג") && (s2[:centerAngleDeg] as Number) == 108;
+}
+
+(:test)
+function kbd_subButtonsLetterGroupFourReturnsFour(logger as Logger) as Boolean {
+    // For קרשת parent (centerAngleDeg=288), expansion is 4 sub-zones at
+    // 288-54, 288-18, 288+18, 288+54 = 234, 270, 306, 342 degrees.
+    var parent = { :label => "קרשת", :type => :LETTER_GROUP, :letters => ["ק", "ר", "ש", "ת"], :centerAngleDeg => 288 };
+    var subs = KeyboardLayout.subButtons(parent, 416, 416);
+    logger.debug("subButtons(קרשת).size=" + subs.size());
+    if (subs.size() != 4) { return false; }
+    var s0 = subs[0] as Dictionary;
+    var s3 = subs[3] as Dictionary;
+    return (s0[:label] as String).equals("ק") && (s0[:centerAngleDeg] as Number) == 234
+        && (s3[:label] as String).equals("ת") && (s3[:centerAngleDeg] as Number) == 342;
+}
+
+(:test)
+function kbd_subButtonsDigitsReturnsTenAroundRing(logger as Logger) as Boolean {
+    // For DIGITS expansion, 10 sub-zones each 36° wide at angles 0, 36, ..., 324.
+    var parent = { :label => "0-9", :type => :DIGITS, :letters => ["0","1","2","3","4","5","6","7","8","9"], :centerAngleDeg => 324 };
+    var subs = KeyboardLayout.subButtons(parent, 416, 416);
+    logger.debug("subButtons(digits).size=" + subs.size());
+    if (subs.size() != 10) { return false; }
+    var s0 = subs[0] as Dictionary;
+    var s5 = subs[5] as Dictionary;
+    var s9 = subs[9] as Dictionary;
+    return (s0[:label] as String).equals("0") && (s0[:centerAngleDeg] as Number) == 0
+        && (s5[:label] as String).equals("5") && (s5[:centerAngleDeg] as Number) == 180
+        && (s9[:label] as String).equals("9") && (s9[:centerAngleDeg] as Number) == 324;
+}
+
+(:test)
+function kbd_subButtonAtInsideLetterExpansionReturnsLabel(logger as Logger) as Boolean {
+    // אבג parent at 72°. Sub-zone for ב is at 72°. Tap at r=80 (inside expansion ring),
+    // angle 72°: (cx + 80*sin(72°), cy - 80*cos(72°)) = (208+76, 208-24) = (284, 184).
+    var parent = { :label => "אבג", :type => :LETTER_GROUP, :letters => ["א", "ב", "ג"], :centerAngleDeg => 72 };
+    var s = KeyboardLayout.subButtonAt(284, 184, parent, 416, 416);
+    if (s == null) { logger.debug("subButtonAt returned null"); return false; }
+    var d = s as Dictionary;
+    logger.debug("subButtonAt(284,184) = " + d[:label]);
+    return (d[:label] as String).equals("ב");
+}
+
+(:test)
+function kbd_subButtonAtOutsideExpansionReturnsNull(logger as Logger) as Boolean {
+    // For LETTER_GROUP expansion, taps inside R_EXPANSION_INNER (center) return null.
+    var parent = { :label => "אבג", :type => :LETTER_GROUP, :letters => ["א", "ב", "ג"], :centerAngleDeg => 72 };
+    var s = KeyboardLayout.subButtonAt(208, 208, parent, 416, 416);
+    logger.debug("subButtonAt(208,208) center = " + s);
+    return s == null;
 }
