@@ -18,7 +18,7 @@ class wikiwatchView extends WatchUi.View {
         _lines = null;
         _contentHeight = 0;
         _screenHeight = 0;
-        _leftMargin = 25;
+        _leftMargin = 15;
         _middleWidth = 0;
     }
 
@@ -35,7 +35,7 @@ class wikiwatchView extends WatchUi.View {
         // leaving a wide clean gap near the physical Back / Up buttons.
         // Combined with _middleWidth = screenW - _leftMargin - _RIGHT_MARGIN,
         // a full-width middle line's visual left
-        // edge lands exactly at _leftMargin = 25 px.
+        // edge lands exactly at _leftMargin = 15 px.
         var rightAnchorX = screenW - _RIGHT_MARGIN;
 
         var lines = _lines as Array<Dictionary>;
@@ -93,7 +93,7 @@ class wikiwatchView extends WatchUi.View {
         return _screenHeight;
     }
 
-    // M2.7 layout. Per-raw strategy unchanged from M2.5:
+    // M2.8 layout. Per-raw strategy unchanged from M2.5:
     //   firstRaw (H1) -> widths [narrowEdge, narrowSecond, middleWidth, ...]
     //                    every sub-line tagged :isH1 => true
     //   middleRaws    -> widths [middleWidth]
@@ -112,7 +112,7 @@ class wikiwatchView extends WatchUi.View {
     //                                       codepoint sits at the stable
     //                                       right edge per line)
     //
-    // Margins (M2.7): _leftMargin = 25 (clean left), _RIGHT_MARGIN = 100 (wide clean gap near the physical Back/Up buttons; text
+    // Margins (M2.8): _leftMargin = 15 (clean left), _RIGHT_MARGIN = 100 (wide clean gap near the physical Back/Up buttons; text
     // right edge stays 100 px clear). _middleWidth comes
     // from Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN).
     private function _layout(dc as Dc) as Void {
@@ -125,14 +125,23 @@ class wikiwatchView extends WatchUi.View {
         var narrowSecond = 250;
         _middleWidth = Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN);
 
+        // M2.8 (option B): build per-raw meta with per-word pixel widths so
+        // the wrap can pack by actual rendered px (not char-count estimate).
+        // splitWords + per-word getTextWidthInPixels happens once per raw line
+        // here; the lazy _layout cache makes the cost a one-shot.
         var meta = [];
         for (var i = 0; i < rawLines.size(); i++) {
             var token = MarkdownTokens.parse(rawLines[i] as String);
             var font = _fontForLevel(token[:level] as Number);
             var fh = dc.getFontHeight(font);
-            var charW = dc.getTextWidthInPixels("ש", font);
-            if (charW < 1) { charW = 8; }
-            meta.add({ :token => token, :font => font, :fh => fh, :charW => charW });
+            var text = token[:text] as String;
+            var words = LineWrap.splitWords(text);
+            var wordPx = [];
+            for (var wi = 0; wi < words.size(); wi++) {
+                wordPx.add(dc.getTextWidthInPixels(words[wi] as String, font));
+            }
+            var spacePx = dc.getTextWidthInPixels(" ", font);
+            meta.add({ :token => token, :font => font, :fh => fh, :words => words, :wordPx => wordPx, :spacePx => spacePx });
         }
 
         var firstWidths = [narrowEdge, narrowSecond, _middleWidth];
@@ -142,17 +151,18 @@ class wikiwatchView extends WatchUi.View {
         var y = 8;
         for (var i = 0; i < meta.size(); i++) {
             var m = meta[i] as Dictionary;
-            var text = (m[:token] as Dictionary)[:text] as String;
-            var charW = m[:charW] as Number;
+            var words = m[:words] as Array<String>;
+            var wordPx = m[:wordPx] as Array<Number>;
+            var spacePx = m[:spacePx] as Number;
             var subs;
             var perSubWidth = null;
             var widthsUsed;
             var isH1 = (i == 0);
             if (i == 0) {
-                subs = LineWrap.wrapToWidths(text, charW, firstWidths, 0);
+                subs = LineWrap.wrapPxToWidths(words, wordPx, spacePx, firstWidths, 0);
                 widthsUsed = firstWidths;
             } else if (i == meta.size() - 1) {
-                subs = LineWrap.wrapWithNarrowTail(text, charW, _middleWidth, narrowSecond, narrowEdge);
+                subs = LineWrap.wrapPxWithNarrowTail(words, wordPx, spacePx, _middleWidth, narrowSecond, narrowEdge);
                 perSubWidth = [];
                 var sCount = subs.size();
                 for (var k = 0; k < sCount; k++) {
@@ -166,7 +176,7 @@ class wikiwatchView extends WatchUi.View {
                 }
                 widthsUsed = middleOnly;
             } else {
-                subs = LineWrap.wrapToWidths(text, charW, middleOnly, 0);
+                subs = LineWrap.wrapPxToWidths(words, wordPx, spacePx, middleOnly, 0);
                 widthsUsed = middleOnly;
             }
             for (var j = 0; j < subs.size(); j++) {
