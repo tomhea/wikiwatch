@@ -7,7 +7,7 @@ class wikiwatchView extends WatchUi.View {
     private var _lines as Array?;
     private var _contentHeight as Number;
     private var _screenHeight as Number;
-    private var _rightMargin as Number;
+    private var _leftMargin as Number;
     private var _middleWidth as Number;
 
     function initialize() {
@@ -16,7 +16,7 @@ class wikiwatchView extends WatchUi.View {
         _lines = null;
         _contentHeight = 0;
         _screenHeight = 0;
-        _rightMargin = 25;
+        _leftMargin = 15;
         _middleWidth = 0;
     }
 
@@ -29,7 +29,7 @@ class wikiwatchView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.clear();
         var centerX = screenW / 2;
-        var rightAnchorX = screenW - _rightMargin;
+        var r = _screenHeight / 2;
 
         var lines = _lines as Array<Dictionary>;
         var n = lines.size();
@@ -49,11 +49,12 @@ class wikiwatchView extends WatchUi.View {
             var ln = lines[i] as Dictionary;
             var screenY = (ln[:y] as Number) - _scrollY;
             if (screenY >= _screenHeight) { break; }
-            var w = ln[:w] as Number;
-            if (w >= _middleWidth) {
-                dc.drawText(rightAnchorX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_RIGHT);
-            } else {
+            if (ln[:isH1] as Boolean) {
                 dc.drawText(centerX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_CENTER);
+            } else {
+                var anchorX = centerX - SafeArea.safeChordHalfWidth(r, screenY - r);
+                if (anchorX < _leftMargin) { anchorX = _leftMargin; }
+                dc.drawText(anchorX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_LEFT);
             }
             i++;
         }
@@ -68,26 +69,44 @@ class wikiwatchView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
-    // M2.4 layout. Per-raw strategy:
-    //   firstRaw   -> widths [narrowEdge, narrowSecond, middleWidth, ...]
-    //                 (wraps the H1 into 160 / 250 / full-width sub-lines)
-    //   middleRaws -> widths [middleWidth] (full screen width, body lines
-    //                 are right-anchored at rightMargin in onUpdate so
-    //                 their right edge sits 25 px from the screen edge)
-    //   lastRaw    -> LineWrap.wrapWithNarrowTail(...)
-    //                 (forward-packs into middle-width lines then reserves
-    //                 the absolute LAST 2 sub-lines for the 250/160 narrow
-    //                 tail - fixes M2.3's defaultWidth cascade where every
-    //                 sub-line beyond the second got 160).
+    function scrollToTop() as Void {
+        _scrollY = 0;
+        WatchUi.requestUpdate();
+    }
+
+    function scrollToBottom() as Void {
+        var maxScroll = _contentHeight - _screenHeight;
+        if (maxScroll < 0) { maxScroll = 0; }
+        _scrollY = maxScroll;
+        WatchUi.requestUpdate();
+    }
+
+    function getScreenHeight() as Number {
+        return _screenHeight;
+    }
+
+    // M2.5 layout. Per-raw strategy:
+    //   firstRaw (H1) -> widths [narrowEdge, narrowSecond, middleWidth, ...]
+    //                    every sub-line tagged :isH1 => true
+    //   middleRaws    -> widths [middleWidth] (full screen width + right bleed)
+    //   lastRaw       -> LineWrap.wrapWithNarrowTail(...) with narrowSecond=300
+    //                    so the absolute LAST sub-line is at 160 px and the
+    //                    PENULTIMATE at 300 px.
     //
     // Justify (in onUpdate):
-    //   narrow sub-line (w < middleWidth)  -> CENTER (chord at top/bottom of
-    //                                         the round screen is narrow;
-    //                                         center-justify keeps text inside)
-    //   middle sub-line  (w >= middleWidth) -> RIGHT  (anchored at
-    //                                         screenW - rightMargin; gives a
-    //                                         clean finger margin on the right
-    //                                         where users scroll)
+    //   :isH1 sub-line  -> CENTER at screenW/2 (every H1 sub-line, regardless
+    //                      of width)
+    //   non-H1 sub-line -> LEFT-justify, anchored at max(chord_left_at(y),
+    //                      _leftMargin). In the middle band the chord is
+    //                      wider than the screen so the anchor falls back to
+    //                      _leftMargin (clean 15 px gap on the left). In the
+    //                      narrow chord zones the anchor moves inward to the
+    //                      chord's left edge so the text stays inside the
+    //                      round bezel.
+    //
+    // Margins: _leftMargin = 15 (clean left), _rightBleed = 20 (text may
+    // extend up to 20 px past the right screen edge if it makes the line
+    // nicer). _middleWidth = screenW - _leftMargin + _rightBleed.
     private function _layout(dc as Dc) as Void {
         var article = Strings.sampleArticle();
         var rawLines = _splitLines(article);
@@ -95,12 +114,9 @@ class wikiwatchView extends WatchUi.View {
         var spacing = 4;
         var sectionGap = 4;
         var narrowEdge = 160;
-        var narrowSecond = 250;
-        // middleWidth = full screen width. With right-justify anchored at
-        // screenW - rightMargin and a wrap budget of screenW, text may bleed
-        // up to rightMargin pixels past the LEFT screen edge - explicitly
-        // accepted by the user ("a bit too much if it makes the line nicer").
-        _middleWidth = screenW;
+        var narrowSecond = 300;
+        var rightBleed = 20;
+        _middleWidth = screenW - _leftMargin + rightBleed;
 
         var meta = [];
         for (var i = 0; i < rawLines.size(); i++) {
@@ -124,6 +140,7 @@ class wikiwatchView extends WatchUi.View {
             var subs;
             var perSubWidth = null;
             var widthsUsed;
+            var isH1 = (i == 0);
             if (i == 0) {
                 subs = LineWrap.wrapToWidths(text, charW, firstWidths, 0);
                 widthsUsed = firstWidths;
@@ -159,7 +176,8 @@ class wikiwatchView extends WatchUi.View {
                     :font => m[:font],
                     :y => y,
                     :h => m[:fh] as Number,
-                    :w => w
+                    :w => w,
+                    :isH1 => isH1
                 });
                 y += (m[:fh] as Number) + spacing;
             }
