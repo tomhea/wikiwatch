@@ -6,7 +6,7 @@ import Toybox.Math;
 module KeyboardLayout {
     const NUM_BUTTONS = 10;
     const WEDGE_ARC_DEG = 36;
-    const R_INNER = 105;
+    const R_INNER = 170;
     const R_OUTER = 205;
     const R_EXPANSION_INNER = 50;
 

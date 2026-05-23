@@ -74,13 +74,25 @@ function kbd_buttonNineIsDigits(logger as Logger) as Boolean {
 
 (:test)
 function kbd_buttonAtInsideAlefGroupReturnsIt(logger as Logger) as Boolean {
-    // אבג wedge center: angle 72°, radius 155 on the 416-px sim.
-    // Tap at (cx + 155*sin(72°), cy - 155*cos(72°)) = (208+147, 208-47) = (355, 161).
-    var k = KeyboardLayout.buttonAt(355, 161, 416, 416);
+    // M3.2 outer ring is thinner: R_INNER=170, R_OUTER=205, midRadius=187.
+    // אבג wedge at angle 72°. Tap at (208 + 187*sin(72°), 208 - 187*cos(72°))
+    // = (208+178, 208-58) = (386, 150) sits inside the new ring at the wedge.
+    var k = KeyboardLayout.buttonAt(386, 150, 416, 416);
     if (k == null) { logger.debug("buttonAt returned null"); return false; }
     var d = k as Dictionary;
-    logger.debug("buttonAt(355,161)=" + d[:label] + " type=" + d[:type]);
+    logger.debug("buttonAt(386,150)=" + d[:label] + " type=" + d[:type]);
     return d[:type] == :LETTER_GROUP && (d[:centerAngleDeg] as Number) == 72;
+}
+
+(:test)
+function kbd_buttonAtInsideOldMidRingReturnsNull(logger as Logger) as Boolean {
+    // M3.2 raised R_INNER from 105 to 170 (thinner outer ring). A point at
+    // r=154 (which used to be inside the M3.1 ring at midRadius 155) is now
+    // in the inner area and returns null.
+    // (208 + 147, 208 - 47) = (355, 161), r = sqrt(147^2+47^2) ~ 154.
+    var k = KeyboardLayout.buttonAt(355, 161, 416, 416);
+    logger.debug("buttonAt(355,161) = " + k);
+    return k == null;
 }
 
 (:test)
