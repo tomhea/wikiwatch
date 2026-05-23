@@ -1,0 +1,34 @@
+﻿M2 article-view layout diagnostic (one-off run, prints the parsed token tree
+and computed y positions). Hebrew chars in stdout get mangled by the Windows
+cp1252 redirect; the actual rendered glyphs are correct (each line's text is
+the canonical "שלום היא ברכה ופרידה." etc. from Strings.sampleArticle()).
+
+RAW[0] level=1 fontH=67 charW=13 maxChars=21 text='שלום'
+RAW[1] level=0 fontH=32 charW=6 maxChars=46 text='שלום היא ברכה ופרידה.'
+RAW[2] level=2 fontH=58 charW=11 maxChars=25 text='משמעות'
+RAW[3] level=0 fontH=32 charW=6 maxChars=46 text='המילה מופיעה בתנ"ך פעמים רבות.'
+RAW[4] level=3 fontH=49 charW=9 maxChars=31 text='דוגמאות'
+RAW[5] level=0 fontH=32 charW=6 maxChars=46 text='שאלו שלום ירושלים.'
+RAW[6] level=4 fontH=43 charW=8 maxChars=35 text='תפילה'
+RAW[7] level=0 fontH=32 charW=6 maxChars=46 text='עושה שלום במרומיו.'
+RAW[8] level=0 fontH=32 charW=6 maxChars=46 text='שורת גוף ארוכה שעוטפת לכמה שורות במסך העגול של השעון.'
+
+LAYOUT lineCount=10 contentH=493 screenH=416 scrollY=0
+  line[0] y=8   h=67 font=FONT_LARGE  text='שלום'
+  line[1] y=83  h=32 font=FONT_XTINY  text='שלום היא ברכה ופרידה.'
+  line[2] y=123 h=58 font=FONT_MEDIUM text='משמעות'
+  line[3] y=189 h=32 font=FONT_XTINY  text='המילה מופיעה בתנ"ך פעמים רבות.'
+  line[4] y=229 h=49 font=FONT_SMALL  text='דוגמאות'
+  line[5] y=286 h=32 font=FONT_XTINY  text='שאלו שלום ירושלים.'
+  line[6] y=326 h=43 font=FONT_TINY   text='תפילה'
+  line[7] y=377 h=32 font=FONT_XTINY  text='עושה שלום במרומיו.'
+  line[8] y=417 h=32 font=FONT_XTINY  text='שורת גוף ארוכה שעוטפת לכמה שורות במסך העגול של'
+  line[9] y=453 h=32 font=FONT_XTINY  text='השעון.'
+
+Observations:
+- All 4 header levels render with distinct font sizes (H1=67, H2=58, H3=49, H4=43 px tall in sim).
+- Body text at FONT_XTINY = 32 px tall, 6 px per Hebrew char.
+- The last body line (line[8/9]) demonstrates LineWrap working: "שורת גוף ארוכה..." doesn't
+  fit in 46 chars, so it wraps to two screen lines.
+- contentHeight=493 > screenHeight=416 -> scrolling is required to read the full article.
+  Pressing the lower-right button or swiping up triggers onNextPage -> scrollBy(60).

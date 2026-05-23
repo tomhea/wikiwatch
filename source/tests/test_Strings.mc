@@ -11,21 +11,39 @@ function strings_helloIsHebrew(logger as Logger) as Boolean {
 
 (:test)
 function strings_helloCharCount(logger as Logger) as Boolean {
-    // "שלום" is 4 Hebrew code points: ש (U+05E9), ל (U+05DC), ו (U+05D5), ם (U+05DD).
     var s = Strings.hello();
-    logger.debug("Strings.hello().length() = " + s.length());
     return s.length() == 4;
 }
 
 (:test)
 function strings_hebrewLiteralRoundtripsThroughStorage(logger as Logger) as Boolean {
-    // Decoupled from Strings.hello() on purpose: this asserts UTF-8 survives
-    // Application.Storage serialization (critical for M7 article-corpus storage),
-    // independent of whether the Strings module is implemented yet.
     var s = "שלום";
     Application.Storage.setValue("test_hebrew_roundtrip", s);
     var back = Application.Storage.getValue("test_hebrew_roundtrip") as String;
     Application.Storage.deleteValue("test_hebrew_roundtrip");
-    logger.debug("roundtrip back = '" + back + "' (length=" + (back != null ? back.length() : -1) + ")");
     return back != null && s.equals(back) && back.length() == 4;
+}
+
+(:test)
+function strings_sampleArticleStartsWithH1(logger as Logger) as Boolean {
+    // The sample article exercises every header level; assert it leads with H1.
+    var a = Strings.sampleArticle();
+    logger.debug("sampleArticle prefix: '" + a.substring(0, 10) + "...'");
+    return a.find("# ") == 0;
+}
+
+(:test)
+function strings_sampleArticleHasH4(logger as Logger) as Boolean {
+    var a = Strings.sampleArticle();
+    return a.find("\n#### ") != null;
+}
+
+(:test)
+function strings_sampleArticleIsMultiline(logger as Logger) as Boolean {
+    // Must contain at least two newlines to be useful as a multi-line layout demo.
+    var a = Strings.sampleArticle();
+    var firstNl = a.find("\n");
+    if (firstNl == null) { return false; }
+    var rest = a.substring(firstNl + 1, a.length());
+    return rest.find("\n") != null;
 }
