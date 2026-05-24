@@ -1,0 +1,86 @@
+M4 R2 evidence — ArticleStore + Manifest + Fixtures plumbing
+
+Per docs/cr-rules.md R2, every milestone provides simulator evidence for
+the change. M4 is plumbing (no UX delta), so R2 is satisfied via two
+real-simulator captures that together exercise both code paths in
+FixtureInstaller.installIfEmpty:
+
+  - "fresh storage -> install N fixtures" path
+  - "manifest already populated -> skip" path
+
+Both run on the simulator via monkeydo against bin/wikiwatch.prg (or
+the test-harness build of the same source). Storage layer is invisible
+on-screen, so the on-watch evidence is necessarily the System.println /
+logger.debug stdout, not screenshots.
+
+==============================================================================
+PATH 1 — FRESH-INSTALL path  (test-harness, monkeydo /t)
+==============================================================================
+The installer_freshInstallPopulatesManifest test in
+source/tests/test_FixtureInstaller.mc deletes every fixture key from
+Application.Storage at the top of the test, then calls
+FixtureInstaller.installIfEmpty() and verifies the result. This is a real
+simulator run via monkeydo /t. The debug line is the exact value
+FixtureInstaller returned + the manifest+body state it produced:
+
+Executing test installer_freshInstallPopulatesManifest...
+DEBUG: install n=3 ids=[shalom, torah, shabbat] firstBodyLen=2058
+PASS
+
+Confirmed:
+  - n == 3 -> all three fixtures (shalom, torah, shabbat) were installed.
+  - manifest articleIds round-tripped through Storage in insertion order.
+  - The "shalom" body persisted at 2058 bytes (matches Strings.sampleArticle()).
+
+installer_secondCallReturnsZero further proves the no-op-on-second-call
+behavior in a single test:
+
+Executing test installer_secondCallReturnsZero...
+DEBUG: first=3 second=0
+PASS
+
+==============================================================================
+PATH 2 — SKIP path  (live app, monkeydo bin/wikiwatch.prg venu2)
+==============================================================================
+The diagnostic added to FixtureInstaller.installIfEmpty prints
+"startEmpty / startIds" then either DONE or SKIP, depending on
+Manifest.isEmpty(). Launching bin/wikiwatch.prg in the running simulator
+(after Storage was already populated by the prior test run) produces:
+
+M4 install: startEmpty=false startIds=[shalom, torah, shabbat]
+M4 install: SKIP (manifest already populated)
+
+Confirmed:
+  - The diagnostic fires on every wikiwatchApp.onStart.
+  - Manifest.isEmpty() correctly returns false after install.
+  - Manifest.articleIds() returns the 3 IDs in the order Fixtures.manifest()
+    defined them.
+  - The SKIP branch is taken — no duplicate write.
+
+==============================================================================
+WHY NOT A SECOND LIVE-APP RUN FOR THE FRESH PATH
+==============================================================================
+The Connect IQ simulator persists Application.Storage in-memory for the
+lifetime of the simulator.exe process — there is no on-disk file to delete
+between runs of bin/wikiwatch.prg. Restarting the simulator would clear
+in-memory Storage but also resets every other piece of sim state, so the
+test-harness path (which does its own deleteValue cleanup) is the
+shortest reliable way to demonstrate the fresh-install code path.
+
+Per the garmin-ciq-simulator skill: monkeydo /t IS a real simulator
+invocation (same binary, same VM, same Application.Storage runtime); the
+only difference is that the test harness drives the (:test) functions
+instead of the app's onStart. Both paths execute the exact same Manifest
+/ ArticleStore code.
+
+==============================================================================
+SUMMARY OF M4 TEST RUN
+==============================================================================
+Ran 112 tests
+PASSED (passed=112, failed=0, errors=0)
+
+Net new since M3.6 (98 tests): +14
+  test_Manifest:          6 tests
+  test_ArticleStore:      3 tests
+  test_Fixtures:          3 tests
+  test_FixtureInstaller:  2 tests
