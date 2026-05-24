@@ -1,6 +1,7 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
+import Toybox.System;
 import Toybox.WatchUi;
 
 // M3.3 keyboard view. Draw order: center -> outer ring -> expansion. The
@@ -10,15 +11,27 @@ import Toybox.WatchUi;
 // as 4 cells "0 1 _ 9" (middle blank). SPACE / BACKSPACE flash brighter
 // for ~200 ms via _pressedAngleDeg.
 class wikiwatchKeyboardView extends WatchUi.View {
+    // M5 suggestion-area geometry. Must match the values used in
+    // _drawCenterDisplay below so suggestionAt() agrees with what gets
+    // rendered.
+    private const _BAND_W = 200;
+    private const _BAND_H = 64;
+    private const _BAND_Y_OFFSET = -110;     // bandY = cy + _BAND_Y_OFFSET
+    private const _SUGGESTION_Y_START_OFFSET = 6;
+    private const _SUGGESTION_LINE_STEP = 22;
+    private const _MAX_SUGGESTIONS = 5;
+
     private var _buffer as String;
     private var _expanded as Dictionary?;
     private var _pressedAngleDeg as Number?;
+    private var _suggestions as Array<Dictionary>?;
 
     function initialize() {
         View.initialize();
         _buffer = "";
         _expanded = null;
         _pressedAngleDeg = null;
+        _suggestions = null;
     }
 
     function setBuffer(b as String) as Void {
@@ -44,6 +57,39 @@ class wikiwatchKeyboardView extends WatchUi.View {
     function clearPressed() as Void {
         _pressedAngleDeg = null;
         WatchUi.requestUpdate();
+    }
+
+    // M5: replace the stub suggestion strings with real ranked results.
+    function setSuggestions(s as Array<Dictionary>) as Void {
+        _suggestions = s;
+        WatchUi.requestUpdate();
+    }
+
+    // M5: return the suggestion dict at the tapped (x, y), or null. The
+    // suggestion area sits entirely within r < R_HIT_INNER (=131), so it
+    // never overlaps the outer-ring wedge hit-test — no precedence
+    // conflict. x must be inside the band-x range; taps off the side
+    // fall through to the wedge hit-test.
+    function suggestionAt(x as Number, y as Number) as Dictionary? {
+        if (_suggestions == null) { return null; }
+        var suggestions = _suggestions as Array<Dictionary>;
+        var n = suggestions.size();
+        if (n == 0) { return null; }
+        if (n > _MAX_SUGGESTIONS) { n = _MAX_SUGGESTIONS; }
+        var settings = System.getDeviceSettings();
+        var cx = settings.screenWidth / 2;
+        var cy = settings.screenHeight / 2;
+        var bandX = cx - _BAND_W / 2;
+        if (x < bandX || x > bandX + _BAND_W) { return null; }
+        var lineY0 = cy + _BAND_Y_OFFSET + _BAND_H + _SUGGESTION_Y_START_OFFSET;
+        for (var i = 0; i < n; i++) {
+            var top = lineY0 + i * _SUGGESTION_LINE_STEP - _SUGGESTION_LINE_STEP / 2;
+            var bottom = top + _SUGGESTION_LINE_STEP;
+            if (y >= top && y < bottom) {
+                return suggestions[i] as Dictionary;
+            }
+        }
+        return null;
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -171,15 +217,20 @@ class wikiwatchKeyboardView extends WatchUi.View {
                         Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         }
 
-        // 5 stub suggestion lines below the input band.
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        // M5: render up to 5 real ranked suggestions (Hebrew titles, right-
+        // justified). Empty / null _suggestions means the area is blank —
+        // happens on first frame before the delegate has seeded any.
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         var rightX = cx + bandW / 2 - 4;
-        var lineY = bandY + bandH + 6;
-        var lineStep = 22;
-        for (var i = 1; i <= 5; i++) {
+        var lineY = bandY + bandH + _SUGGESTION_Y_START_OFFSET;
+        var sugs = _suggestions;
+        var sn = (sugs == null) ? 0 : (sugs as Array<Dictionary>).size();
+        if (sn > _MAX_SUGGESTIONS) { sn = _MAX_SUGGESTIONS; }
+        for (var i = 0; i < sn; i++) {
+            var s = (sugs as Array<Dictionary>)[i] as Dictionary;
             dc.drawText(rightX, lineY, Graphics.FONT_XTINY,
-                        "(suggestion " + i + ")", Graphics.TEXT_JUSTIFY_RIGHT);
-            lineY = lineY + lineStep;
+                        s[:title] as String, Graphics.TEXT_JUSTIFY_RIGHT);
+            lineY = lineY + _SUGGESTION_LINE_STEP;
         }
     }
 
