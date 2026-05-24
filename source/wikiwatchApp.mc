@@ -9,6 +9,7 @@ class wikiwatchApp extends Application.AppBase {
     }
 
     function onStart(state as Dictionary?) as Void {
+        FixtureInstaller.installIfEmpty();
     }
 
     function onStop(state as Dictionary?) as Void {
