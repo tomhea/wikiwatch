@@ -5,6 +5,7 @@ import Toybox.WatchUi;
 class wikiwatchView extends WatchUi.View {
     private const _RIGHT_MARGIN = 100;
 
+    private var _body as String;
     private var _scrollY as Number;
     private var _lines as Array?;
     private var _contentHeight as Number;
@@ -12,8 +13,13 @@ class wikiwatchView extends WatchUi.View {
     private var _leftMargin as Number;
     private var _middleWidth as Number;
 
-    function initialize() {
+    // M5: body is now a constructor parameter so the keyboard delegate
+    // can push different articles. Pre-M5 the view always rendered
+    // Strings.sampleArticle(); now the caller hands in the body String
+    // (typically from ArticleStore.bodyOf(id)).
+    function initialize(body as String) {
         View.initialize();
+        _body = body;
         _scrollY = 0;
         _lines = null;
         _contentHeight = 0;
@@ -116,8 +122,7 @@ class wikiwatchView extends WatchUi.View {
     // right edge stays 100 px clear). _middleWidth comes
     // from Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN).
     private function _layout(dc as Dc) as Void {
-        var article = Strings.sampleArticle();
-        var rawLines = _splitLines(article);
+        var rawLines = _splitLines(_body);
         var screenW = dc.getWidth();
         var spacing = 4;
         var sectionGap = 4;
