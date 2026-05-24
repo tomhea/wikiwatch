@@ -39,6 +39,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M3.5 | `v0.M3.5` | `99b3638` | 2026-05-24 | 132 KB | Final-letter (sofit) sub-zones ך/ם/ן/ף/ץ (level-2, inward) + multi-line buffer wrap | 98 |
 | M3.6 | `v0.M3.6` | `206e343` | 2026-05-24 | 132 KB | Flip final-form sub-buttons OUTWARD onto the outer ring (level-0 tier, ~9× bigger tap area) | 98 |
 | M4 | `v0.M4` | `00382a0` | 2026-05-24 | 138 KB | Storage layer — `Manifest` + `ArticleStore` + `Fixtures` + `FixtureInstaller`. R4-gated `setValue`. First-launch fixture install (3 Hebrew articles). No on-watch UX delta. | 112 |
+| M5 | `v0.M5` | `2df7c54` | 2026-05-24 | 143 KB | Live search — `Search.rank` (prefix > substring > popularity); keyboard center shows real ranked Hebrew titles instead of stubs; tap a suggestion to push the M2.x article reader. `wikiwatchView` becomes `initialize(body)`. | 122 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -586,16 +587,61 @@ The Connect IQ simulator persists `Application.Storage` in-memory for the lifeti
 
 Storage-touching tests follow the M1 `strings_hebrewLiteralRoundtripsThroughStorage` precedent: explicit `Application.Storage.deleteValue` at the top + bottom of each test so each starts from a known-empty state and leaves no residue.
 
-**Artifact:** `wikiwatch-M4.prg` (137 516 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M4.prg` (137 516 bytes).
+
+---
+
+## M5 — Live search prefix+substring+popularity, tap-to-open reader (tag `v0.M5`)
+
+The first milestone where the user can **see** the M4 storage layer and **read** the fixture articles. Connects the M3.6 circular keyboard to the M4 manifest + the dormant M2.x reader.
+
+**Why now:** the keyboard center already had 5 "stub suggestion" slots from M3.x (`(suggestion 1)` … `(suggestion 5)`) plumbed in pixel space, and the article reader had been sitting in `source/` since M2.8 with no caller. M4 shipped 3 Hebrew fixtures into `Application.Storage`. M5 wires those pieces together by swapping two strings (stub literals → real titles, no-op tap → `pushView`) bound by a new `Search.rank` pure module.
+
+**What landed (pure module — `source/models/`):**
+- `Search.mc` — `rank(query, articles) as Array<Dictionary>`. **Empty query** → top-K (=20) sorted by `:popularity` DESC, stable tiebreak by `:title`. **Non-empty query** → `[tier-1 (prefix match), tier-2 (substring not prefix)]`, each tier sorted by popularity DESC with codepoint-order tiebreak by title (Hebrew-safe via `String.toCharArray()`), capped at TOP_K. Stable insertion sort; O(N) partition + O(K²) tier sort, fine through the M7 corpus size. Only imports `Toybox.Lang` (R6 clean).
+
+**View refactor (`source/wikiwatchView.mc`):**
+- Constructor now takes `body as String` instead of pulling `Strings.sampleArticle()` inline. One-line backwards-incompatible change; the only call site is the new M5 pushView, so no other callers to fix. Public scroll API (`scrollBy`/`scrollToTop`/`scrollToBottom`/`getScreenHeight`) unchanged.
+
+**Keyboard view (`source/wikiwatchKeyboardView.mc`):**
+- New `_suggestions` field + `setSuggestions(arr)` / `suggestionAt(x, y)` public API.
+- The hardcoded `for (i = 1; i <= 5) drawText("(suggestion " + i + ")")` loop in `_drawCenterDisplay` is replaced with a loop over `_suggestions` (up to 5 Hebrew titles, right-justified, FONT_XTINY light-gray).
+- Band/line geometry pulled into private consts (`_BAND_W=200`, `_BAND_H=64`, `_BAND_Y_OFFSET=-110`, `_SUGGESTION_Y_START_OFFSET=6`, `_SUGGESTION_LINE_STEP=22`, `_MAX_SUGGESTIONS=5`) so `suggestionAt`'s hit-test math agrees with the render. Suggestion area sits entirely within `r < R_HIT_INNER=131`, so no precedence conflict with the outer-ring wedges.
+- Added `Toybox.System` import for `getDeviceSettings()`.
+
+**Keyboard delegate (`source/wikiwatchKeyboardDelegate.mc`):**
+- `initialize` loads `Manifest.load()[:articles]` into the `_articles` field once at construction, then calls `_recomputeSuggestions()` to seed the view with top-3 by popularity.
+- Every buffer-mutating tap (SPACE append, BACKSPACE pop, sub-button append, `onBack` popLast) calls `_recomputeSuggestions()` which runs `Search.rank(_buffer, _articles)`, takes top-5, prints the R2 diagnostic, and pushes the new list to the view.
+- In `onTap`, BEFORE the wedge hit-test (but after the expansion sub-button check), checks `_view.suggestionAt(x, y)`. Non-null → loads `ArticleStore.bodyOf(suggestion[:id])` and `WatchUi.pushView(new wikiwatchView(body), new wikiwatchDelegate(reader), WatchUi.SLIDE_LEFT)`.
+
+**Test changes (+10, 112 → 122):**
+- `test_Search.mc` — 10 tests: empty-query-by-popularity, cap-at-20, empty-articles-returns-empty, prefix-match-only, substring-non-prefix-is-tier-2, prefix-before-substring, popularity-within-tier, title-stable-tiebreak-on-popularity-tie, no-matches-returns-empty, hebrew-substring-match.
+
+**R1 evidence:** `docs/m5-fail.txt` (10 of the new tests FAIL on the sentinel-returning Search stub) → `docs/m5-pass.txt` (122/122 PASS).
+
+**R2 evidence:** `docs/m5-r2-evidence.txt` captured from a live `monkeydo bin/wikiwatch.prg venu2` invocation:
+
+```
+M4 install: startEmpty=false startIds=[shalom, torah, shabbat]
+M4 install: SKIP (manifest already populated)
+M5 rank: buf='' top=[שלום,תורה,שבת]
+```
+
+Proves end-to-end: `Manifest.load()` returns the 3 M4 fixtures → `Search.rank("", ...)` orders them by popularity DESC (shalom=100 > torah=80 > shabbat=60) → `_view.setSuggestions([…])` fires. The same `M5 rank` diagnostic appears 122 times in `docs/m5-pass.txt` (once per test, since the harness boots `wikiwatchApp.onStart` + `getInitialView` per test) — the strongest possible co-evidence that the wire executes successfully on every fresh boot with real Storage data.
+
+Interactive flows (typing filters, tap-to-open) are described in the evidence file but not captured as stdout — `monkeydo` doesn't programmatically drive touch events. The code paths route deterministically from `onTap` through `Search.rank` + `WatchUi.pushView`, and the unit tests cover all `Search.rank` tiers.
+
+**User-visible change:** before M5, the keyboard center showed 5 dummy `(suggestion N)` lines and tapping them did nothing. After M5, the center shows 3 real Hebrew titles (`שלום`, `תורה`, `שבת`) on launch; typing a Hebrew letter filters them live; tapping a line opens the M2.x article reader with that body (drag-scroll, double-tap-edge nav, all from M2.x preserved). Lower-right back button pops the reader and returns to the keyboard with the typed buffer still in place.
+
+**Artifact:** `wikiwatch-M5.prg` (142 556 bytes). Current head of `main`.
 
 ---
 
 ## What's missing (planned but not yet built)
 
-The bigger ladder beyond M4 is documented in the project memory (`memory/project_ladder.md`):
+The bigger ladder beyond M5 is documented in the project memory (`memory/project_ladder.md`):
 
-- **M5** — Live search (prefix + substring + popularity ranking) over `Manifest.articleIds()` / `titleOf()`, results list view; wires `:SEARCH` from the M3 keyboard.
-- **M6** — Long-press a word in the article → push a new keyboard layer pre-filled with that word. Layer stack pop/push.
+- **M6** — Long-press a word in the article → push a new keyboard layer pre-filled with that word. Layer stack pop/push. (Spike needed first: `onHold` for long-press inside a custom view.)
 - **M7** — First-run chunked download from `wikiwatch.tomhe.app/` into `Application.Storage`; resumable.
 - **M8** — Digits page on the keyboard ("123" toggle). (M3.x already ships the DIGITS wedge with 0..9 expansion; M8 may evolve into a dedicated punctuation/symbols page.)
 - **M9** — Polish + measure corpus size; decide whether M10 is needed.
@@ -607,7 +653,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 112 tests pass at v0.M4
+& scripts\test.ps1     # 122 tests pass at v0.M5
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
