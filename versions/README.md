@@ -38,6 +38,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M3.4 | `v0.M3.4` | `e66491b` | 2026-05-24 | 131 KB | 1.3× wider ring (R_INNER 160 → 146) + buffer band sizing | 95 |
 | M3.5 | `v0.M3.5` | `99b3638` | 2026-05-24 | 132 KB | Final-letter (sofit) sub-zones ך/ם/ן/ף/ץ (level-2, inward) + multi-line buffer wrap | 98 |
 | M3.6 | `v0.M3.6` | `206e343` | 2026-05-24 | 132 KB | Flip final-form sub-buttons OUTWARD onto the outer ring (level-0 tier, ~9× bigger tap area) | 98 |
+| M4 | `v0.M4` | `00382a0` | 2026-05-24 | 138 KB | Storage layer — `Manifest` + `ArticleStore` + `Fixtures` + `FixtureInstaller`. R4-gated `setValue`. First-launch fixture install (3 Hebrew articles). No on-watch UX delta. | 112 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -530,16 +531,70 @@ User feedback after M3.5: "the final-letters' buttons are really small ... inste
 
 **R2 evidence:** `docs/m3-6-r2-evidence.txt` — diagnostic confirms `subButtons(יכל)[3]` (`ך`) has `r=[146, 205]` and `subButtonAt(208, 383)` (r≈175, a=180°) returns `ך`; the OLD inward probe `subButtonAt(208, 238)` (r≈30) now returns `null`.
 
-**Artifact:** `wikiwatch-M3.6.prg` (132 284 bytes — same byte count as M3.5 due to compiler alignment). Current head of `main`.
+**Artifact:** `wikiwatch-M3.6.prg` (132 284 bytes — same byte count as M3.5 due to compiler alignment).
+
+---
+
+## M4 — ArticleStore + Manifest plumbing with fixture data (tag `v0.M4`)
+
+First milestone past the keyboard ladder. **Plumbing, not UX** — visually identical to v0.M3.6. Stands up the `Application.Storage` layer that M5 (live search) and M6 (long-press → keyboard layer) will read from, populated with fixture data so the rest of the ladder can develop offline. No network — that's M7.
+
+**Why now:** the empty `onStart` in `wikiwatchApp.mc` is the foreshadowed seam. M5 will want to call `Manifest.articleIds()` on every keystroke to filter results, and M7's downloader will write the exact same `Manifest` / `ArticleStore` keyspace. Locking the schema + storage discipline (R4 freeMemory guards) now means M5..M7 inherit a tested contract instead of reinventing one.
+
+**What landed (pure module — `source/models/`):**
+- `Fixtures.mc` — `manifest() as Dictionary` returns the 3-article fixture:
+  ```
+  { :version => 1,
+    :articles => [
+      { :id => "shalom",  :title => "שלום",  :popularity => 100 },
+      { :id => "torah",   :title => "תורה",  :popularity => 80  },
+      { :id => "shabbat", :title => "שבת",   :popularity => 60  }
+    ] }
+  ```
+  `bodyOf(id) as String?` dispatches: `"shalom"` → `Strings.sampleArticle()` (reuses the existing 49-line Hebrew article), `"torah"` and `"shabbat"` → 1-paragraph Hebrew placeholders. M7 will swap the placeholders for real Wikipedia bodies.
+
+**What landed (storage wrappers — new `source/storage/` directory):**
+- `Manifest.mc` — wraps the `"manifest"` Storage key. Public API: `load`, `save`, `isEmpty`, `articleIds`, `titleOf`. `save` is R4-gated (`freeMemory >= 3 × estimated_size`).
+- `ArticleStore.mc` — per-article bodies at keys `"article:<id>"`. `bodyOf` / `putBody`. `putBody` R4-gated on `freeMemory >= 3 × (body.length × 4)` (4× = conservative UTF-8 upper bound for Hebrew).
+- `FixtureInstaller.mc` — `installIfEmpty()` glue. If `Manifest.isEmpty()`, calls `Manifest.save(Fixtures.manifest())` then `ArticleStore.putBody(id, Fixtures.bodyOf(id))` for each article ID. Returns the count installed. Idempotent on every subsequent launch. Emits one-shot `System.println` diagnostics for R2 evidence.
+
+**Why `source/storage/` not `source/models/`:** R6 forbids non-pure imports in `source/models/`. The storage wrappers import `Toybox.Application` (for `Storage.setValue/getValue`) and `Toybox.System` (for `freeMemory`), so they can't live in `models/`. `Fixtures.mc` is pure (only `Toybox.Lang`), so it stays in `models/`.
+
+**Wiring (`source/wikiwatchApp.mc`):**
+```monkeyc
+function onStart(state as Dictionary?) as Void {
+    FixtureInstaller.installIfEmpty();
+}
+```
+`getInitialView` unchanged — still returns the M3.6 keyboard pair.
+
+**Mid-implementation gotcha — Symbol serialization:** the first PASS attempt hit `UnexpectedTypeException: Given value cannot be serialized` at the `Application.Storage.setValue(KEY, m)` line in `Manifest.save`. Cause: `Application.Storage` cannot serialize Symbols, and the in-memory schema uses Symbol keys throughout (`:version`, `:articles`, `:id`, `:title`, `:popularity`). The fix preserves the Symbol-keyed in-memory idiom (matches the rest of the codebase — `KeyboardLayout`, `MarkdownTokens`, etc.) by adding `_toStorageDict` / `_fromStorageDict` converters that translate Symbol ↔ String keys at the Storage boundary. Callers (`Fixtures`, `FixtureInstaller`, future M5/M6/M7 code) never see the String-keyed form.
+
+**R1 evidence:** `docs/m4-fail.txt` (14 of the new tests FAIL on stubs returning sentinels) → `docs/m4-pass.txt` (112/112 PASS = 98 prior + 14 new).
+
+**R2 evidence:** `docs/m4-r2-evidence.txt` combines two real-simulator captures:
+- **Fresh-install path** (test harness, `monkeydo /t`): the `installer_freshInstallPopulatesManifest` test deletes every fixture key from Storage first, then calls `installIfEmpty()`. Debug log: `install n=3 ids=[shalom, torah, shabbat] firstBodyLen=2058`.
+- **Skip path** (live app, `monkeydo bin/wikiwatch.prg venu2`): with Storage already populated, `wikiwatchApp.onStart`'s `FixtureInstaller.installIfEmpty()` diagnostic prints `startEmpty=false startIds=[shalom, torah, shabbat]` and `SKIP (manifest already populated)`.
+
+The Connect IQ simulator persists `Application.Storage` in-memory for the lifetime of `simulator.exe` (no on-disk file to delete between live-app runs), so the test-harness path is the cleanest demonstration of the fresh-install flow. Both `monkeydo` invocations execute the same VM and Storage runtime — the only difference is which entry point fires (`(:test)` functions vs `onStart`).
+
+**Test changes (+14, 98 → 112):**
+- `test_Manifest.mc` — 6 tests: empty-default-when-storage-empty, isEmpty-true-on-fresh, save/load roundtrip, articleIds-order, titleOf-hit, titleOf-miss.
+- `test_ArticleStore.mc` — 3 tests: put/get Hebrew roundtrip, missing-key-returns-null, putBody-overwrites.
+- `test_Fixtures.mc` — 3 tests: ≥3 articles, all-titles-and-bodies-non-empty, bodyOf-known-returns-non-empty.
+- `test_FixtureInstaller.mc` — 2 end-to-end tests: fresh-install-returns-count (≥3), second-call-returns-zero.
+
+Storage-touching tests follow the M1 `strings_hebrewLiteralRoundtripsThroughStorage` precedent: explicit `Application.Storage.deleteValue` at the top + bottom of each test so each starts from a known-empty state and leaves no residue.
+
+**Artifact:** `wikiwatch-M4.prg` (137 516 bytes). Current head of `main`.
 
 ---
 
 ## What's missing (planned but not yet built)
 
-The bigger ladder beyond M3.x is documented in the project memory (`memory/project_ladder.md`):
+The bigger ladder beyond M4 is documented in the project memory (`memory/project_ladder.md`):
 
-- **M4** — `ArticleStore` + `Manifest` modules; fixture article data persisted in `Application.Storage`.
-- **M5** — Live search (prefix + substring + popularity ranking), results list view; wires `:SEARCH` from the M3 keyboard.
+- **M5** — Live search (prefix + substring + popularity ranking) over `Manifest.articleIds()` / `titleOf()`, results list view; wires `:SEARCH` from the M3 keyboard.
 - **M6** — Long-press a word in the article → push a new keyboard layer pre-filled with that word. Layer stack pop/push.
 - **M7** — First-run chunked download from `wikiwatch.tomhe.app/` into `Application.Storage`; resumable.
 - **M8** — Digits page on the keyboard ("123" toggle). (M3.x already ships the DIGITS wedge with 0..9 expansion; M8 may evolve into a dedicated punctuation/symbols page.)
@@ -552,7 +607,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 98 tests pass at v0.M3.6
+& scripts\test.ps1     # 112 tests pass at v0.M4
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
