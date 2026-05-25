@@ -48,6 +48,7 @@ class wikiwatchView extends WatchUi.View {
     private var _middleWidth as Number;
     private var _ctorTimeMs as Number;       // M5.3: first-paint timing
     private var _firstPaintLogged as Boolean;
+    private var _screenWidth as Number;      // M6: cached for findWordAt
 
     function initialize(body as String) {
         View.initialize();
@@ -65,6 +66,7 @@ class wikiwatchView extends WatchUi.View {
         _middleWidth = 0;
         _ctorTimeMs = System.getTimer();
         _firstPaintLogged = false;
+        _screenWidth = 0;
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -75,6 +77,7 @@ class wikiwatchView extends WatchUi.View {
             _middleWidth = Layout.middleWidth(dc.getWidth(), _leftMargin, _RIGHT_MARGIN);
         }
         _screenHeight = dc.getHeight();
+        _screenWidth = dc.getWidth();
 
         // Lay out the next batch (firstPass gets the bigger initial budget).
         var totalRaw = (_rawLines as Array<String>).size();
@@ -145,6 +148,53 @@ class wikiwatchView extends WatchUi.View {
     // yet). Returns false until the lazy layout has consumed all raw lines.
     function isLayoutComplete() as Boolean {
         return _layoutComplete;
+    }
+
+    // M6: long-press hit-test. Given a screen (x, y), returns the word at
+    // that point or null. Used by wikiwatchDelegate.onHold to push a new
+    // keyboard layer pre-filled with the tapped word. Returns null if the
+    // tap is outside any laid-out line, outside the line's text, or if
+    // _lines hasn't been initialized yet (e.g. first onUpdate hasn't run).
+    function findWordAt(x as Number, y as Number) as String? {
+        if (_lines == null) { return null; }
+        var contentY = y + _scrollY;
+        var lines = _lines as Array<Dictionary>;
+        for (var i = 0; i < lines.size(); i++) {
+            var ln = lines[i] as Dictionary;
+            var top = ln[:y] as Number;
+            var height = ln[:h] as Number;
+            if (contentY < top || contentY >= top + height) { continue; }
+            // Compute this line's right edge based on its justify mode
+            // (mirrors the onUpdate render code).
+            var text = ln[:text] as String;
+            var font = ln[:font];
+            var w = ln[:w] as Number;
+            var isH1 = ln[:isH1] as Boolean;
+            var charPx = _approxCharPx(font);
+            var lineRightX;
+            if (isH1 || w < _middleWidth) {
+                // Centered at centerX = screenW/2.
+                var centerX = _screenWidth / 2;
+                var textWidth = text.length() * charPx;
+                lineRightX = centerX + textWidth / 2;
+            } else {
+                // Right-justified at screenW - _RIGHT_MARGIN.
+                lineRightX = _screenWidth - _RIGHT_MARGIN;
+            }
+            return WordHitTest.findWordInLine(x, text, lineRightX, charPx);
+        }
+        return null;
+    }
+
+    // Per-font average char width estimate (Hebrew on built-in fonts; see
+    // M2 runtime probe in memory/project_snapshot.md). Approximate — wider
+    // letters (samekh, mem-sofit) and narrower (yud, vav) average out.
+    private function _approxCharPx(font as Graphics.FontType) as Number {
+        if (font == Graphics.FONT_LARGE)  { return 13; }
+        if (font == Graphics.FONT_MEDIUM) { return 11; }
+        if (font == Graphics.FONT_SMALL)  { return 9; }
+        if (font == Graphics.FONT_TINY)   { return 8; }
+        return 6;  // FONT_XTINY
     }
 
     private function _scheduleNextTick() as Void {

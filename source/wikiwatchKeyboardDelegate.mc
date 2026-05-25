@@ -29,10 +29,14 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private var _ranked as Array<Dictionary>;
     private var _totalMatches as Number;
 
-    function initialize(view as wikiwatchKeyboardView) {
+    // M6: initialBuffer lets the long-press flow push a new keyboard
+    // layer with a pre-filled word. Existing callers pass "" for the
+    // initial-launch keyboard.
+    function initialize(view as wikiwatchKeyboardView, initialBuffer as String) {
         BehaviorDelegate.initialize();
         _view = view;
-        _buffer = "";
+        _buffer = initialBuffer;
+        _view.setBuffer(_buffer);
         _expanded = null;
         _pressTimer = null;
         var arts = Manifest.load()[:articles] as Array<Dictionary>?;
