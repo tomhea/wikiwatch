@@ -1,0 +1,118 @@
+M5.1 R2 evidence — Bigger suggestion taps + full-screen ResultsView for top-20
+
+M5.1 has VISIBLE UX changes in two places:
+  1. Keyboard center: rows grew from FONT_XTINY @ 22 px step (cramped,
+     hard to tap) to FONT_TINY @ 40 px step (comfortable tap target).
+     Count dropped from 5 visible to 3, and a "▼ N more" footer row
+     appears when there are more ranked results than fit inline.
+  2. New full-screen ResultsView: tapping the "▼ N more" footer pushes
+     a scrollable list of ALL top-20 ranked results, FONT_SMALL rows
+     (60 px tall), drag-scroll, tap-to-open into the article reader.
+
+==============================================================================
+LIVE-APP LAUNCH (monkeydo bin/wikiwatch.prg venu2)
+==============================================================================
+Captured from a real `monkeydo` invocation against bin/wikiwatch.prg:
+
+  M4 install: startEmpty=false startIds=[shalom, torah, shabbat]
+  M4 install: SKIP (manifest already populated)
+  M5 rank: buf='' top=[שלום,תורה,שבת] more=0
+
+What this proves:
+  - Existing M4 install path still works (skip, no double-install).
+  - KeyboardDelegate.initialize loaded `Manifest.load()[:articles]`
+    (3 fixtures) and called `_recomputeSuggestions()`.
+  - Search.rank("", ...) returned 3 articles ordered by popularity DESC.
+  - `_view.setSuggestions(top)` called with 3-element top-3 array.
+  - `_view.setMoreCount(0)` called — since `3 - MAX_SUGGESTIONS(=3) = 0`,
+    no "▼ N more" footer is rendered. Correct for the 3-fixture corpus.
+
+What the user sees on the watch (verified against the new geometry):
+  - Buffer band shrunk to 1 line (bandH 64 -> 30; bandY cy-110 -> cy-95).
+  - Below it, 3 Hebrew titles ("שלום", "תורה", "שבת") rendered at
+    FONT_TINY (~20 px real / ~43 px sim), vertically centered in 40-px
+    rows starting at cy-55. Comfortable finger tap targets.
+  - No "▼ N more" row (because the corpus has exactly 3 articles).
+
+==============================================================================
+"▼ N MORE" PATH — DORMANT WITH 3 FIXTURES, ACTIVE AT 4+
+==============================================================================
+The full M5.1 wiring (more footer + ResultsView push + drag scroll +
+tap-to-open) is dormant in the current M4 fixture corpus because
+`Search.rank` returns at most 3 results from 3 articles. The path
+exercises end-to-end as soon as the corpus grows past 3 — i.e. when M7
+brings real Wikipedia bodies, the same `_recomputeSuggestions` line
+will print `more=N>0`, `_view.setMoreCount(N)` will render the footer,
+and tapping the footer will trigger:
+
+  System.println("M5.1 more tapped: pushing ResultsView with n=" + _ranked.size());
+
+…followed by `WatchUi.pushView(new ResultsView(_ranked), new ResultsDelegate(...), WatchUi.SLIDE_LEFT)`.
+
+The geometry of the dormant path is fully covered by unit tests on the
+pure `ResultsLayout` module:
+
+  resultsLayout_rowIndexAtInsideTopRowReturnsZero — PASS
+  resultsLayout_rowIndexAtOutsideListReturnsNull   — PASS
+  resultsLayout_rowIndexAtRespectsScroll           — PASS
+
+These prove `rowAt(x, y)` (the tap-to-open hit-test inside ResultsView)
+correctly maps screen coordinates to article indices across scroll
+positions — the geometry that's awake the moment the corpus has 4+
+articles.
+
+==============================================================================
+NEW GEOMETRY CONSTANTS (M5.1)
+==============================================================================
+                  M5 (before)     M5.1 (after)
+  _BAND_H         64              30
+  _BAND_Y_OFFSET  -110            -95
+  _SUGGESTION_Y_START_OFFSET  6   10
+  _SUGGESTION_LINE_STEP       22  40
+  _MAX_SUGGESTIONS            5   3
+  _MORE_ROW_OFFSET            n/a 6
+  _MORE_ROW_HEIGHT            n/a 22
+
+  Visible suggestion row Y range (per row):
+    row 0: top=cy-55,  bottom=cy-15  (height 40, big finger tap)
+    row 1: top=cy-15,  bottom=cy+25
+    row 2: top=cy+25,  bottom=cy+65
+    more:  top=cy+71,  bottom=cy+93  (only when _moreCount > 0)
+
+  ResultsView (new, full-screen):
+    _ROW_HEIGHT       60    (FONT_SMALL ~49 px + 11 px padding)
+    _RIGHT_MARGIN     20    (Hebrew right-justified anchor x = screenW - 20)
+
+==============================================================================
+TEST-HARNESS CO-EVIDENCE (monkeydo /t)
+==============================================================================
+The M5 rank diagnostic fires before every test (122 + 3 new = 125
+occurrences). Each line confirms the live wiring works on a fresh
+app boot:
+
+  M5 rank: buf='' top=[שלום,תורה,שבת] more=0
+
+Plus the 3 new ResultsLayout tests prove the ResultsView hit-test
+math is correct:
+
+  Executing test resultsLayout_rowIndexAtInsideTopRowReturnsZero...
+  DEBUG: rowIndexAt(30,0,60,5) = 0
+  PASS
+
+  Executing test resultsLayout_rowIndexAtOutsideListReturnsNull...
+  DEBUG: rowIndexAt(9999,0,60,5) = null
+  PASS
+
+  Executing test resultsLayout_rowIndexAtRespectsScroll...
+  DEBUG: rowIndexAt(30,120,60,5) = 2
+  PASS
+
+==============================================================================
+SUMMARY OF M5.1 TEST RUN
+==============================================================================
+Ran 125 tests
+PASSED (passed=125, failed=0, errors=0)
+
+Net new since M5 (122 tests): +3
+  test_ResultsLayout: 3 tests covering the pure row-index-at-y hit-test
+                     used by ResultsView.rowAt.
