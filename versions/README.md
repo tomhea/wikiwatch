@@ -44,6 +44,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M5.2 | `v0.M5.2` | `edf23bb` | 2026-05-25 | 156 KB | Bundle: 2-line buffer restored (`bandH` 30 → 64, rounded edges) + 1-px row separators + 30 ש-prefix fixtures (version-aware install) + lazy article layout via `LayoutProgress` + `Timer.Timer` + "..." marker + "X more articles fit" footer in ResultsView. | 146 |
 | M5.3 | `v0.M5.3` | `ef4a84f` | 2026-05-26 | 159 KB | Bundle: shir-lashalom-long title fix + empty-buffer guard + round-screen-aware ResultsView (15%/15% pad + 40 px L/R margins) + multiline title blocks (`ResultsLayout.blockAt`) + bounded first-paint (`_INITIAL_LINES` 12 → 5 so שלום and שבת load in comparable time). | 154 |
 | M5.4 | `v0.M5.4` | `dce2ad8` | 2026-05-26 | 159 KB | Polish: tighter lazy-load (`_INITIAL_LINES` 5 → 2, `_INCREMENTAL_LINES` 4 → 2, `_LAYOUT_TICK_MS` 80 → 50; bounded-batch test STRENGTHENED to exact equality) + bottom-double-tap gated on `isLayoutComplete` + ResultsView margins 15 → 16% / 40 → 50 px + 0 px intra-article sub-line gap. | 154 |
+| M6 | `v0.M6` | `eaf7d99` | 2026-05-26 | 162 KB | Long-press a word in the article reader → push a new keyboard layer pre-filled with that word. New pure `WordHitTest.findWordInLine` (char-count + Hebrew-RTL aware). New `wikiwatchView.findWordAt` + `wikiwatchDelegate.onHold`. `wikiwatchKeyboardDelegate` ctor takes `initialBuffer`. Inlines the project's `onHold` spike via a `System.println` diagnostic. | 160 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -871,7 +872,60 @@ Per-change narrative covers all 4 changes including the manual first-paint measu
 - Double-tapping the bottom edge of the screen during lazy load → silently ignored. After the "..." marker disappears → works as before.
 - ResultsView: slightly more bezel clearance; long titles wrap with sub-lines touching (no inter-line gap).
 
-**Artifact:** `wikiwatch-M5.4.prg` (159 004 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M5.4.prg` (159 004 bytes).
+
+---
+
+## M6 — Long-press a word in the article → push a keyboard layer pre-filled with that word (tag `v0.M6`)
+
+The reader loop closes. Long-press any word in the article reader → a new keyboard view pushes on top, with that word pre-filled in the buffer band. From there the user can backspace + re-type to drill into a related article, or press back to return.
+
+**Why now:** the article reader (`wikiwatchView`) ships lazy layout (M5.2), bounded first-paint (M5.4), and tap dispatch via `wikiwatchDelegate`. The keyboard side (`wikiwatchKeyboardView` / `KeyboardDelegate` / `ResultsView`) is stable. M6 connects them via long-press so the user can "drill into a word they don't recognize, then back out".
+
+**Why this isn't just `WatchUi.pushView`:** Hebrew text wraps unpredictably in word-pixel space. The new `WordHitTest` pure module maps a tap (in content coordinates) to the word under the finger using a char-count approximation. Each word "owns" its trailing space so taps on whitespace snap to the preceding word — natural for "I just read this word, then tapped just past it".
+
+**What landed:**
+
+**New pure module** (`source/models/WordHitTest.mc`, `Toybox.Lang` only):
+- `findWordInLine(contentX, text, lineRightX, charPx) as String?` — right-anchored char-count word-at-tap. Returns null when the tap is past the right edge, past the left edge, or text is empty.
+- Hebrew RTL semantics: CIQ's BiDi renderer puts the first LOGICAL character at the visual right edge. Walking `words` in logical order produces the correct visual mapping.
+
+**View wiring** (`source/wikiwatchView.mc`):
+- New public `findWordAt(x, y) as String?` — converts screen y to content y via `_scrollY`, walks `_lines` to find the matching line, computes the line's right edge based on its justify mode (centered at `centerX + textWidth/2` for H1/narrow lines, `screenW - _RIGHT_MARGIN` for middle lines), dispatches to `WordHitTest.findWordInLine`.
+- Private `_approxCharPx(font)` — per-font Hebrew char width (LARGE 13, MEDIUM 11, SMALL 9, TINY 8, XTINY 6; from the M2 runtime probe).
+- `_screenWidth` cached during `onUpdate` (was only `_screenHeight`).
+
+**Delegate wiring** (`source/wikiwatchDelegate.mc`):
+- New `onHold(event)` override. Reads tap coords, prints `M6 onHold: x=... y=...` diagnostic, calls `_view.findWordAt(x, y)`. If non-null → constructs new `wikiwatchKeyboardView` + `wikiwatchKeyboardDelegate(view, word)` and `WatchUi.pushView(... SLIDE_LEFT)`.
+- The diagnostic doubles as the project's pending **`onHold` spike** (handoff §7): if the print appears in stdout when the user long-presses, the path works as designed. If not, M6.1 falls back to Timer-based detection in `onTap`.
+
+**Constructor update** (`source/wikiwatchKeyboardDelegate.mc`):
+- `initialize(view, initialBuffer)` — pre-fills the buffer + calls `_recomputeSuggestions` so the ranked list reflects the pre-fill on construction.
+
+**Caller update** (`source/wikiwatchApp.mc`):
+- `getInitialView` passes `""` for the empty-launch state.
+
+**View-stack flow** (CIQ default push/pop):
+
+```
+[KeyboardView] type ש → [KB][ResultsView] tap שלום →
+[KB][RV][wikiwatchView] long-press אברהם →
+[KB][RV][AR][KeyboardView('אברהם')] type/tap → drill into another article →
+[KB][RV][AR][KB'][RV'][AR']
+
+back button pops each layer cleanly.
+```
+
+**Test changes (+6, 154 → 160):**
+- `test_WordHitTest.mc` — 6 cases: insideText, atRightEdge (first word), atLeftEdge (last word), pastLeftEdge (null), pastRightEdge (null), emptyText (null).
+
+**R1 evidence:** `docs/m6-fail.txt` (6 FAIL on stub) → `docs/m6-pass.txt` (160/160 PASS).
+
+**R2 evidence:** `docs/m6-r2-evidence.txt` — live `monkeydo bin/wikiwatch.prg venu2` (initial state) + manual long-press verification protocol. `monkeydo` can't programmatically simulate touch events, so the `M6 onHold` diagnostic appears only when the user actually long-presses. The evidence file documents the expected `M6 onHold: word='X' — pushing keyboard layer` stdout sequence + the 5+ layer view-stack flow + the spike documentation.
+
+**User-visible change:** in the article reader, long-press any word — a new keyboard view slides in with that word in the buffer. The view stack can now grow several layers deep (article → keyboard' → article' → keyboard'' → ...). Back-press through each layer returns to the previous, preserving scroll positions.
+
+**Artifact:** `wikiwatch-M6.prg` (161 580 bytes). Current head of `main`.
 
 ---
 
@@ -891,7 +945,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 154 tests pass at v0.M5.4
+& scripts\test.ps1     # 160 tests pass at v0.M6
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
