@@ -43,6 +43,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M5.1 | `v0.M5.1` | `c15a8cf` | 2026-05-25 | 147 KB | Bigger suggestion taps (3×FONT_TINY @ 40 px, was 5×FONT_XTINY @ 22 px) + "▼ N more" footer that pushes a new full-screen scrollable `ResultsView` listing all top-20 in FONT_SMALL rows. New pure `ResultsLayout.rowIndexAt` for the hit-test math. | 125 |
 | M5.2 | `v0.M5.2` | `edf23bb` | 2026-05-25 | 156 KB | Bundle: 2-line buffer restored (`bandH` 30 → 64, rounded edges) + 1-px row separators + 30 ש-prefix fixtures (version-aware install) + lazy article layout via `LayoutProgress` + `Timer.Timer` + "..." marker + "X more articles fit" footer in ResultsView. | 146 |
 | M5.3 | `v0.M5.3` | `ef4a84f` | 2026-05-26 | 159 KB | Bundle: shir-lashalom-long title fix + empty-buffer guard + round-screen-aware ResultsView (15%/15% pad + 40 px L/R margins) + multiline title blocks (`ResultsLayout.blockAt`) + bounded first-paint (`_INITIAL_LINES` 12 → 5 so שלום and שבת load in comparable time). | 154 |
+| M5.4 | `v0.M5.4` | `dce2ad8` | 2026-05-26 | 159 KB | Polish: tighter lazy-load (`_INITIAL_LINES` 5 → 2, `_INCREMENTAL_LINES` 4 → 2, `_LAYOUT_TICK_MS` 80 → 50; bounded-batch test STRENGTHENED to exact equality) + bottom-double-tap gated on `isLayoutComplete` + ResultsView margins 15 → 16% / 40 → 50 px + 0 px intra-article sub-line gap. | 154 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -813,7 +814,64 @@ The NEW diagnostic `M5 rank: buf='' (empty — no results shown)` confirms the e
 - ResultsView never clips text at top/bottom; long titles wrap.
 - Tapping `שלום` no longer lags vs tapping `שבת`.
 
-**Artifact:** `wikiwatch-M5.3.prg` (158 892 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M5.3.prg` (158 892 bytes).
+
+---
+
+## M5.4 — Smoother lazy-load + bottom-double-tap gate + ResultsView margins + 0 px sub-line gap (tag `v0.M5.4`)
+
+Four small polish requests after M5.3 testing:
+
+1. **שלום still felt laggy.** M5.3's `_INITIAL_LINES = 5` meant the first onUpdate did ~50 `dc.getTextWidthInPixels` calls — still perceptible on the watch. Drop further so `שלום` does the SAME work as `שבת`.
+2. **Bottom double-tap during lazy load** dumps the user in partially-rendered content. Disable until layout completes.
+3. **ResultsView margins** — slightly larger top/bottom pad (15% → 16%) and L/R margins (40 → 50 px).
+4. **0 px sub-line gap** — wrapped sub-lines of the same article should touch.
+
+**What landed:**
+
+| File | Change |
+|---|---|
+| [wikiwatchView.mc](source/wikiwatchView.mc) | `_INITIAL_LINES` 5 → 2, `_INCREMENTAL_LINES` 4 → 2, `_LAYOUT_TICK_MS` 80 → 50 (CIQ minimum). New public `isLayoutComplete() as Boolean` getter exposing the lazy-layout state. |
+| [wikiwatchDelegate.mc](source/wikiwatchDelegate.mc) | Bottom-edge double-tap branch now gated on `_view.isLayoutComplete()` — scroll-to-bottom is silently ignored while layout is in progress. Top double-tap (scroll-to-top) unaffected (scrollY=0 is always valid). |
+| [ResultsView.mc](source/ResultsView.mc) | `_TOP_PAD_PCT` + `_BOTTOM_PAD_PCT` 15 → 16, `_LEFT_MARGIN` + `_RIGHT_MARGIN` 40 → 50, `_SUB_LINE_GAP` 2 → 0. Wrap budget shrinks 20 px so long titles wrap to one more sub-line; sub-lines of the same article are now line-touching. |
+| [test_LayoutProgress.mc](source/tests/test_LayoutProgress.mc) | `layoutProgress_initialBatchIsBoundedForAnyBodyLength` — `INITIAL` 5 → 2; assertion STRENGTHENED to require EXACT equality (`shortBatch == longBatch == 2`), proving wall-clock first-paint parity. |
+
+**Why "exactly 2" matters:** with `_INITIAL_LINES = 2`, ANY body with ≥ 2 raw lines processes EXACTLY 2 raw lines on first onUpdate. שבת (2 raw) and שלום (50 raw) do identical per-batch work → identical wall-clock first paint.
+
+**Test changes:** no new tests (no new pure-module surface). Existing bounded-batch test updated to encode the strengthened M5.4 invariant.
+
+**R1 evidence:**
+- **FAIL** ([docs/m5-4-fail.txt](docs/m5-4-fail.txt)): with the strengthened assertion applied but `INITIAL=5` (M5.3 baseline), `shortBatch=2` and `longBatch=5`, so `longBatch == shortBatch` is false:
+  ```
+  DEBUG: INITIAL=5 shortBatch=2 longBatch=5
+  FAIL
+  Ran 154 tests
+  FAILED (passed=153, failed=1, errors=0)
+  ```
+- **PASS** ([docs/m5-4-pass.txt](docs/m5-4-pass.txt)): with `INITIAL=2` (M5.4), both bodies cap at 2:
+  ```
+  DEBUG: INITIAL=2 shortBatch=2 longBatch=2
+  PASS
+  Ran 154 tests
+  PASSED (passed=154, failed=0, errors=0)
+  ```
+
+**R2 evidence** ([docs/m5-4-r2-evidence.txt](docs/m5-4-r2-evidence.txt)) — live `monkeydo bin/wikiwatch.prg venu2`:
+
+```
+M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[…30 IDs…]
+M4 install: SKIP (manifest already at target version)
+M5 rank: buf='' (empty — no results shown)
+```
+
+Per-change narrative covers all 4 changes including the manual first-paint measurement protocol via the M5.3 `M5.3 first-paint: ms=N hint=...` diagnostic.
+
+**User-visible changes** (vs M5.3):
+- `שלום` opens at the same speed as `שבת` (both do 2 lines of layout work for first paint).
+- Double-tapping the bottom edge of the screen during lazy load → silently ignored. After the "..." marker disappears → works as before.
+- ResultsView: slightly more bezel clearance; long titles wrap with sub-lines touching (no inter-line gap).
+
+**Artifact:** `wikiwatch-M5.4.prg` (159 004 bytes). Current head of `main`.
 
 ---
 
@@ -833,7 +891,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 154 tests pass at v0.M5.3
+& scripts\test.ps1     # 154 tests pass at v0.M5.4
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
