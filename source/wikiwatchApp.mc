@@ -20,7 +20,9 @@ class wikiwatchApp extends Application.AppBase {
     // on top of the view stack when a word is long-pressed in an article.
     function getInitialView() as [Views] or [Views, InputDelegates] {
         var view = new wikiwatchKeyboardView();
-        return [ view, new wikiwatchKeyboardDelegate(view) ];
+        // M6: KeyboardDelegate ctor now takes an initial-buffer string.
+        // First launch starts with an empty buffer.
+        return [ view, new wikiwatchKeyboardDelegate(view, "") ];
     }
 
 }

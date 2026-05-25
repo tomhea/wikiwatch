@@ -80,6 +80,32 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    // M6: long-press a word → push a keyboard layer pre-filled with the
+    // tapped word. Lets the user drill down into a related article from
+    // the reader. Words are dispatched via wikiwatchView.findWordAt (which
+    // delegates to the pure WordHitTest module).
+    //
+    // Diagnostic stays in the shipped build — one System.println per
+    // long-press, harmless. Doubles as R2 evidence that BehaviorDelegate
+    // .onHold fires on the Venu 2 touchscreen (the project's "pending
+    // spike" from the handoff).
+    function onHold(event as WatchUi.ClickEvent) as Boolean {
+        var coords = event.getCoordinates() as Array<Number>;
+        var x = coords[0];
+        var y = coords[1];
+        System.println("M6 onHold: x=" + x + " y=" + y);
+        var word = _view.findWordAt(x, y);
+        if (word != null) {
+            System.println("M6 onHold: word='" + word + "' — pushing keyboard layer");
+            var kbView = new wikiwatchKeyboardView();
+            var kbDelegate = new wikiwatchKeyboardDelegate(kbView, word as String);
+            WatchUi.pushView(kbView, kbDelegate, WatchUi.SLIDE_LEFT);
+        } else {
+            System.println("M6 onHold: no word at tap — ignored");
+        }
+        return true;
+    }
+
     // Page/button fallback for accessibility and discrete steps.
     function onNextPage() as Boolean {
         _view.scrollBy(60);

@@ -1,0 +1,131 @@
+M6 R2 evidence — Long-press word in article → push keyboard layer pre-filled with that word
+
+M6 closes the reader loop. Long-press any word in the article reader
+to push a NEW keyboard view onto the view stack with that word
+pre-filled. CIQ's built-in view stack handles push/pop. Back button
+returns to the original article with scroll position preserved.
+
+==============================================================================
+LIVE-APP LAUNCH (monkeydo bin/wikiwatch.prg venu2)
+==============================================================================
+Initial state (before any long-press):
+
+  M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
+  M4 install: SKIP (manifest already at target version)
+  M5 rank: buf='' (empty — no results shown)
+
+The M6 onHold diagnostic fires only when the user actually long-presses
+a word in the article reader. monkeydo can't programmatically simulate
+touch events, so the live evidence below is a MANUAL VERIFICATION
+PROTOCOL — what the user should see in the sim's stdout when they
+follow the steps.
+
+==============================================================================
+MANUAL VERIFICATION PROTOCOL
+==============================================================================
+1. Type "ש" on the keyboard (any single ש tap works).
+   Diagnostic: M5 rank: buf='ש' top=[שלום,שבת] more=28 total=30
+
+2. Tap the "▼ 28 more" footer to push the ResultsView.
+
+3. Tap the שלום row to push the article reader.
+   Diagnostic: M5.3 first-paint: ms=N hint='# שלום היא מילה שיו'
+
+4. Long-press any word in the article body. For best results, pick a
+   non-trivial word in the middle of a body line — e.g. "אברהם" in
+   "אברהם נפרד מאבימלך לשלום אחרי שכרתו ברית של אחווה.".
+   Expected stdout (when onHold fires on the sim):
+     M6 onHold: x=200 y=180
+     M6 onHold: word='אברהם' — pushing keyboard layer
+
+5. The article slides left; a new KeyboardView appears with the buffer
+   pre-filled with "אברהם". The center suggestion area is BLANK because
+   no fixture title in the 30 ש-prefix corpus starts with "אברהם". With
+   M7's real Wikipedia corpus, this would show real matches.
+
+6. Press the lower-right physical button to pop the new keyboard.
+   The article reader returns with its scroll position preserved.
+
+==============================================================================
+THE M6 SPIKE — DOES onHold FIRE ON THE VENU 2 TOUCHSCREEN?
+==============================================================================
+Per the handoff §7, this is the project's "pending spike". The
+implementation bets on `BehaviorDelegate.onHold(event)` firing on
+touch press-and-hold. If it does, the M6 stdout sequence above appears
+when the user long-presses. If it doesn't (some CIQ devices only fire
+onHold for physical buttons), the fallback is documented in the M6
+plan: synthesize long-press in `onTap` via a `Timer.Timer` that fires
+after 500 ms unless cancelled by a subsequent onDrag or onRelease.
+
+The spike is INLINED in this PR rather than shipped as a separate
+spike branch (handoff allows either). The diagnostic prints in
+wikiwatchDelegate.onHold serve double duty:
+  - R2 evidence: confirms the path triggers when the user holds.
+  - Production-safe: one System.println per long-press, harmless.
+
+If during sim testing the user holds a finger for ≥ 500 ms and sees
+NO "M6 onHold" line in stdout, the fallback path activates in M6.1.
+
+==============================================================================
+END-TO-END FLOW (the M6 ladder runs up to 5 layers deep before back-out)
+==============================================================================
+  Layer 1: KeyboardView (empty — M5.3 initial state)
+       ↓ type ש
+  Layer 1: KeyboardView ['ש'] → tap "▼ 28 more"
+  Layer 2: ResultsView (30 ש-titles)
+       ↓ tap שלום
+  Layer 3: wikiwatchView (שלום body)
+       ↓ long-press "אברהם" in body
+  Layer 4: KeyboardView ['אברהם'] → (in M5.2 corpus, 0 matches; M7+ would have hits)
+       ↓ user could "▼ N more" → push ResultsView for the new query
+  Layer 5: ResultsView (matches for 'אברהם')
+       ↓ tap a result
+  Layer 6: wikiwatchView (new article)
+
+Press back N times → pops back through each layer cleanly. CIQ's
+default View stack handles all of this — no custom back logic needed
+(M5.1 already verified this for the keyboard→ResultsView→article
+chain; M6 just extends the chain through long-press).
+
+==============================================================================
+WORDHITEST INVARIANTS (R3 — pure unit tests)
+==============================================================================
+6 (:test) functions cover the M6 hit-test math:
+
+  Executing test wordHitTest_returnsWordInsideText...
+  DEBUG: findWordInLine(255, 'abc def ghi', 300, 10) = def
+  PASS
+
+  Executing test wordHitTest_returnsFirstWordAtRightEdge...
+  DEBUG: findWordInLine(297, ...) = abc
+  PASS
+
+  Executing test wordHitTest_returnsLastWordAtLeftEdge...
+  DEBUG: findWordInLine(192, ...) = ghi
+  PASS
+
+  Executing test wordHitTest_returnsNullPastLeftEdge...
+  DEBUG: findWordInLine(185, past-left) = null
+  PASS
+
+  Executing test wordHitTest_returnsNullPastRightEdge...
+  DEBUG: findWordInLine(305, past-right) = null
+  PASS
+
+  Executing test wordHitTest_returnsNullEmptyText...
+  DEBUG: findWordInLine(empty text) = null
+  PASS
+
+Hebrew RTL note: CIQ's BiDi renderer puts the first LOGICAL character
+at the visual right edge for right-anchored text. WordHitTest treats
+char 0 == first logical char == visually rightmost, then walks `words`
+in logical order — correct mapping under BiDi.
+
+==============================================================================
+SUMMARY OF M6 TEST RUN
+==============================================================================
+Ran 160 tests
+PASSED (passed=160, failed=0, errors=0)
+
+Net new since M5.4 (154 tests): +6
+  test_WordHitTest: 6 tests covering the char-count word-at-tap helper.
