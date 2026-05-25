@@ -42,6 +42,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M5 | `v0.M5` | `2df7c54` | 2026-05-24 | 143 KB | Live search — `Search.rank` (prefix > substring > popularity); keyboard center shows real ranked Hebrew titles instead of stubs; tap a suggestion to push the M2.x article reader. `wikiwatchView` becomes `initialize(body)`. | 122 |
 | M5.1 | `v0.M5.1` | `c15a8cf` | 2026-05-25 | 147 KB | Bigger suggestion taps (3×FONT_TINY @ 40 px, was 5×FONT_XTINY @ 22 px) + "▼ N more" footer that pushes a new full-screen scrollable `ResultsView` listing all top-20 in FONT_SMALL rows. New pure `ResultsLayout.rowIndexAt` for the hit-test math. | 125 |
 | M5.2 | `v0.M5.2` | `edf23bb` | 2026-05-25 | 156 KB | Bundle: 2-line buffer restored (`bandH` 30 → 64, rounded edges) + 1-px row separators + 30 ש-prefix fixtures (version-aware install) + lazy article layout via `LayoutProgress` + `Timer.Timer` + "..." marker + "X more articles fit" footer in ResultsView. | 146 |
+| M5.3 | `v0.M5.3` | `ef4a84f` | 2026-05-26 | 159 KB | Bundle: shir-lashalom-long title fix + empty-buffer guard + round-screen-aware ResultsView (15%/15% pad + 40 px L/R margins) + multiline title blocks (`ResultsLayout.blockAt`) + bounded first-paint (`_INITIAL_LINES` 12 → 5 so שלום and שבת load in comparable time). | 154 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -754,7 +755,65 @@ All 30 fixture IDs present. `more=28 total=30` proves the wire from Search.total
 - C: defensive clamps (negative scrollY, content < screen).
 - D: view popped while timer scheduled → `onHide` stops the timer.
 
-**Artifact:** `wikiwatch-M5.2.prg` (156 284 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M5.2.prg` (156 284 bytes).
+
+---
+
+## M5.3 — Title-body match + empty-buffer + round ResultsView + multiline + bounded first-paint (tag `v0.M5.3`)
+
+Four user-reported polish issues after testing M5.2. All shipped as one bundle.
+
+**Why now:**
+1. **Title mismatch.** Tapping the long suggestion `שיר לשלום מאת חיים נחמן ביאליק ונועה קירל` opened an article whose H1 was just `שיר לשלום` — the body title didn't match the manifest title. Also: empty buffer still showed 2 inline suggestions + "▼ 28 more" footer — noise before the user has typed anything.
+2. **ResultsView ignores the round screen.** Hebrew titles at the top + bottom of the screen got clipped by the bezel curve. The user gave an exact spec: skip top 15% + bottom 15% of screen, plus 40 px L/R margins.
+3. **Long titles need wrapping.** With FONT_SMALL in M5.2, the long anachronistic title overflowed the row width. The user wanted multiline rows — tightly-spaced sub-lines of the same article, looser gap between articles.
+4. **"Quick load" wasn't quick.** Tapping `שלום` (50 raw lines) felt noticeably slower than `שבת` (2 raw lines). The user wanted both to feel "instant" with tests verifying the timings match.
+
+**What landed:**
+
+**Change 1 — Title fix + empty-buffer guard:**
+- `source/models/Fixtures.mc`: `shir-lashalom-long` body H1 now reads `שיר לשלום מאת חיים נחמן ביאליק ונועה קירל` (matches manifest). `:version => 3` so the version-aware `FixtureInstaller` (M5.2) auto-migrates on next launch.
+- `source/wikiwatchKeyboardDelegate.mc` `_recomputeSuggestions`: top-level guard — if `_buffer.length() == 0`, call `setSuggestions([])` + `setMoreCount(0)` and skip `Search.rank`. The keyboard center renders blank under the buffer band.
+
+**Change 2 — Round-screen-aware ResultsView** (`source/ResultsView.mc`):
+- New constants: `_TOP_PAD_PCT = 15`, `_BOTTOM_PAD_PCT = 15`, `_LEFT_MARGIN = 40` (was 0), `_RIGHT_MARGIN = 40` (was 20).
+- Rows render only in `y ∈ [_visibleTop, _visibleTop + _visibleHeight)` (middle 70% of screen). Text right-anchored at `screenW - 40`.
+
+**Change 3 — Multiline article rows** (`source/ResultsView.mc`):
+- Per-article block layout pre-computed on first onUpdate using `LineWrap.wrapPxToWidths` (each title wraps to fit `_usableWidth = screenW - 80`).
+- Constants: `_SUB_LINE_GAP = 2`, `_INTER_ARTICLE_GAP = 16`. FONT_TINY (was FONT_SMALL) for more headroom.
+- New pure helper `ResultsLayout.blockAt(contentY, blocks)` — variable-height row hit-test. Used by `ResultsView.rowAt` to dispatch a tap on any sub-line back to the article.
+
+**Change 4 — Bounded first-paint** (`source/wikiwatchView.mc`):
+- `_INITIAL_LINES` 12 → 5 (~10× less first-paint work for the long `שלום` article).
+- `_INCREMENTAL_LINES` 6 → 4 (smaller per-tick batches).
+- New first-paint diagnostic: `M5.3 first-paint: ms=N hint='<body prefix>'`. Fires once per article open; usable for manual timing verification on the sim.
+- New unit test `layoutProgress_initialBatchIsBoundedForAnyBodyLength` encodes the invariant: `nextBatchEnd(0, 2, 5) == 2 && nextBatchEnd(0, 50, 5) == 5`. Both short and long bodies process AT MOST `_INITIAL_LINES` raw lines on first paint → comparable wall-clock first-paint by construction.
+
+**Test changes (+8, 146 → 154):**
+- `test_Fixtures.mc` — `+1` `fixtures_titlesMatchBodies` (every fixture's body H1 starts with the manifest title); existing version test renamed `IsTwo` → `IsThree`.
+- `test_LayoutProgress.mc` — `+1` `initialBatchIsBoundedForAnyBodyLength`.
+- `test_ResultsLayout.mc` — `+6` `blockAt` cases (inside-first, inside-second, in-gap, past-end, negative, empty-array).
+
+**R1 evidence:** `docs/m5-3-fail.txt` (8 FAIL on stubs) → `docs/m5-3-pass.txt` (154/154 PASS).
+
+**R2 evidence:** `docs/m5-3-r2-evidence.txt` — live `monkeydo bin/wikiwatch.prg venu2` shows:
+
+```
+M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[…30 IDs…]
+M4 install: SKIP (manifest already at target version)
+M5 rank: buf='' (empty — no results shown)
+```
+
+The NEW diagnostic `M5 rank: buf='' (empty — no results shown)` confirms the empty-buffer guard fires correctly. `currentVersion=3 targetVersion=3` proves the v2→v3 migration completed on the prior run. Per-flow narrative for each of the 4 changes in the evidence file, plus a manual first-paint-timing measurement protocol (tap `שבת`, then tap `שלום`, compare the two `M5.3 first-paint: ms=N` outputs — expect within ~30 ms).
+
+**User-visible changes** (vs M5.2):
+- Empty buffer → blank center (no suggestion noise).
+- Long title's body H1 now matches what was tapped.
+- ResultsView never clips text at top/bottom; long titles wrap.
+- Tapping `שלום` no longer lags vs tapping `שבת`.
+
+**Artifact:** `wikiwatch-M5.3.prg` (158 892 bytes). Current head of `main`.
 
 ---
 
@@ -774,7 +833,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 146 tests pass at v0.M5.2
+& scripts\test.ps1     # 154 tests pass at v0.M5.3
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
