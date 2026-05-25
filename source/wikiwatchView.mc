@@ -1,5 +1,6 @@
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
@@ -24,8 +25,13 @@ import Toybox.WatchUi;
 //                      before fire); stopped + cleared in onHide
 class wikiwatchView extends WatchUi.View {
     private const _RIGHT_MARGIN = 100;
-    private const _INITIAL_LINES = 12;       // ~ 2 screens of body content
-    private const _INCREMENTAL_LINES = 6;    // smaller batches for follow-ups
+    // M5.3: bounded first-batch — shrank 12->5 so short and long articles
+    // first-paint in comparable wall-clock time. Per-batch work is dominated
+    // by dc.getTextWidthInPixels calls; 5 raw lines * ~10 words = ~50 calls,
+    // matching the "feels instant" baseline of short articles like שבת.
+    // Subsequent batches are smaller (4) so per-tick work stays predictable.
+    private const _INITIAL_LINES = 5;
+    private const _INCREMENTAL_LINES = 4;
     private const _LAYOUT_TICK_MS = 80;      // >= 50 ms (CIQ minimum)
 
     private var _body as String;
@@ -40,6 +46,8 @@ class wikiwatchView extends WatchUi.View {
     private var _screenHeight as Number;
     private var _leftMargin as Number;
     private var _middleWidth as Number;
+    private var _ctorTimeMs as Number;       // M5.3: first-paint timing
+    private var _firstPaintLogged as Boolean;
 
     function initialize(body as String) {
         View.initialize();
@@ -55,6 +63,8 @@ class wikiwatchView extends WatchUi.View {
         _screenHeight = 0;
         _leftMargin = 15;
         _middleWidth = 0;
+        _ctorTimeMs = System.getTimer();
+        _firstPaintLogged = false;
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -83,6 +93,17 @@ class wikiwatchView extends WatchUi.View {
         if (!_layoutComplete) {
             _drawLoadingMarker(dc);
             _scheduleNextTick();
+        }
+
+        // M5.3: log first-paint wall-clock time (constructor -> first render
+        // returning). Used to verify the bounded-first-batch invariant
+        // perceptually matches: e.g. שבת and שלום should be within ~30 ms.
+        if (!_firstPaintLogged) {
+            _firstPaintLogged = true;
+            var elapsed = System.getTimer() - _ctorTimeMs;
+            // Body's first ~24 chars (typically the H1 line incl. "# ").
+            var hint = (_body.length() > 24) ? _body.substring(0, 24) : _body;
+            System.println("M5.3 first-paint: ms=" + elapsed + " hint='" + hint + "'");
         }
     }
 

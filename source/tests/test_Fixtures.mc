@@ -14,12 +14,42 @@ function fixtures_manifestHasThirtyArticles(logger as Logger) as Boolean {
 }
 
 (:test)
-function fixtures_manifestVersionIsTwo(logger as Logger) as Boolean {
+function fixtures_manifestVersionIsThree(logger as Logger) as Boolean {
     // M5.2: version bump from 1 -> 2 lets FixtureInstaller detect that an
     // older (M4/M5/M5.1) install needs to be re-seeded with the new corpus.
+    // M5.3: bump to 3 because the shir-lashalom-long body changed (its H1
+    // now matches the long manifest title).
     var v = Fixtures.manifest()[:version] as Number;
     logger.debug("Fixtures.manifest version = " + v);
-    return v == 2;
+    return v == 3;
+}
+
+(:test)
+function fixtures_titlesMatchBodies(logger as Logger) as Boolean {
+    // M5.3: each fixture's BODY H1 must START WITH the manifest title.
+    // (The manifest title can be a prefix of a longer H1 — e.g. shalom's
+    // body H1 is "# שלום היא מילה שימושית בהחלט" but its manifest title is
+    // just "שלום". What we want to catch is the OLD bug where shir-
+    // lashalom-long's body had a shorter H1 than its manifest title —
+    // tapping the long suggestion opened an article whose H1 was just
+    // "# שיר לשלום".)
+    var arts = Fixtures.manifest()[:articles] as Array;
+    for (var i = 0; i < arts.size(); i++) {
+        var a = arts[i] as Dictionary;
+        var id = a[:id] as String;
+        var title = a[:title] as String;
+        var body = Fixtures.bodyOf(id);
+        if (body == null) {
+            logger.debug("article " + i + " (" + id + ") has null body");
+            return false;
+        }
+        var expectedPrefix = "# " + title;
+        if ((body as String).find(expectedPrefix) != 0) {
+            logger.debug("article " + i + " (" + id + ") title MISMATCH: body must start with '" + expectedPrefix + "'");
+            return false;
+        }
+    }
+    return true;
 }
 
 (:test)

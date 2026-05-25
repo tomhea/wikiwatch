@@ -64,3 +64,67 @@ function resultsLayout_moreArticlesTextNegativeReturnsNull(logger as Logger) as 
     logger.debug("moreArticlesText(5, 10) = " + r);
     return r == null;
 }
+
+// --- M5.3: ResultsLayout.blockAt (variable-height row hit-test) ---
+
+(:test)
+function resultsLayout_blockAtInsideFirstReturnsZero(logger as Logger) as Boolean {
+    var blocks = [
+        { :top => 0,  :height => 50 },
+        { :top => 66, :height => 30 }
+    ];
+    var r = ResultsLayout.blockAt(30, blocks);
+    logger.debug("blockAt(30, ...) = " + r);
+    return r != null && (r as Number) == 0;
+}
+
+(:test)
+function resultsLayout_blockAtInsideSecondReturnsOne(logger as Logger) as Boolean {
+    var blocks = [
+        { :top => 0,  :height => 50 },
+        { :top => 66, :height => 30 }
+    ];
+    var r = ResultsLayout.blockAt(80, blocks);
+    logger.debug("blockAt(80, ...) = " + r);
+    return r != null && (r as Number) == 1;
+}
+
+(:test)
+function resultsLayout_blockAtInGapReturnsNull(logger as Logger) as Boolean {
+    var blocks = [
+        { :top => 0,  :height => 50 },
+        { :top => 66, :height => 30 }
+    ];
+    // contentY=60 is in the gap between block 0 (ends at 50) and block 1 (starts at 66).
+    var r = ResultsLayout.blockAt(60, blocks);
+    logger.debug("blockAt(60 in gap) = " + r);
+    return r == null;
+}
+
+(:test)
+function resultsLayout_blockAtPastEndReturnsNull(logger as Logger) as Boolean {
+    var blocks = [
+        { :top => 0,  :height => 50 },
+        { :top => 66, :height => 30 }
+    ];
+    var r = ResultsLayout.blockAt(9999, blocks);
+    logger.debug("blockAt(9999 past end) = " + r);
+    return r == null;
+}
+
+(:test)
+function resultsLayout_blockAtNegativeReturnsNull(logger as Logger) as Boolean {
+    var blocks = [
+        { :top => 0, :height => 50 }
+    ];
+    var r = ResultsLayout.blockAt(-5, blocks);
+    logger.debug("blockAt(-5) = " + r);
+    return r == null;
+}
+
+(:test)
+function resultsLayout_blockAtEmptyArrayReturnsNull(logger as Logger) as Boolean {
+    var r = ResultsLayout.blockAt(0, []);
+    logger.debug("blockAt(0, []) = " + r);
+    return r == null;
+}
