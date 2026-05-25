@@ -28,14 +28,15 @@ function search_emptyQueryReturnsTopByPopularity(logger as Logger) as Boolean {
 }
 
 (:test)
-function search_emptyQueryCapsAtTwenty(logger as Logger) as Boolean {
+function search_emptyQueryCapsAtTopK(logger as Logger) as Boolean {
+    // M5.2: TOP_K was 20, bumped to 50. Verify the cap with 60 articles.
     var arts = [];
-    for (var i = 0; i < 25; i++) {
+    for (var i = 0; i < 60; i++) {
         arts.add({ :id => "id" + i, :title => "title" + i, :popularity => i });
     }
     var r = Search.rank("", arts);
-    logger.debug("25-articles empty-query size=" + r.size());
-    return r.size() == 20;
+    logger.debug("60-articles empty-query size=" + r.size());
+    return r.size() == 50;
 }
 
 (:test)
@@ -134,6 +135,40 @@ function search_hebrewSubstringMatch(logger as Logger) as Boolean {
     logger.debug("hebrew-prefix size=" + r.size() + " ids=" + _searchIdsOf(r));
     // "תור" is a prefix of "תורה"; "אלוהים" doesn't contain it.
     return r.size() == 1 && ((r[0] as Dictionary)[:id] as String).equals("torah");
+}
+
+// --- M5.2: Search.totalMatches ---
+
+(:test)
+function search_totalMatchesEmptyQueryReturnsArraySize(logger as Logger) as Boolean {
+    // Empty query matches every article (matches the empty-query branch of rank).
+    var arts = [];
+    for (var i = 0; i < 7; i++) {
+        arts.add({ :id => "x" + i, :title => "x" + i, :popularity => 0 });
+    }
+    var t = Search.totalMatches("", arts);
+    logger.debug("totalMatches('', size=7) = " + t);
+    return t == 7;
+}
+
+(:test)
+function search_totalMatchesCountsExactly(logger as Logger) as Boolean {
+    var arts = [
+        { :id => "a", :title => "שלום",  :popularity => 0 },  // matches ש
+        { :id => "b", :title => "שבת",   :popularity => 0 },  // matches ש
+        { :id => "c", :title => "תורה",  :popularity => 0 },  // no match
+        { :id => "d", :title => "אשת",   :popularity => 0 }   // substring contains ש (idx 1)
+    ];
+    var t = Search.totalMatches("ש", arts);
+    logger.debug("totalMatches('ש', 4 mixed) = " + t);
+    return t == 3;  // שלום, שבת, אשת
+}
+
+(:test)
+function search_totalMatchesEmptyArticlesReturnsZero(logger as Logger) as Boolean {
+    var t = Search.totalMatches("foo", []);
+    logger.debug("totalMatches('foo', []) = " + t);
+    return t == 0;
 }
 
 // Helper: render an array of article dicts as "[id1,id2,...]" for debug logs.

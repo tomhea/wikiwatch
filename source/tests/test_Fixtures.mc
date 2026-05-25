@@ -4,11 +4,38 @@ import Toybox.Test;
 // M4 tests for the Fixtures pure module. No Storage interaction.
 
 (:test)
-function fixtures_manifestHasThreeArticles(logger as Logger) as Boolean {
+function fixtures_manifestHasThirtyArticles(logger as Logger) as Boolean {
+    // M5.2: corpus expanded from 3 -> 30 fixture articles so the keyboard's
+    // "▼ N more" footer + full-screen ResultsView paths get exercised.
     var m = Fixtures.manifest();
     var arts = m[:articles] as Array;
     logger.debug("Fixtures.manifest articles.size = " + arts.size());
-    return arts.size() >= 3;
+    return arts.size() >= 30;
+}
+
+(:test)
+function fixtures_manifestVersionIsTwo(logger as Logger) as Boolean {
+    // M5.2: version bump from 1 -> 2 lets FixtureInstaller detect that an
+    // older (M4/M5/M5.1) install needs to be re-seeded with the new corpus.
+    var v = Fixtures.manifest()[:version] as Number;
+    logger.debug("Fixtures.manifest version = " + v);
+    return v == 2;
+}
+
+(:test)
+function fixtures_allTitlesStartWithShin(logger as Logger) as Boolean {
+    // M5.2: all 30 fixture titles start with the Hebrew letter ש so the
+    // M5 prefix-match path and the M5.1 "▼ N more" overflow are both
+    // exercised by typing ש in the keyboard.
+    var arts = Fixtures.manifest()[:articles] as Array;
+    for (var i = 0; i < arts.size(); i++) {
+        var t = (arts[i] as Dictionary)[:title] as String;
+        if (t == null || t.find("ש") != 0) {
+            logger.debug("article " + i + " title='" + t + "' does NOT start with ש");
+            return false;
+        }
+    }
+    return true;
 }
 
 (:test)

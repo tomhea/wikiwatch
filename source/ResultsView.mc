@@ -13,18 +13,28 @@ import Toybox.WatchUi;
 class ResultsView extends WatchUi.View {
     private const _ROW_HEIGHT = 60;
     private const _RIGHT_MARGIN = 20;
+    private const _FOOTER_HEIGHT = 30;        // M5.2: room for "X more articles fit"
+    private const _FOOTER_GAP = 6;            // gap above footer
 
     private var _ranked as Array<Dictionary>;
+    private var _totalMatches as Number;
     private var _scrollY as Number;
     private var _screenHeight as Number;
     private var _contentHeight as Number;
 
-    function initialize(ranked as Array<Dictionary>) {
+    // M5.2: totalMatches = un-capped count of articles that matched the
+    // query in the corpus. When totalMatches > ranked.size(), the footer
+    // "X more articles fit" tells the user there are matches the
+    // capped/displayed list excluded.
+    function initialize(ranked as Array<Dictionary>, totalMatches as Number) {
         View.initialize();
         _ranked = ranked;
+        _totalMatches = totalMatches;
         _scrollY = 0;
         _screenHeight = 0;
-        _contentHeight = ranked.size() * _ROW_HEIGHT;
+        var hasFooter = ResultsLayout.moreArticlesText(totalMatches, ranked.size()) != null;
+        _contentHeight = ranked.size() * _ROW_HEIGHT
+                       + (hasFooter ? _FOOTER_GAP + _FOOTER_HEIGHT : 0);
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -52,6 +62,19 @@ class ResultsView extends WatchUi.View {
             dc.drawText(rightX, ty, Graphics.FONT_SMALL, title,
                         Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
             i++;
+        }
+
+        // M5.2: "X more articles fit" footer (only when total > displayed).
+        var footerText = ResultsLayout.moreArticlesText(_totalMatches, n);
+        if (footerText != null) {
+            var footerTop = n * _ROW_HEIGHT + _FOOTER_GAP - _scrollY;
+            var footerBottom = footerTop + _FOOTER_HEIGHT;
+            if (footerBottom > 0 && footerTop < _screenHeight) {
+                dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(screenW / 2, footerTop + _FOOTER_HEIGHT / 2,
+                            Graphics.FONT_XTINY, footerText as String,
+                            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            }
         }
     }
 

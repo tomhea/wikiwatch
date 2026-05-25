@@ -2,8 +2,12 @@ import Toybox.Lang;
 import Toybox.System;
 
 // M4 glue: writes the Fixtures manifest + each fixture body into
-// Application.Storage on first launch. Idempotent (no-op on subsequent
-// launches once Manifest.isEmpty() returns false).
+// Application.Storage on first launch. M5.2 made it version-aware so
+// that bumping Fixtures.manifest()[:version] from N -> N+1 triggers
+// an automatic re-install on next launch (no manual sim wipe).
+//
+// Migration logic: install when Manifest.isEmpty() OR the persisted
+// :version differs from the fixture's :version. Otherwise no-op.
 //
 // Called once per app lifecycle from wikiwatchApp.onStart.
 //
@@ -11,11 +15,17 @@ import Toybox.System;
 // milestone (no UX change). Once-per-launch, harmless to leave in.
 module FixtureInstaller {
     function installIfEmpty() as Number {
-        var startEmpty = Manifest.isEmpty();
+        var current = Manifest.load();
+        var currentVersion = current[:version] as Number;
+        var targetVersion = Fixtures.manifest()[:version] as Number;
         var startIds = Manifest.articleIds();
-        System.println("M4 install: startEmpty=" + startEmpty + " startIds=" + startIds.toString());
-        if (!startEmpty) {
-            System.println("M4 install: SKIP (manifest already populated)");
+        var isEmpty = Manifest.isEmpty();
+        System.println("M4 install: startEmpty=" + isEmpty
+            + " currentVersion=" + currentVersion
+            + " targetVersion=" + targetVersion
+            + " startIds=" + startIds.toString());
+        if (!isEmpty && currentVersion == targetVersion) {
+            System.println("M4 install: SKIP (manifest already at target version)");
             return 0;
         }
         var m = Fixtures.manifest();

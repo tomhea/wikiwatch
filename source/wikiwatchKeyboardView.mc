@@ -11,19 +11,24 @@ import Toybox.WatchUi;
 // as 4 cells "0 1 _ 9" (middle blank). SPACE / BACKSPACE flash brighter
 // for ~200 ms via _pressedAngleDeg.
 class wikiwatchKeyboardView extends WatchUi.View {
-    // M5.1 suggestion-area geometry. Bigger taps: 1-line buffer band
-    // (was 2 lines in M5), 3 rows of FONT_TINY at 40 px step (was 5
-    // rows of FONT_XTINY at 22 px), and a "▼ N more" footer row that
-    // pushes the full-screen ResultsView. Must match the math in
-    // suggestionAt + moreHit + _drawCenterDisplay.
+    // M5.2 suggestion-area geometry. Restores the 2-line buffer band
+    // (M3.5/M5 style; bandH 64) at the cost of one suggestion row
+    // (MAX 3 -> 2). Suggestion rows stay big and tappable (FONT_TINY @
+    // 40 px). Adds a 1-px DK_GRAY separator centered horizontally
+    // between each consecutive row (and between the last row and the
+    // "▼ N more" footer). Must match the math in suggestionAt +
+    // moreHit + _drawCenterDisplay.
     private const _BAND_W = 200;
-    private const _BAND_H = 30;
-    private const _BAND_Y_OFFSET = -95;       // bandY = cy + _BAND_Y_OFFSET
+    private const _BAND_H = 64;                // 1-line in M5.1 -> 2-line
+    private const _BAND_Y_OFFSET = -110;       // bandY = cy + _BAND_Y_OFFSET
+    private const _BAND_CORNER_RADIUS = 8;     // M5.2: rounded edges
     private const _SUGGESTION_Y_START_OFFSET = 10;
     private const _SUGGESTION_LINE_STEP = 40;
-    private const _MAX_SUGGESTIONS = 3;
+    private const _MAX_SUGGESTIONS = 2;        // 3 in M5.1 -> 2 to fit 2-line buffer
     private const _MORE_ROW_OFFSET = 6;
     private const _MORE_ROW_HEIGHT = 22;
+    private const _SEPARATOR_WIDTH = 67;       // ~1/3 of _BAND_W
+    private const _SEPARATOR_COLOR = Graphics.COLOR_DK_GRAY;
 
     private var _buffer as String;
     private var _expanded as Dictionary?;
@@ -225,31 +230,33 @@ class wikiwatchKeyboardView extends WatchUi.View {
     }
 
     private function _drawCenterDisplay(dc as Dc, cx as Number, cy as Number) as Void {
-        // M5.1: 1-line buffer band (was 2 in M3.5/M5). bandH 64 -> 30 to
-        // give the suggestion area more room for bigger tap targets.
-        // Long buffers tail-truncate to one line — acceptable for typical
-        // search queries (1-4 chars).
+        // M5.2: 2-line buffer band restored (bandH=64, M3.5/M5 style).
+        // Suggestion area below now holds 2 big tappable FONT_TINY rows
+        // at 40 px step + optional "▼ N more" footer + thin separators.
         var bandX = cx - _BAND_W / 2;
         var bandY = cy + _BAND_Y_OFFSET;
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        dc.fillRectangle(bandX, bandY, _BAND_W, _BAND_H);
+        // M5.2: rounded corners for a softer "input box" look.
+        dc.fillRoundedRectangle(bandX, bandY, _BAND_W, _BAND_H, _BAND_CORNER_RADIUS);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
 
-        // Buffer text: take the LAST line of the char-wrap so long inputs
-        // show the most-recent tail.
+        // 2-line buffer wrap (M5 logic): show the LAST 2 lines of the
+        // char-by-char wrap so long inputs reveal the most recent tail
+        // while still showing one line of history.
         var lines = _wrapBufferIntoLines(dc, _buffer, Graphics.FONT_TINY, _BAND_W - 12);
-        var lastIdx = lines.size() - 1;
-        if (lastIdx >= 0) {
-            dc.drawText(bandX + _BAND_W - 6, bandY + _BAND_H / 2,
-                        Graphics.FONT_TINY, lines[lastIdx] as String,
+        var startIdx = (lines.size() > 2) ? (lines.size() - 2) : 0;
+        var rowH = _BAND_H / 2;
+        for (var li = startIdx; li < lines.size(); li++) {
+            var rowIdx = li - startIdx;
+            var lineY = bandY + rowIdx * rowH + rowH / 2;
+            dc.drawText(bandX + _BAND_W - 6, lineY, Graphics.FONT_TINY,
+                        lines[li] as String,
                         Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         }
 
-        // M5.1: render up to 3 real ranked suggestions in FONT_TINY, big
-        // tappable rows. Right-justified Hebrew titles vertically centered
-        // within each 40-px row. Light gray for contrast against the
-        // black background; the M5 dark-gray was too dim once the rows
-        // grew.
+        // M5.1/M5.2: render up to MAX_SUGGESTIONS real ranked suggestions
+        // in FONT_TINY, big tappable rows. Right-justified Hebrew titles
+        // vertically centered within each row.
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         var rightX = cx + _BAND_W / 2 - 4;
         var rowsTop = bandY + _BAND_H + _SUGGESTION_Y_START_OFFSET;
@@ -262,6 +269,21 @@ class wikiwatchKeyboardView extends WatchUi.View {
             dc.drawText(rightX, rowY, Graphics.FONT_TINY,
                         s[:title] as String,
                         Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
+
+        // M5.2: 1-px DK_GRAY separator (67 px wide, centered) drawn at
+        // the boundary BELOW each suggestion row when another row (or
+        // the more-footer) follows. Subtle visual divider so adjacent
+        // titles don't blend.
+        dc.setColor(_SEPARATOR_COLOR, Graphics.COLOR_TRANSPARENT);
+        var sepX1 = cx - _SEPARATOR_WIDTH / 2;
+        var sepX2 = cx + _SEPARATOR_WIDTH / 2;
+        for (var i = 0; i < sn; i++) {
+            var hasFollower = (i < sn - 1) || (_moreCount > 0);
+            if (hasFollower) {
+                var sepY = rowsTop + (i + 1) * _SUGGESTION_LINE_STEP;
+                dc.drawLine(sepX1, sepY, sepX2, sepY);
+            }
         }
 
         // M5.1: "▼ N more" footer row (only when there are more results

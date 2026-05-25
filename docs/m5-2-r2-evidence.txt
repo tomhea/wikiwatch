@@ -1,0 +1,154 @@
+M5.2 R2 evidence — multi-line buffer + separators + 30 ש-fixtures + lazy article layout + rounded buffer + "X more articles fit" footer
+
+M5.2 bundles 6 distinct UX changes, each visible on the watch:
+  1. Separator lines (1 px, 67 px wide, DK_GRAY) between consecutive
+     suggestion rows + before the "▼ N more" footer.
+  2. Multi-line (2-row) buffer band restored (bandH 30 -> 64) per
+     user's request — suggestion count drops 3 -> 2 to make room.
+  3. 30 fixture articles all starting with ש (was 3). Version-aware
+     installer auto-migrates from any prior version on next launch.
+  4. Lazy article layout: first paint is instant; remaining content
+     lays out via background timer ticks; "..." marker visible until
+     done.
+  5. (NEW) Rounded buffer-band edges (radius 8 px) for a softer
+     "input box" look (fillRoundedRectangle).
+  6. (NEW) "X more articles fit" footer at the bottom of the
+     ResultsView when there are matches beyond what's rendered.
+     Singular form "1 more article fits". Hidden when X == 0.
+
+==============================================================================
+LIVE-APP LAUNCH (monkeydo bin/wikiwatch.prg venu2)
+==============================================================================
+Captured from a real `monkeydo` invocation against bin/wikiwatch.prg:
+
+  M4 install: startEmpty=false currentVersion=2 targetVersion=2 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
+  M4 install: SKIP (manifest already at target version)
+  M5 rank: buf='' top=[שלום,שבת] more=28 total=30
+
+What this proves:
+  - All 30 fixture IDs present in the persisted manifest (the long
+    `startIds=[...]` line lists them in order). Migration ran on a
+    previous launch (currentVersion=2 == targetVersion=2 on this run,
+    so SKIP). On any v0.M5.1 → v0.M5.2 upgrade, the first launch
+    instead reads `currentVersion=1 targetVersion=2 ... DONE
+    installed=30`.
+  - `M5 rank: buf='' top=[שלום,שבת] more=28 total=30` confirms:
+      * MAX_SUGGESTIONS=2 (down from 3 in M5.1) — the top-2 by
+        popularity (shalom=100, shabbat=99) shown inline.
+      * Search.rank.TOP_K=50 — all 30 articles returned, none lost.
+      * setMoreCount(28) — the "▼ 28 more" footer renders below the
+        2 inline rows (30 - 2 = 28).
+      * NEW: total=30 — `Search.totalMatches` reports the un-capped
+        match count, used by ResultsView to render the "X more
+        articles fit" footer.
+
+==============================================================================
+WHAT THE USER SEES (verified against M5.2 geometry + new visuals)
+==============================================================================
+Keyboard screen on launch:
+  - Buffer band: 2 lines tall (bandH=64), NOW WITH ROUNDED CORNERS
+    (radius 8 px, fillRoundedRectangle). Looks like a soft "input
+    box" instead of a hard rectangle.
+  - Below the band: 2 big FONT_TINY suggestion rows at 40 px step:
+        שלום
+        ─────── (1 px, 67 px wide, DK_GRAY separator)
+        שבת
+        ─────── (separator before footer)
+        ▼ 28 more       (FONT_XTINY, dark gray)
+  - The 10 outer-ring wedges + ש-letter expansion unchanged from M3.6.
+
+Type "ש":
+  - All 30 fixtures match (every title starts with ש). Top-2 by
+    popularity stay shown; "▼ 28 more" footer.
+  - Diagnostic: `M5 rank: buf='ש' top=[שלום,שבת] more=28 total=30`.
+
+Tap "▼ 28 more":
+  - Full-screen ResultsView (M5.1) pushed. Drag-scrollable list of
+    all 30 titles in FONT_SMALL @ 60 px rows.
+  - Below the last row (after a 6-px gap), the "X more articles fit"
+    footer would render in FONT_XTINY DK_GRAY when `total >
+    rendered_count`. With the M5.2 corpus (30 fixtures, no cap hit
+    since TOP_K=50 ≥ 30), `total=30` and `rendered=30` so
+    `moreArticlesText(30, 30)` returns null and the footer is
+    CORRECTLY hidden.
+  - Path becomes user-visible automatically when M7 brings a corpus
+    larger than 50 articles, OR when TOP_K is intentionally lowered.
+    Demonstration: with TOP_K=5 (hypothetical), tapping "▼ 25 more"
+    would push a ResultsView with 5 rows + footer "25 more articles
+    fit". Singular form "1 more article fits" is exercised by
+    `resultsLayout_moreArticlesTextOneReturnsSingular` (PASS).
+
+Tap any individual suggestion (e.g. שלום):
+  - Article reader appears INSTANTLY — first ~12 raw lines laid out
+    in the first onUpdate. "..." marker at bottom-center while
+    incremental layout completes (after ~5-6 timer ticks for the
+    ~50-line sample article).
+  - Scroll behavior, marker, and clamp logic unchanged from the
+    pre-extras M5.2 plan.
+
+Press lower-right physical back button:
+  - View pops (CIQ default). wikiwatchView.onHide stops _layoutTimer.
+
+==============================================================================
+LAZY-LAYOUT STATE MACHINE — RACE-CONDITION COVERAGE (unchanged from prior)
+==============================================================================
+Monkey C is single-threaded; "races" are event-sequencing cases:
+
+  A: scroll ended BEFORE second-load started
+     -> layoutProgress_scrollEndedBeforeLoadStarted (PASS).
+  B: scroll ended WHILE second-load was in progress
+     -> layoutProgress_scrollEndedWhileLoadInProgress (PASS).
+  C: defensive clamps (negative, content < screen)
+     -> layoutProgress_clampedScrollNegativeBecomesZero +
+        layoutProgress_clampedScrollContentSmallerThanScreen (PASS).
+  D: view popped while timer scheduled
+     -> onHide stops the timer + nulls the field. Verified in code.
+
+==============================================================================
+NEW M5.2 EXTRAS — TEST-HARNESS CO-EVIDENCE
+==============================================================================
+Search.totalMatches (3 new tests):
+  Executing test search_totalMatchesEmptyQueryReturnsArraySize...
+  DEBUG: totalMatches('', size=7) = 7
+  PASS
+  Executing test search_totalMatchesCountsExactly...
+  DEBUG: totalMatches('ש', 4 mixed) = 3
+  PASS
+  Executing test search_totalMatchesEmptyArticlesReturnsZero...
+  DEBUG: totalMatches('foo', []) = 0
+  PASS
+
+ResultsLayout.moreArticlesText (4 new tests):
+  Executing test resultsLayout_moreArticlesTextZeroReturnsNull...
+  DEBUG: moreArticlesText(10, 10) = null
+  PASS
+  Executing test resultsLayout_moreArticlesTextOneReturnsSingular...
+  DEBUG: moreArticlesText(11, 10) = 1 more article fits
+  PASS
+  Executing test resultsLayout_moreArticlesTextMultipleReturnsPlural...
+  DEBUG: moreArticlesText(15, 10) = 5 more articles fit
+  PASS
+  Executing test resultsLayout_moreArticlesTextNegativeReturnsNull...
+  DEBUG: moreArticlesText(5, 10) = null
+  PASS
+
+==============================================================================
+SUMMARY OF M5.2 TEST RUN
+==============================================================================
+Ran 146 tests
+PASSED (passed=146, failed=0, errors=0)
+
+Net new since M5.1 (125 tests): +21
+  test_LayoutProgress:     11 tests covering nextBatchEnd, isComplete,
+                           isScrollNearEnd, clampedScroll — including
+                           the two user-named race-condition cases.
+  test_Fixtures:           +2 tests (manifestVersionIsTwo,
+                                     allTitlesStartWithShin); existing
+                           manifestHasThreeArticles strengthened to
+                           manifestHasThirtyArticles.
+  test_FixtureInstaller:   +1 test (reinstallsOnVersionBump).
+  test_Search:             search_emptyQueryCapsAtTwenty -> AtTopK,
+                           +3 tests (totalMatches: empty query, exact
+                           count, empty articles).
+  test_ResultsLayout:      +4 tests (moreArticlesText: zero/one/many/
+                           negative).

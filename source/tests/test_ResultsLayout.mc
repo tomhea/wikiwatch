@@ -33,3 +33,34 @@ function resultsLayout_rowIndexAtRespectsScroll(logger as Logger) as Boolean {
     logger.debug("rowIndexAt(30,120,60,5) = " + r);
     return r != null && (r as Number) == 2;
 }
+
+// --- M5.2: ResultsLayout.moreArticlesText ---
+
+(:test)
+function resultsLayout_moreArticlesTextZeroReturnsNull(logger as Logger) as Boolean {
+    var r = ResultsLayout.moreArticlesText(10, 10);
+    logger.debug("moreArticlesText(10, 10) = " + r);
+    return r == null;
+}
+
+(:test)
+function resultsLayout_moreArticlesTextOneReturnsSingular(logger as Logger) as Boolean {
+    var r = ResultsLayout.moreArticlesText(11, 10);
+    logger.debug("moreArticlesText(11, 10) = " + r);
+    return r != null && (r as String).equals("1 more article fits");
+}
+
+(:test)
+function resultsLayout_moreArticlesTextMultipleReturnsPlural(logger as Logger) as Boolean {
+    var r = ResultsLayout.moreArticlesText(15, 10);
+    logger.debug("moreArticlesText(15, 10) = " + r);
+    return r != null && (r as String).equals("5 more articles fit");
+}
+
+(:test)
+function resultsLayout_moreArticlesTextNegativeReturnsNull(logger as Logger) as Boolean {
+    // Defensive: displayed > total shouldn't happen but must be safe.
+    var r = ResultsLayout.moreArticlesText(5, 10);
+    logger.debug("moreArticlesText(5, 10) = " + r);
+    return r == null;
+}
