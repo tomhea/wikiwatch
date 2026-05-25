@@ -11,20 +11,25 @@ import Toybox.WatchUi;
 // as 4 cells "0 1 _ 9" (middle blank). SPACE / BACKSPACE flash brighter
 // for ~200 ms via _pressedAngleDeg.
 class wikiwatchKeyboardView extends WatchUi.View {
-    // M5 suggestion-area geometry. Must match the values used in
-    // _drawCenterDisplay below so suggestionAt() agrees with what gets
-    // rendered.
+    // M5.1 suggestion-area geometry. Bigger taps: 1-line buffer band
+    // (was 2 lines in M5), 3 rows of FONT_TINY at 40 px step (was 5
+    // rows of FONT_XTINY at 22 px), and a "▼ N more" footer row that
+    // pushes the full-screen ResultsView. Must match the math in
+    // suggestionAt + moreHit + _drawCenterDisplay.
     private const _BAND_W = 200;
-    private const _BAND_H = 64;
-    private const _BAND_Y_OFFSET = -110;     // bandY = cy + _BAND_Y_OFFSET
-    private const _SUGGESTION_Y_START_OFFSET = 6;
-    private const _SUGGESTION_LINE_STEP = 22;
-    private const _MAX_SUGGESTIONS = 5;
+    private const _BAND_H = 30;
+    private const _BAND_Y_OFFSET = -95;       // bandY = cy + _BAND_Y_OFFSET
+    private const _SUGGESTION_Y_START_OFFSET = 10;
+    private const _SUGGESTION_LINE_STEP = 40;
+    private const _MAX_SUGGESTIONS = 3;
+    private const _MORE_ROW_OFFSET = 6;
+    private const _MORE_ROW_HEIGHT = 22;
 
     private var _buffer as String;
     private var _expanded as Dictionary?;
     private var _pressedAngleDeg as Number?;
     private var _suggestions as Array<Dictionary>?;
+    private var _moreCount as Number;
 
     function initialize() {
         View.initialize();
@@ -32,6 +37,7 @@ class wikiwatchKeyboardView extends WatchUi.View {
         _expanded = null;
         _pressedAngleDeg = null;
         _suggestions = null;
+        _moreCount = 0;
     }
 
     function setBuffer(b as String) as Void {
@@ -65,6 +71,14 @@ class wikiwatchKeyboardView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
+    // M5.1: count of results NOT shown inline (= total ranked - 3 visible).
+    // Renders as a "▼ N more" footer row when > 0; tapping it pushes the
+    // full-screen ResultsView.
+    function setMoreCount(n as Number) as Void {
+        _moreCount = (n < 0) ? 0 : n;
+        WatchUi.requestUpdate();
+    }
+
     // M5: return the suggestion dict at the tapped (x, y), or null. The
     // suggestion area sits entirely within r < R_HIT_INNER (=131), so it
     // never overlaps the outer-ring wedge hit-test — no precedence
@@ -81,15 +95,32 @@ class wikiwatchKeyboardView extends WatchUi.View {
         var cy = settings.screenHeight / 2;
         var bandX = cx - _BAND_W / 2;
         if (x < bandX || x > bandX + _BAND_W) { return null; }
-        var lineY0 = cy + _BAND_Y_OFFSET + _BAND_H + _SUGGESTION_Y_START_OFFSET;
+        var rowsTop = cy + _BAND_Y_OFFSET + _BAND_H + _SUGGESTION_Y_START_OFFSET;
         for (var i = 0; i < n; i++) {
-            var top = lineY0 + i * _SUGGESTION_LINE_STEP - _SUGGESTION_LINE_STEP / 2;
+            var top = rowsTop + i * _SUGGESTION_LINE_STEP;
             var bottom = top + _SUGGESTION_LINE_STEP;
             if (y >= top && y < bottom) {
                 return suggestions[i] as Dictionary;
             }
         }
         return null;
+    }
+
+    // M5.1: true iff (x, y) falls inside the "▼ N more" footer row. The
+    // delegate calls this BEFORE suggestionAt + the wedge hit-test.
+    // Returns false if _moreCount is 0 (footer not rendered).
+    function moreHit(x as Number, y as Number) as Boolean {
+        if (_moreCount <= 0) { return false; }
+        var settings = System.getDeviceSettings();
+        var cx = settings.screenWidth / 2;
+        var cy = settings.screenHeight / 2;
+        var bandX = cx - _BAND_W / 2;
+        if (x < bandX || x > bandX + _BAND_W) { return false; }
+        var rowsBottom = cy + _BAND_Y_OFFSET + _BAND_H + _SUGGESTION_Y_START_OFFSET
+                       + _MAX_SUGGESTIONS * _SUGGESTION_LINE_STEP;
+        var moreTop = rowsBottom + _MORE_ROW_OFFSET;
+        var moreBottom = moreTop + _MORE_ROW_HEIGHT;
+        return y >= moreTop && y < moreBottom;
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -194,43 +225,54 @@ class wikiwatchKeyboardView extends WatchUi.View {
     }
 
     private function _drawCenterDisplay(dc as Dc, cx as Number, cy as Number) as Void {
-        // M3.5: 2-line band. bandW slightly wider (200), bandH 40 -> 64
-        // (room for 2 lines of FONT_TINY Hebrew, each ~30 px). bandY moved
-        // 15 px higher (was cy-95, now cy-110) per user "cut a bit from top".
-        // Text wraps onto a second line if it doesn't fit; last 2 lines shown.
-        var bandW = 200;
-        var bandH = 64;
-        var bandX = cx - bandW / 2;
-        var bandY = cy - 110;
+        // M5.1: 1-line buffer band (was 2 in M3.5/M5). bandH 64 -> 30 to
+        // give the suggestion area more room for bigger tap targets.
+        // Long buffers tail-truncate to one line — acceptable for typical
+        // search queries (1-4 chars).
+        var bandX = cx - _BAND_W / 2;
+        var bandY = cy + _BAND_Y_OFFSET;
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        dc.fillRectangle(bandX, bandY, bandW, bandH);
+        dc.fillRectangle(bandX, bandY, _BAND_W, _BAND_H);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
 
-        // Wrap the buffer into char-fit lines; show the last 2.
-        var lines = _wrapBufferIntoLines(dc, _buffer, Graphics.FONT_TINY, bandW - 12);
-        var startIdx = (lines.size() > 2) ? (lines.size() - 2) : 0;
-        var rowH = bandH / 2;
-        for (var i = startIdx; i < lines.size(); i++) {
-            var rowIdx = i - startIdx;
-            var lineY = bandY + rowIdx * rowH + rowH / 2;
-            dc.drawText(bandX + bandW - 6, lineY, Graphics.FONT_TINY, lines[i] as String,
+        // Buffer text: take the LAST line of the char-wrap so long inputs
+        // show the most-recent tail.
+        var lines = _wrapBufferIntoLines(dc, _buffer, Graphics.FONT_TINY, _BAND_W - 12);
+        var lastIdx = lines.size() - 1;
+        if (lastIdx >= 0) {
+            dc.drawText(bandX + _BAND_W - 6, bandY + _BAND_H / 2,
+                        Graphics.FONT_TINY, lines[lastIdx] as String,
                         Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         }
 
-        // M5: render up to 5 real ranked suggestions (Hebrew titles, right-
-        // justified). Empty / null _suggestions means the area is blank —
-        // happens on first frame before the delegate has seeded any.
+        // M5.1: render up to 3 real ranked suggestions in FONT_TINY, big
+        // tappable rows. Right-justified Hebrew titles vertically centered
+        // within each 40-px row. Light gray for contrast against the
+        // black background; the M5 dark-gray was too dim once the rows
+        // grew.
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        var rightX = cx + bandW / 2 - 4;
-        var lineY = bandY + bandH + _SUGGESTION_Y_START_OFFSET;
+        var rightX = cx + _BAND_W / 2 - 4;
+        var rowsTop = bandY + _BAND_H + _SUGGESTION_Y_START_OFFSET;
         var sugs = _suggestions;
         var sn = (sugs == null) ? 0 : (sugs as Array<Dictionary>).size();
         if (sn > _MAX_SUGGESTIONS) { sn = _MAX_SUGGESTIONS; }
         for (var i = 0; i < sn; i++) {
             var s = (sugs as Array<Dictionary>)[i] as Dictionary;
-            dc.drawText(rightX, lineY, Graphics.FONT_XTINY,
-                        s[:title] as String, Graphics.TEXT_JUSTIFY_RIGHT);
-            lineY = lineY + _SUGGESTION_LINE_STEP;
+            var rowY = rowsTop + i * _SUGGESTION_LINE_STEP + _SUGGESTION_LINE_STEP / 2;
+            dc.drawText(rightX, rowY, Graphics.FONT_TINY,
+                        s[:title] as String,
+                        Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
+
+        // M5.1: "▼ N more" footer row (only when there are more results
+        // than fit inline). Tap target for the full-screen ResultsView.
+        if (_moreCount > 0) {
+            dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+            var moreY = rowsTop + _MAX_SUGGESTIONS * _SUGGESTION_LINE_STEP
+                      + _MORE_ROW_OFFSET + _MORE_ROW_HEIGHT / 2;
+            dc.drawText(cx, moreY, Graphics.FONT_XTINY,
+                        "▼ " + _moreCount + " more",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
     }
 

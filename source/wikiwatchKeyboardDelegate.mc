@@ -19,13 +19,14 @@ import Toybox.WatchUi;
 // instance field — local Timer.Timer gets GC'd before the delay elapses.
 class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private const PRESS_FLASH_MS = 200;
-    private const MAX_SUGGESTIONS = 5;
+    private const MAX_SUGGESTIONS = 3;
 
     private var _view as wikiwatchKeyboardView;
     private var _buffer as String;
     private var _expanded as Dictionary?;
     private var _pressTimer as Timer.Timer?;
     private var _articles as Array<Dictionary>;
+    private var _ranked as Array<Dictionary>;
 
     function initialize(view as wikiwatchKeyboardView) {
         BehaviorDelegate.initialize();
@@ -35,6 +36,7 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _pressTimer = null;
         var arts = Manifest.load()[:articles] as Array<Dictionary>?;
         _articles = (arts == null) ? new [0] : arts;
+        _ranked = new [0];
         _recomputeSuggestions();
     }
 
@@ -56,6 +58,16 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
             }
             _expanded = null;
             _view.clearExpansion();
+            return true;
+        }
+
+        // M5.1: "▼ N more" footer row → push the full-screen ResultsView.
+        // Check before suggestionAt so the footer takes priority over an
+        // ambiguous overlap at the row boundary.
+        if (_view.moreHit(x, y)) {
+            System.println("M5.1 more tapped: pushing ResultsView with n=" + _ranked.size());
+            var results = new ResultsView(_ranked);
+            WatchUi.pushView(results, new ResultsDelegate(results), WatchUi.SLIDE_LEFT);
             return true;
         }
 
@@ -111,10 +123,14 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     }
 
     private function _recomputeSuggestions() as Void {
-        var ranked = Search.rank(_buffer, _articles);
-        var top = _takeTop(ranked, MAX_SUGGESTIONS);
-        System.println("M5 rank: buf='" + _buffer + "' top=" + _titlesOf(top));
+        _ranked = Search.rank(_buffer, _articles);
+        var top = _takeTop(_ranked, MAX_SUGGESTIONS);
+        var more = _ranked.size() - MAX_SUGGESTIONS;
+        if (more < 0) { more = 0; }
+        System.println("M5 rank: buf='" + _buffer + "' top=" + _titlesOf(top)
+                       + " more=" + more);
         _view.setSuggestions(top);
+        _view.setMoreCount(more);
     }
 
     private function _takeTop(arr as Array<Dictionary>, n as Number) as Array<Dictionary> {
