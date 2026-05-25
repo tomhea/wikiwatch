@@ -1,74 +1,86 @@
 import Toybox.Lang;
 import Toybox.Test;
 
-// M6 tests for WordHitTest.findWordInLine — the pure word-at-tap helper
-// behind wikiwatchView.findWordAt + wikiwatchDelegate.onHold.
+// M6.1 tests for WordHitTest.findWordPx — pixel-accurate word hit-test
+// (replaces the M6 char-count-approximation findWordInLine that caused
+// off-by-one bugs and a left-side dead zone).
 //
 // Contract:
-//   findWordInLine(contentX, text, lineRightX, charPx):
+//   findWordPx(contentX, words, wordPx, lineRightX, spacePx):
 //     - text is right-anchored at lineRightX (visual right edge).
-//     - charPx is an average per-char width (approximate; Hebrew chars
-//       vary 6-13 px on built-in fonts).
-//     - Returns the word at the tap (logical-order; for Hebrew RTL the
-//       FIRST logical word sits visually at the right edge).
-//     - Each word "owns" the trailing space so taps on whitespace snap
-//       to the preceding word.
-//     - Returns null when the tap is past the right edge, past the left
-//       edge of the text, or when text is empty.
+//     - words[i] visually occupies [rightEdge - wordPx[i], rightEdge]
+//       where rightEdge starts at lineRightX and shifts left by
+//       (wordPx[i] + spacePx) per word.
+//     - For Hebrew RTL, words[0] is logically first AND visually
+//       rightmost.
+//     - Each word "owns" the space to its LEFT (toward the next word)
+//       so taps on whitespace snap to the preceding word — natural
+//       for "I just read this word, then tapped just past it".
+//     - Returns null when the tap is past the right edge (contentX
+//       > lineRightX), past the left edge (contentX < leftmost word's
+//       left edge), or when words is empty.
 
-// Fixtures used by all tests:
-//   text = "abc def ghi" (11 chars; "abc" 0-2, ' ' 3, "def" 4-6, ' ' 7, "ghi" 8-10)
-//   lineRightX = 300, charPx = 10
-//   text_width_px ≈ 110; text_left_x ≈ 190
-//   Word ownership (incl. trailing space):
-//     "abc" → char 0..3
-//     "def" → char 4..7
-//     "ghi" → char 8..10
-
-(:test)
-function wordHitTest_returnsWordInsideText(logger as Logger) as Boolean {
-    // Tap at x=255 → char_index = (300-255)/10 = 4 → first word with end > 4
-    // is "def" (which owns chars 4..7).
-    var r = WordHitTest.findWordInLine(255, "abc def ghi", 300, 10);
-    logger.debug("findWordInLine(255, 'abc def ghi', 300, 10) = " + r);
-    return r != null && (r as String).equals("def");
-}
+// Common test fixture:
+//   words = ["abc", "def", "ghi"]  (3 words, each 30 px wide)
+//   spacePx = 10
+//   lineRightX = 300
+// Layout (visual, right -> left):
+//   abc: [270, 300]
+//   space: [260, 270]  (owned by abc)
+//   def: [230, 260]
+//   space: [220, 230]  (owned by def)
+//   ghi: [190, 220]
 
 (:test)
-function wordHitTest_returnsFirstWordAtRightEdge(logger as Logger) as Boolean {
-    // Tap at x=297 (close to rightX=300) → char_index = 0 → "abc".
-    var r = WordHitTest.findWordInLine(297, "abc def ghi", 300, 10);
-    logger.debug("findWordInLine(297, ...) = " + r);
+function wordHitTest_insideFirstWord(logger as Logger) as Boolean {
+    var r = WordHitTest.findWordPx(285, ["abc", "def", "ghi"], [30, 30, 30], 300, 10);
+    logger.debug("findWordPx(285) = " + r);
     return r != null && (r as String).equals("abc");
 }
 
 (:test)
-function wordHitTest_returnsLastWordAtLeftEdge(logger as Logger) as Boolean {
-    // Tap at x=192 → char_index = 10 → "ghi" (owns 8..10).
-    var r = WordHitTest.findWordInLine(192, "abc def ghi", 300, 10);
-    logger.debug("findWordInLine(192, ...) = " + r);
+function wordHitTest_insideMiddleWord(logger as Logger) as Boolean {
+    var r = WordHitTest.findWordPx(245, ["abc", "def", "ghi"], [30, 30, 30], 300, 10);
+    logger.debug("findWordPx(245) = " + r);
+    return r != null && (r as String).equals("def");
+}
+
+(:test)
+function wordHitTest_insideLastWord(logger as Logger) as Boolean {
+    // M6 bug 2: left-side taps returned null. With pixel-accurate math,
+    // a tap visually on the leftmost word correctly returns it.
+    var r = WordHitTest.findWordPx(205, ["abc", "def", "ghi"], [30, 30, 30], 300, 10);
+    logger.debug("findWordPx(205, last word) = " + r);
     return r != null && (r as String).equals("ghi");
 }
 
 (:test)
-function wordHitTest_returnsNullPastLeftEdge(logger as Logger) as Boolean {
-    // Tap at x=185 → char_index = 11 >= totalChars(11) → null.
-    var r = WordHitTest.findWordInLine(185, "abc def ghi", 300, 10);
-    logger.debug("findWordInLine(185, past-left) = " + r);
+function wordHitTest_onSpaceSnapsToPreviousWord(logger as Logger) as Boolean {
+    // Tap on the space [260, 270] between "abc" and "def" → "abc" (the
+    // word just read). M6 bug 1: char-count off-by-one made this return
+    // "def" instead.
+    var r = WordHitTest.findWordPx(265, ["abc", "def", "ghi"], [30, 30, 30], 300, 10);
+    logger.debug("findWordPx(265 on space) = " + r);
+    return r != null && (r as String).equals("abc");
+}
+
+(:test)
+function wordHitTest_pastRightEdge(logger as Logger) as Boolean {
+    var r = WordHitTest.findWordPx(305, ["abc", "def", "ghi"], [30, 30, 30], 300, 10);
+    logger.debug("findWordPx(305 past right) = " + r);
     return r == null;
 }
 
 (:test)
-function wordHitTest_returnsNullPastRightEdge(logger as Logger) as Boolean {
-    // Tap at x=305 > rightX(300) → null.
-    var r = WordHitTest.findWordInLine(305, "abc def ghi", 300, 10);
-    logger.debug("findWordInLine(305, past-right) = " + r);
+function wordHitTest_pastLeftEdge(logger as Logger) as Boolean {
+    var r = WordHitTest.findWordPx(185, ["abc", "def", "ghi"], [30, 30, 30], 300, 10);
+    logger.debug("findWordPx(185 past left) = " + r);
     return r == null;
 }
 
 (:test)
-function wordHitTest_returnsNullEmptyText(logger as Logger) as Boolean {
-    var r = WordHitTest.findWordInLine(250, "", 300, 10);
-    logger.debug("findWordInLine(empty text) = " + r);
+function wordHitTest_emptyWords(logger as Logger) as Boolean {
+    var r = WordHitTest.findWordPx(250, [], [], 300, 10);
+    logger.debug("findWordPx(empty words) = " + r);
     return r == null;
 }

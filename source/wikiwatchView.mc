@@ -155,6 +155,11 @@ class wikiwatchView extends WatchUi.View {
     // keyboard layer pre-filled with the tapped word. Returns null if the
     // tap is outside any laid-out line, outside the line's text, or if
     // _lines hasn't been initialized yet (e.g. first onUpdate hasn't run).
+    //
+    // M6.1: pixel-accurate. Uses the per-word px widths stored in each
+    // line dict (:words / :wordPx / :spacePx) via the new pure
+    // WordHitTest.findWordPx — fixes the M6 char-count off-by-one and
+    // left-side dead zone.
     function findWordAt(x as Number, y as Number) as String? {
         if (_lines == null) { return null; }
         var contentY = y + _scrollY;
@@ -164,37 +169,38 @@ class wikiwatchView extends WatchUi.View {
             var top = ln[:y] as Number;
             var height = ln[:h] as Number;
             if (contentY < top || contentY >= top + height) { continue; }
-            // Compute this line's right edge based on its justify mode
-            // (mirrors the onUpdate render code).
-            var text = ln[:text] as String;
-            var font = ln[:font];
+            // Pull pre-measured per-word px from the line dict.
+            var words = ln[:words] as Array<String>;
+            var wordPx = ln[:wordPx] as Array<Number>;
+            var spacePx = ln[:spacePx] as Number;
+            if (words == null || words.size() == 0) { return null; }
+            // Compute this line's exact right edge based on its justify
+            // mode (mirrors _renderVisibleLines). Use sum(wordPx) +
+            // (n-1)*spacePx for the EXACT rendered text width — replaces
+            // M6's char-count estimate (text.length() * charPx) that
+            // caused the off-by-one + left-side bugs.
             var w = ln[:w] as Number;
             var isH1 = ln[:isH1] as Boolean;
-            var charPx = _approxCharPx(font);
             var lineRightX;
             if (isH1 || w < _middleWidth) {
-                // Centered at centerX = screenW/2.
+                // Centered at screenW/2.
                 var centerX = _screenWidth / 2;
-                var textWidth = text.length() * charPx;
-                lineRightX = centerX + textWidth / 2;
+                var nWords = words.size();
+                var textPx = 0;
+                for (var twi = 0; twi < nWords; twi++) {
+                    textPx = textPx + (wordPx[twi] as Number);
+                }
+                if (nWords > 1) {
+                    textPx = textPx + (nWords - 1) * spacePx;
+                }
+                lineRightX = centerX + textPx / 2;
             } else {
                 // Right-justified at screenW - _RIGHT_MARGIN.
                 lineRightX = _screenWidth - _RIGHT_MARGIN;
             }
-            return WordHitTest.findWordInLine(x, text, lineRightX, charPx);
+            return WordHitTest.findWordPx(x, words, wordPx, lineRightX, spacePx);
         }
         return null;
-    }
-
-    // Per-font average char width estimate (Hebrew on built-in fonts; see
-    // M2 runtime probe in memory/project_snapshot.md). Approximate — wider
-    // letters (samekh, mem-sofit) and narrower (yud, vav) average out.
-    private function _approxCharPx(font as Graphics.FontType) as Number {
-        if (font == Graphics.FONT_LARGE)  { return 13; }
-        if (font == Graphics.FONT_MEDIUM) { return 11; }
-        if (font == Graphics.FONT_SMALL)  { return 9; }
-        if (font == Graphics.FONT_TINY)   { return 8; }
-        return 6;  // FONT_XTINY
     }
 
     private function _scheduleNextTick() as Void {
@@ -268,13 +274,27 @@ class wikiwatchView extends WatchUi.View {
                 } else {
                     w = widthsUsed[widthsUsed.size() - 1];
                 }
+                // M6.1: also measure per-word px for the SUB-LINE's words
+                // so findWordAt → WordHitTest.findWordPx can do pixel-
+                // accurate hit-test. Re-split the sub-line text (which
+                // is a join of N of the original words via wrapPx*) and
+                // measure each — straightforward since dc is in hand.
+                var subText = subs[j] as String;
+                var subWords = LineWrap.splitWords(subText);
+                var subWordPx = [];
+                for (var swi = 0; swi < subWords.size(); swi++) {
+                    subWordPx.add(dc.getTextWidthInPixels(subWords[swi] as String, font));
+                }
                 lines.add({
-                    :text => subs[j],
+                    :text => subText,
                     :font => font,
                     :y => y,
                     :h => fh,
                     :w => w,
-                    :isH1 => isH1
+                    :isH1 => isH1,
+                    :words => subWords,
+                    :wordPx => subWordPx,
+                    :spacePx => spacePx
                 });
                 y += fh + spacing;
             }
