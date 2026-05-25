@@ -40,6 +40,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M3.6 | `v0.M3.6` | `206e343` | 2026-05-24 | 132 KB | Flip final-form sub-buttons OUTWARD onto the outer ring (level-0 tier, ~9× bigger tap area) | 98 |
 | M4 | `v0.M4` | `00382a0` | 2026-05-24 | 138 KB | Storage layer — `Manifest` + `ArticleStore` + `Fixtures` + `FixtureInstaller`. R4-gated `setValue`. First-launch fixture install (3 Hebrew articles). No on-watch UX delta. | 112 |
 | M5 | `v0.M5` | `2df7c54` | 2026-05-24 | 143 KB | Live search — `Search.rank` (prefix > substring > popularity); keyboard center shows real ranked Hebrew titles instead of stubs; tap a suggestion to push the M2.x article reader. `wikiwatchView` becomes `initialize(body)`. | 122 |
+| M5.1 | `v0.M5.1` | `c15a8cf` | 2026-05-25 | 147 KB | Bigger suggestion taps (3×FONT_TINY @ 40 px, was 5×FONT_XTINY @ 22 px) + "▼ N more" footer that pushes a new full-screen scrollable `ResultsView` listing all top-20 in FONT_SMALL rows. New pure `ResultsLayout.rowIndexAt` for the hit-test math. | 125 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -633,7 +634,61 @@ Interactive flows (typing filters, tap-to-open) are described in the evidence fi
 
 **User-visible change:** before M5, the keyboard center showed 5 dummy `(suggestion N)` lines and tapping them did nothing. After M5, the center shows 3 real Hebrew titles (`שלום`, `תורה`, `שבת`) on launch; typing a Hebrew letter filters them live; tapping a line opens the M2.x article reader with that body (drag-scroll, double-tap-edge nav, all from M2.x preserved). Lower-right back button pops the reader and returns to the keyboard with the typed buffer still in place.
 
-**Artifact:** `wikiwatch-M5.prg` (142 556 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M5.prg` (142 556 bytes).
+
+---
+
+## M5.1 — Bigger suggestion taps + full-screen ResultsView for top-20 (tag `v0.M5.1`)
+
+Two pain points the user hit immediately on the simulator after M5 shipped:
+
+1. **Hard to tap.** The 5 suggestion rows rendered at `FONT_XTINY` (~15 px on real Venu 2, ~32 px on sim) with a 22 px y-step. Smaller than a finger's comfortable target (≥40 px) and visually overlapping on sim.
+2. **Capped at 5.** `Search.rank` returned top-20 but the delegate's `_takeTop(ranked, 5)` discarded 15. No way to see results 6–20.
+
+After offering 4 design options (single full-screen view, in-keyboard scroll, horizontal swipe pagination, or 3-big-rows + overflow), the user picked **3 big tappable rows in the keyboard center for the common case, plus a "▼ N more" row that pushes a full-screen scrollable `ResultsView` for the rest**. This mirrors the existing keyboard → article-reader push pattern, so no new architectural primitives.
+
+**What landed (pure module — `source/models/`):**
+- `ResultsLayout.mc` — `rowIndexAt(y, scrollY, rowHeight, rowCount) as Number?`. Pure geometry for `ResultsView.rowAt` hit-test. Maps screen y + scroll offset → row index, returns null off-list or for non-positive args. Only imports `Toybox.Lang`.
+
+**New views** (mirror the existing `wikiwatchView` / `wikiwatchDelegate` pattern; live flat under `source/` like the keyboard views):
+- `ResultsView.mc` — full-screen scrollable list. Constructor takes the ranked array. Renders FONT_SMALL Hebrew titles right-justified at 60 px row step. Drag-scroll via `scrollBy` (M2.1 onDrag pattern). Skip-ahead optimization in `onUpdate` (M2.4 pattern). Public: `scrollBy`, `rowAt`, `getScreenHeight`.
+- `ResultsDelegate.mc` — `onTap` → `rowAt` → push `wikiwatchView(ArticleStore.bodyOf(id))`. `onDrag` → live scroll. `onBack` returns `false` so CIQ pops back to keyboard.
+
+**KeyboardView geometry refactor** (`source/wikiwatchKeyboardView.mc`):
+
+| Const | M5 | M5.1 |
+| --- | --- | --- |
+| `_BAND_H` | 64 (2-line buffer) | 30 (1-line) |
+| `_BAND_Y_OFFSET` | −110 | −95 |
+| `_SUGGESTION_Y_START_OFFSET` | 6 | 10 |
+| `_SUGGESTION_LINE_STEP` | 22 | 40 |
+| `_MAX_SUGGESTIONS` | 5 | 3 |
+| `_MORE_ROW_OFFSET` | n/a | 6 |
+| `_MORE_ROW_HEIGHT` | n/a | 22 |
+
+`_drawCenterDisplay` renders FONT_TINY suggestion rows (was FONT_XTINY) plus a conditional "▼ N more" FONT_XTINY footer. Buffer band shows the LAST line of the char-wrap (was 2-line tail). New `_moreCount` field + `setMoreCount(n)` setter + `moreHit(x, y)` predicate.
+
+**KeyboardDelegate wiring** (`source/wikiwatchKeyboardDelegate.mc`):
+- `MAX_SUGGESTIONS` 5→3. New `_ranked` field caches the full `Search.rank` result (M5 discarded after taking top-5).
+- `_recomputeSuggestions` calls `setSuggestions(top3)` + `setMoreCount(_ranked.size() − 3)`. Diagnostic line gains `more=N` suffix.
+- `onTap` checks `_view.moreHit(x, y)` BEFORE `suggestionAt`; non-null → `WatchUi.pushView(new ResultsView(_ranked), new ResultsDelegate(results), WatchUi.SLIDE_LEFT)`.
+
+**Test changes (+3, 122 → 125):**
+- `test_ResultsLayout.mc` — 3 tests: inside-top-row-returns-zero, outside-list-returns-null, respects-scroll. Exercise the pure `rowIndexAt` math.
+
+**R1 evidence:** `docs/m5-1-fail.txt` (3 FAIL on stub returning −1) → `docs/m5-1-pass.txt` (125/125 PASS).
+
+**R2 evidence:** `docs/m5-1-r2-evidence.txt` captured from a live `monkeydo bin/wikiwatch.prg venu2` invocation:
+
+```
+M5 rank: buf='' top=[שלום,תורה,שבת] more=0
+```
+
+`more=0` is correct for the 3-fixture corpus — the footer is dormant when `ranked.size() ≤ 3`. The full M5.1 path (footer rendering + tap → push `ResultsView` + drag-scroll + tap-to-open) becomes user-visible automatically when M7 brings a corpus larger than 3 articles. The geometry of the dormant path is unit-tested via `ResultsLayout`.
+
+**User-visible change:** before M5.1, the 5 cramped FONT_XTINY rows were hard to tap and there was no path past the top 5. After M5.1, 3 big comfortably-tappable FONT_TINY rows show in the keyboard center, plus a "▼ N more" footer (when there are more) that opens a full-screen scrollable list of all top-20 in FONT_SMALL rows. Tap-to-open works from both the inline rows and the full-screen list; back from the article reader returns to whichever view pushed it.
+
+**Artifact:** `wikiwatch-M5.1.prg` (147 052 bytes). Current head of `main`.
 
 ---
 
@@ -653,7 +708,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 122 tests pass at v0.M5
+& scripts\test.ps1     # 125 tests pass at v0.M5.1
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
