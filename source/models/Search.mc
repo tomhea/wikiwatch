@@ -20,7 +20,26 @@ import Toybox.Lang;
 // up to a few thousand articles. If M7 grows to tens of thousands and
 // per-keystroke rank lags, a per-prefix index can be added in M5.x.
 module Search {
-    const TOP_K = 20;
+    // M5.2: bumped 20 -> 50 to fit the 30-fixture corpus without losing
+    // any articles to the cap. The cap still exists as a safety net for
+    // future huge corpora (M7+); ResultsView paginates whatever fits.
+    const TOP_K = 50;
+
+    // M5.2: count of articles that match `query` BEFORE the TOP_K cap.
+    // Empty query matches every article (consistent with rank's empty-query
+    // branch returning top-K of the whole corpus). Used by KeyboardDelegate
+    // to give ResultsView the un-capped match total, so the
+    // "X more articles fit" footer can be rendered when total > displayed.
+    function totalMatches(query as String, articles as Array<Dictionary>) as Number {
+        var n = articles.size();
+        if (query.length() == 0) { return n; }
+        var count = 0;
+        for (var i = 0; i < n; i++) {
+            var title = (articles[i] as Dictionary)[:title] as String;
+            if (title.find(query) != null) { count++; }
+        }
+        return count;
+    }
 
     function rank(query as String, articles as Array<Dictionary>) as Array<Dictionary> {
         var n = articles.size();

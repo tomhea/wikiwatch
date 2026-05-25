@@ -1,27 +1,56 @@
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.Timer;
 import Toybox.WatchUi;
 
+// M2.x article reader, refactored in M5.2 for lazy / progressive layout:
+// the first onUpdate lays out a small batch of raw lines (~2 screens
+// worth) so first paint is nearly instant, then a Timer wakes the view
+// to lay out more batches in the background. Per-word pixel widths
+// (dc.getTextWidthInPixels) can only be measured inside onUpdate where
+// dc is valid, so the timer just calls WatchUi.requestUpdate() to
+// trigger another onUpdate where the next batch can be measured + laid
+// out. Scroll clamps to whatever's currently laid-out; a "..." marker
+// at the bottom of the screen tells the user more content is loading.
+//
+// State invariants (held across onUpdate / timer ticks):
+//   _rawLines        — parsed once, never mutated
+//   _lines           — appended to incrementally per batch
+//   _layoutCursor    — next raw-line index to lay out
+//   _layoutY         — y-offset where the next sub-line will be placed
+//   _contentHeight   — same as _layoutY at end of last batch
+//   _layoutComplete  — true once _layoutCursor reaches _rawLines.size()
+//   _layoutTimer     — instance field per CIQ quirk (local Timer GC'd
+//                      before fire); stopped + cleared in onHide
 class wikiwatchView extends WatchUi.View {
     private const _RIGHT_MARGIN = 100;
+    private const _INITIAL_LINES = 12;       // ~ 2 screens of body content
+    private const _INCREMENTAL_LINES = 6;    // smaller batches for follow-ups
+    private const _LAYOUT_TICK_MS = 80;      // >= 50 ms (CIQ minimum)
 
     private var _body as String;
+    private var _rawLines as Array<String>?;
+    private var _lines as Array<Dictionary>?;
+    private var _layoutCursor as Number;
+    private var _layoutY as Number;
+    private var _layoutComplete as Boolean;
+    private var _layoutTimer as Timer.Timer?;
     private var _scrollY as Number;
-    private var _lines as Array?;
     private var _contentHeight as Number;
     private var _screenHeight as Number;
     private var _leftMargin as Number;
     private var _middleWidth as Number;
 
-    // M5: body is now a constructor parameter so the keyboard delegate
-    // can push different articles. Pre-M5 the view always rendered
-    // Strings.sampleArticle(); now the caller hands in the body String
-    // (typically from ArticleStore.bodyOf(id)).
     function initialize(body as String) {
         View.initialize();
         _body = body;
-        _scrollY = 0;
+        _rawLines = null;
         _lines = null;
+        _layoutCursor = 0;
+        _layoutY = 8;
+        _layoutComplete = false;
+        _layoutTimer = null;
+        _scrollY = 0;
         _contentHeight = 0;
         _screenHeight = 0;
         _leftMargin = 15;
@@ -29,57 +58,50 @@ class wikiwatchView extends WatchUi.View {
     }
 
     function onUpdate(dc as Dc) as Void {
-        if (_lines == null) {
-            _layout(dc);
+        // Lazy init on first onUpdate (we need dc to compute middleWidth).
+        if (_rawLines == null) {
+            _rawLines = _splitLines(_body);
+            _lines = [];
+            _middleWidth = Layout.middleWidth(dc.getWidth(), _leftMargin, _RIGHT_MARGIN);
         }
         _screenHeight = dc.getHeight();
-        var screenW = dc.getWidth();
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        dc.clear();
-        var centerX = screenW / 2;
-        // Right anchor sits _RIGHT_MARGIN px INSIDE the right screen edge so the
-        // leaving a wide clean gap near the physical Back / Up buttons.
-        // Combined with _middleWidth = screenW - _leftMargin - _RIGHT_MARGIN,
-        // a full-width middle line's visual left
-        // edge lands exactly at _leftMargin = 15 px.
-        var rightAnchorX = screenW - _RIGHT_MARGIN;
 
-        var lines = _lines as Array<Dictionary>;
-        var n = lines.size();
-        // Skip ahead to the first line whose bottom edge is in view.
-        var i = 0;
-        while (i < n) {
-            var ln = lines[i] as Dictionary;
-            var lh = ln[:h] as Number;
-            var screenY = (ln[:y] as Number) - _scrollY;
-            if (screenY + lh > 0) { break; }
-            i++;
+        // Lay out the next batch (firstPass gets the bigger initial budget).
+        var totalRaw = (_rawLines as Array<String>).size();
+        var firstPass = (_layoutCursor == 0);
+        var batch = firstPass ? _INITIAL_LINES : _INCREMENTAL_LINES;
+        var newCursor = LayoutProgress.nextBatchEnd(_layoutCursor, totalRaw, batch);
+        if (newCursor > _layoutCursor) {
+            _layoutBatchRange(dc, _layoutCursor, newCursor);
+            _layoutCursor = newCursor;
         }
-        // Draw until past the bottom of the viewport. Early-exit on the
-        // first line below the viewport - the lines array is monotonically
-        // ordered by y, so anything after is also below the viewport.
-        while (i < n) {
-            var ln = lines[i] as Dictionary;
-            var screenY = (ln[:y] as Number) - _scrollY;
-            if (screenY >= _screenHeight) { break; }
-            var w = ln[:w] as Number;
-            if (ln[:isH1] as Boolean) {
-                dc.drawText(centerX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_CENTER);
-            } else if (w < _middleWidth) {
-                dc.drawText(centerX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_CENTER);
-            } else {
-                dc.drawText(rightAnchorX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_RIGHT);
-            }
-            i++;
+        _layoutComplete = LayoutProgress.isComplete(_layoutCursor, totalRaw);
+
+        _renderVisibleLines(dc);
+
+        // Loading marker + schedule next tick while incremental layout has work.
+        if (!_layoutComplete) {
+            _drawLoadingMarker(dc);
+            _scheduleNextTick();
         }
     }
 
+    // Wake-up callback: re-enter onUpdate where dc is valid for the next batch.
+    function onLayoutTimer() as Void {
+        _layoutTimer = null;
+        WatchUi.requestUpdate();
+    }
+
+    function onHide() as Void {
+        if (_layoutTimer != null) {
+            (_layoutTimer as Timer.Timer).stop();
+            _layoutTimer = null;
+        }
+        View.onHide();
+    }
+
     function scrollBy(delta as Number) as Void {
-        _scrollY += delta;
-        var maxScroll = _contentHeight - _screenHeight;
-        if (maxScroll < 0) { maxScroll = 0; }
-        if (_scrollY < 0) { _scrollY = 0; }
-        if (_scrollY > maxScroll) { _scrollY = maxScroll; }
+        _scrollY = LayoutProgress.clampedScroll(_scrollY + delta, _contentHeight, _screenHeight);
         WatchUi.requestUpdate();
     }
 
@@ -89,9 +111,7 @@ class wikiwatchView extends WatchUi.View {
     }
 
     function scrollToBottom() as Void {
-        var maxScroll = _contentHeight - _screenHeight;
-        if (maxScroll < 0) { maxScroll = 0; }
-        _scrollY = maxScroll;
+        _scrollY = LayoutProgress.clampedScroll(_contentHeight, _contentHeight, _screenHeight);
         WatchUi.requestUpdate();
     }
 
@@ -99,43 +119,32 @@ class wikiwatchView extends WatchUi.View {
         return _screenHeight;
     }
 
-    // M2.8 layout. Per-raw strategy unchanged from M2.5:
-    //   firstRaw (H1) -> widths [narrowEdge, narrowSecond, middleWidth, ...]
-    //                    every sub-line tagged :isH1 => true
-    //   middleRaws    -> widths [middleWidth]
-    //   lastRaw       -> LineWrap.wrapWithNarrowTail(...) so the absolute LAST
-    //                    sub-line is at 160 px and the PENULTIMATE at 250 px.
+    private function _scheduleNextTick() as Void {
+        if (_layoutTimer != null) { return; }
+        _layoutTimer = new Timer.Timer();
+        (_layoutTimer as Timer.Timer).start(method(:onLayoutTimer), _LAYOUT_TICK_MS, false);
+    }
+
+    // Lay out raw lines in [startIdx, endIdx). Uses dc.getTextWidthInPixels
+    // for per-word px measurement (M2.8 px-based wrap). Appends sub-line
+    // dicts to _lines and advances _layoutY / _contentHeight.
     //
-    // Justify (in onUpdate, M2.4 hybrid pattern, with the M2.5 :isH1
-    // override preserved):
-    //   :isH1 sub-line                  -> CENTER at screenW/2
-    //   non-H1 narrow (w < middleWidth) -> CENTER at screenW/2 (the last 2
-    //                                       sub-lines of the last raw at 160 /
-    //                                       250 - stays inside the chord at
-    //                                       the bottom of the round screen)
-    //   non-H1 middle (w == middleWidth)-> RIGHT-justify at screenW -
-    //                                       _RIGHT_MARGIN (Hebrew first-
-    //                                       codepoint sits at the stable
-    //                                       right edge per line)
-    //
-    // Margins (M2.8): _leftMargin = 15 (clean left), _RIGHT_MARGIN = 100 (wide clean gap near the physical Back/Up buttons; text
-    // right edge stays 100 px clear). _middleWidth comes
-    // from Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN).
-    private function _layout(dc as Dc) as Void {
-        var rawLines = _splitLines(_body);
-        var screenW = dc.getWidth();
+    // The "narrow tail" branch only fires when this batch reaches the
+    // ABSOLUTE last raw line — which means the bottom paragraph keeps its
+    // 250 / 160 px taper regardless of how the layout was batched.
+    private function _layoutBatchRange(dc as Dc, startIdx as Number, endIdx as Number) as Void {
+        var rawLines = _rawLines as Array<String>;
+        var lines = _lines as Array<Dictionary>;
+        var totalRaw = rawLines.size();
+        var y = _layoutY;
         var spacing = 4;
         var sectionGap = 4;
         var narrowEdge = 160;
         var narrowSecond = 250;
-        _middleWidth = Layout.middleWidth(screenW, _leftMargin, _RIGHT_MARGIN);
+        var firstWidths = [narrowEdge, narrowSecond, _middleWidth];
+        var middleOnly = [_middleWidth];
 
-        // M2.8 (option B): build per-raw meta with per-word pixel widths so
-        // the wrap can pack by actual rendered px (not char-count estimate).
-        // splitWords + per-word getTextWidthInPixels happens once per raw line
-        // here; the lazy _layout cache makes the cost a one-shot.
-        var meta = [];
-        for (var i = 0; i < rawLines.size(); i++) {
+        for (var i = startIdx; i < endIdx; i++) {
             var token = MarkdownTokens.parse(rawLines[i] as String);
             var font = _fontForLevel(token[:level] as Number);
             var fh = dc.getFontHeight(font);
@@ -146,19 +155,7 @@ class wikiwatchView extends WatchUi.View {
                 wordPx.add(dc.getTextWidthInPixels(words[wi] as String, font));
             }
             var spacePx = dc.getTextWidthInPixels(" ", font);
-            meta.add({ :token => token, :font => font, :fh => fh, :words => words, :wordPx => wordPx, :spacePx => spacePx });
-        }
 
-        var firstWidths = [narrowEdge, narrowSecond, _middleWidth];
-        var middleOnly = [_middleWidth];
-
-        _lines = [];
-        var y = 8;
-        for (var i = 0; i < meta.size(); i++) {
-            var m = meta[i] as Dictionary;
-            var words = m[:words] as Array<String>;
-            var wordPx = m[:wordPx] as Array<Number>;
-            var spacePx = m[:spacePx] as Number;
             var subs;
             var perSubWidth = null;
             var widthsUsed;
@@ -166,7 +163,7 @@ class wikiwatchView extends WatchUi.View {
             if (i == 0) {
                 subs = LineWrap.wrapPxToWidths(words, wordPx, spacePx, firstWidths, 0);
                 widthsUsed = firstWidths;
-            } else if (i == meta.size() - 1) {
+            } else if (i == totalRaw - 1) {
                 subs = LineWrap.wrapPxWithNarrowTail(words, wordPx, spacePx, _middleWidth, narrowSecond, narrowEdge);
                 perSubWidth = [];
                 var sCount = subs.size();
@@ -193,19 +190,64 @@ class wikiwatchView extends WatchUi.View {
                 } else {
                     w = widthsUsed[widthsUsed.size() - 1];
                 }
-                _lines.add({
+                lines.add({
                     :text => subs[j],
-                    :font => m[:font],
+                    :font => font,
                     :y => y,
-                    :h => m[:fh] as Number,
+                    :h => fh,
                     :w => w,
                     :isH1 => isH1
                 });
-                y += (m[:fh] as Number) + spacing;
+                y += fh + spacing;
             }
             y += sectionGap;
         }
+        _layoutY = y;
         _contentHeight = y;
+    }
+
+    private function _renderVisibleLines(dc as Dc) as Void {
+        var screenW = dc.getWidth();
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        dc.clear();
+        var centerX = screenW / 2;
+        var rightAnchorX = screenW - _RIGHT_MARGIN;
+
+        var lines = _lines as Array<Dictionary>;
+        var n = lines.size();
+        // M2.4 skip-ahead.
+        var i = 0;
+        while (i < n) {
+            var ln = lines[i] as Dictionary;
+            var lh = ln[:h] as Number;
+            var screenY = (ln[:y] as Number) - _scrollY;
+            if (screenY + lh > 0) { break; }
+            i++;
+        }
+        // M2.4 early-exit on first off-bottom line.
+        while (i < n) {
+            var ln = lines[i] as Dictionary;
+            var screenY = (ln[:y] as Number) - _scrollY;
+            if (screenY >= _screenHeight) { break; }
+            var w = ln[:w] as Number;
+            if (ln[:isH1] as Boolean) {
+                dc.drawText(centerX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_CENTER);
+            } else if (w < _middleWidth) {
+                dc.drawText(centerX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_CENTER);
+            } else {
+                dc.drawText(rightAnchorX, screenY, ln[:font], ln[:text] as String, Graphics.TEXT_JUSTIFY_RIGHT);
+            }
+            i++;
+        }
+    }
+
+    // "..." marker drawn at the bottom of the screen while incremental
+    // layout still has work. Disappears once _layoutComplete is true.
+    private function _drawLoadingMarker(dc as Dc) as Void {
+        var screenW = dc.getWidth();
+        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenW / 2, _screenHeight - 18, Graphics.FONT_XTINY, "...",
+                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
     private function _fontForLevel(level as Number) as Graphics.FontType {
