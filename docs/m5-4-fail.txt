@@ -6,63 +6,63 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test articleStore_putGetRoundtrip...
-DEBUG (00:53): put=true back len=26
+DEBUG (00:51): put=true back len=26
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test articleStore_bodyOfMissingReturnsNull...
-DEBUG (00:53): bodyOf('does-not-exist') = null
+DEBUG (00:51): bodyOf('does-not-exist') = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test articleStore_putBodyOverwrites...
-DEBUG (00:53): after-overwrite = 'second'
+DEBUG (00:51): after-overwrite = 'second'
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test doubleTap_noPreviousTapReturnsFalse...
-DEBUG (00:53): noPrev: isDoubleTap(0,0,100,50,300,80) = false
+DEBUG (00:51): noPrev: isDoubleTap(0,0,100,50,300,80) = false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test doubleTap_timeTooFarApartReturnsFalse...
-DEBUG (00:53): timeFar: isDoubleTap(100,50,600,50,300,80) = false
+DEBUG (00:51): timeFar: isDoubleTap(100,50,600,50,300,80) = false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test doubleTap_yTooFarApartReturnsFalse...
-DEBUG (00:53): yFar: isDoubleTap(100,50,200,250,300,80) = false
+DEBUG (00:51): yFar: isDoubleTap(100,50,200,250,300,80) = false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test doubleTap_withinBothWindowsReturnsTrue...
-DEBUG (00:53): inWindow: isDoubleTap(100,50,250,70,300,80) = true
+DEBUG (00:51): inWindow: isDoubleTap(100,50,250,70,300,80) = true
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test doubleTap_negativeTimeDeltaReturnsFalse...
-DEBUG (00:53): negDelta: isDoubleTap(500,50,100,50,300,80) = false
+DEBUG (00:51): negDelta: isDoubleTap(500,50,100,50,300,80) = false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test doubleTap_intervalBoundaryIsInclusive...
-DEBUG (00:53): boundary: at=400ms -> true, past=401ms -> false
+DEBUG (00:51): boundary: at=400ms -> true, past=401ms -> false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -71,7 +71,7 @@ M5 rank: buf='' (empty — no results shown)
 Executing test installer_freshInstallPopulatesManifest...
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
-DEBUG (00:53): install n=30 ids=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema] firstBodyLen=2058
+DEBUG (00:51): install n=30 ids=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema] firstBodyLen=2058
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
@@ -82,7 +82,7 @@ M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
-DEBUG (00:53): first=30 second=0
+DEBUG (00:51): first=30 second=0
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
@@ -91,21 +91,21 @@ M5 rank: buf='' (empty — no results shown)
 Executing test installer_reinstallsOnVersionBump...
 M4 install: startEmpty=false currentVersion=1 targetVersion=3 startIds=[stale]
 M4 install: DONE installed=30 of 30
-DEBUG (00:53): after-version-bump n=30 size=30 firstId=shalom
+DEBUG (00:51): after-version-bump n=30 size=30 firstId=shalom
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test fixtures_manifestHasThirtyArticles...
-DEBUG (00:53): Fixtures.manifest articles.size = 30
+DEBUG (00:51): Fixtures.manifest articles.size = 30
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test fixtures_manifestVersionIsThree...
-DEBUG (00:53): Fixtures.manifest version = 3
+DEBUG (00:51): Fixtures.manifest version = 3
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -130,295 +130,295 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test fixtures_bodyOfKnownReturnsNonEmpty...
-DEBUG (00:53): bodyOf('shalom') len = 2058
+DEBUG (00:51): bodyOf('shalom') len = 2058
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendToEmpty...
-DEBUG (00:53): append('', 'ש') = 'ש'
+DEBUG (00:51): append('', 'ש') = 'ש'
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendHebrew...
-DEBUG (00:53): append('ש', '�?') = 'ש�?'
+DEBUG (00:51): append('ש', '�?') = 'ש�?'
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendSpace...
-DEBUG (00:53): append('ש', ' ') = 'ש '
+DEBUG (00:51): append('ש', ' ') = 'ש '
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test inputbuf_popLastFromTwoChars...
-DEBUG (00:53): popLast('ש�?') = 'ש'
+DEBUG (00:51): popLast('ש�?') = 'ש'
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test inputbuf_popLastFromEmpty...
-DEBUG (00:53): popLast('') = ''
+DEBUG (00:51): popLast('') = ''
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test inputbuf_clearReturnsEmpty...
-DEBUG (00:53): clear('ש�?ו�?') = ''
+DEBUG (00:51): clear('ש�?ו�?') = ''
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonsReturns10Wedges...
-DEBUG (00:53): buttons.size=10
+DEBUG (00:51): buttons.size=10
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonZeroIsSpace...
-DEBUG (00:53): [0] label=_ type=symbol (348) angle=0
+DEBUG (00:51): [0] label=_ type=symbol (348) angle=0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonOneIsBackspace...
-DEBUG (00:53): [1] label=X type=symbol (346) angle=36
+DEBUG (00:51): [1] label=X type=symbol (346) angle=36
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonTwoIsAlefGroup...
-DEBUG (00:53): [2] label=�?בג type=symbol (335) letters=[�?, ב, ג] angle=72
+DEBUG (00:51): [2] label=�?בג type=symbol (335) letters=[�?, ב, ג] angle=72
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonEightIsQuadLetter...
-DEBUG (00:53): [8] letters=[ק, ר, ש, ת] angle=288
+DEBUG (00:51): [8] letters=[ק, ר, ש, ת] angle=288
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonNineIsDigits...
-DEBUG (00:53): [9] label=0-9 type=symbol (345) letters.size=10
+DEBUG (00:51): [9] label=0-9 type=symbol (345) letters.size=10
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtInsideAlefGroupReturnsIt...
-DEBUG (00:53): buttonAt(386,150)=�?בג type=symbol (335)
+DEBUG (00:51): buttonAt(386,150)=�?בג type=symbol (335)
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtInsideHitHaloReturnsWedge...
-DEBUG (00:53): buttonAt(351,162)=�?בג angle=72
+DEBUG (00:51): buttonAt(351,162)=�?בג angle=72
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtJustOutsideHaloReturnsNull...
-DEBUG (00:53): buttonAt(327,169) = null
+DEBUG (00:51): buttonAt(327,169) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtNewWiderHaloReturnsWedge...
-DEBUG (00:53): buttonAt(336,166)=�?בג
+DEBUG (00:51): buttonAt(336,166)=�?בג
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtCenterReturnsNull...
-DEBUG (00:53): buttonAt(208,208) = null
+DEBUG (00:51): buttonAt(208,208) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtOffRingReturnsNull...
-DEBUG (00:53): buttonAt(0,0) = null
+DEBUG (00:51): buttonAt(0,0) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsLetterGroupReturnsThree...
-DEBUG (00:53): subButtons(�?בג).size=3
+DEBUG (00:51): subButtons(�?בג).size=3
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsLetterGroupFourReturnsFour...
-DEBUG (00:53): subButtons(קרשת).size=4
+DEBUG (00:51): subButtons(קרשת).size=4
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsDigitsReturnsTenAroundRing...
-DEBUG (00:53): subButtons(digits).size=10
+DEBUG (00:51): subButtons(digits).size=10
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtInsideLetterExpansionReturnsLabel...
-DEBUG (00:53): subButtonAt(284,184) = ב
+DEBUG (00:51): subButtonAt(284,184) = ב
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtOutsideExpansionReturnsNull...
-DEBUG (00:53): subButtonAt(208,208) center = null
+DEBUG (00:51): subButtonAt(208,208) center = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsForYudKafLamedHasFinalKaf...
-DEBUG (00:53): subButtons(יכ�?).size=4
-DEBUG (00:53): �? angle=180 rInner=146 rOuter=205
+DEBUG (00:51): subButtons(יכ�?).size=4
+DEBUG (00:51): �? angle=180 rInner=146 rOuter=205
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsForMemNunSamekhHasTwoFinals...
-DEBUG (00:53): subButtons(�?נס).size=5
+DEBUG (00:51): subButtons(�?נס).size=5
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtInsideLevelTwoFinalReturnsLabel...
-DEBUG (00:53): subButtonAt(208,383) = �?
+DEBUG (00:51): subButtonAt(208,383) = �?
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layout_middleWidthM27Baseline...
-DEBUG (00:53): Layout.middleWidth(416, 25, 100) = 291
+DEBUG (00:51): Layout.middleWidth(416, 25, 100) = 291
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layout_middleWidthDifferentScreen...
-DEBUG (00:53): Layout.middleWidth(400, 20, 80) = 300
+DEBUG (00:51): Layout.middleWidth(400, 20, 80) = 300
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndAdvancesByBatchSize...
-DEBUG (00:53): nextBatchEnd(0,50,12) = 12
+DEBUG (00:51): nextBatchEnd(0,50,12) = 12
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndClampsAtTotal...
-DEBUG (00:53): nextBatchEnd(48,50,12) = 50
+DEBUG (00:51): nextBatchEnd(48,50,12) = 50
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndIdempotentAtTotal...
-DEBUG (00:53): nextBatchEnd(50,50,12) = 50
+DEBUG (00:51): nextBatchEnd(50,50,12) = 50
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isCompleteWhenCursorAtTotal...
-DEBUG (00:53): isComplete(50,50) = true
+DEBUG (00:51): isComplete(50,50) = true
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isNotCompleteWhenCursorBelowTotal...
-DEBUG (00:53): isComplete(40,50) = false
+DEBUG (00:51): isComplete(40,50) = false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isScrollNearEndWithinLookahead...
-DEBUG (00:53): isScrollNearEnd(500,800,200,150) = true
+DEBUG (00:51): isScrollNearEnd(500,800,200,150) = true
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isScrollNotNearEndWhenFar...
-DEBUG (00:53): isScrollNearEnd(100,2000,200,150) = false
+DEBUG (00:51): isScrollNearEnd(100,2000,200,150) = false
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_scrollEndedBeforeLoadStarted...
-DEBUG (00:53): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
+DEBUG (00:51): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_scrollEndedWhileLoadInProgress...
-DEBUG (00:53): scrollEndedWhileLoadInProgress before=200 after=200
+DEBUG (00:51): scrollEndedWhileLoadInProgress before=200 after=200
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_clampedScrollNegativeBecomesZero...
-DEBUG (00:53): clampedScroll(-50,500,200) = 0
+DEBUG (00:51): clampedScroll(-50,500,200) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_clampedScrollContentSmallerThanScreen...
-DEBUG (00:53): clampedScroll(50,100,200) = 0
+DEBUG (00:51): clampedScroll(50,100,200) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_initialBatchIsBoundedForAnyBodyLength...
-DEBUG (00:53): INITIAL=2 shortBatch=2 longBatch=2
-PASS
+DEBUG (00:51): INITIAL=5 shortBatch=2 longBatch=5
+FAIL
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wrap_emptyInput...
-DEBUG (00:53): wrap('', 10) = []
+DEBUG (00:51): wrap('', 10) = []
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -437,7 +437,7 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wrap_twoWordsSecondOverflows...
-DEBUG (00:53): wrap('hello world', 7) = [hello, world]
+DEBUG (00:51): wrap('hello world', 7) = [hello, world]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -462,7 +462,7 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wrap_hebrewWords...
-DEBUG (00:53): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
+DEBUG (00:51): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -481,14 +481,14 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wtw_uniformWidthsWrapsOnOverflow...
-DEBUG (00:53): wtw_uniform = [hello, world]
+DEBUG (00:51): wtw_uniform = [hello, world]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wtw_variableWidthsNarrowsFirst...
-DEBUG (00:53): wtw_variable = [a, b c, d e]
+DEBUG (00:51): wtw_variable = [a, b c, d e]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -507,7 +507,7 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wtw_hebrewWithVariableWidths...
-DEBUG (00:53): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
+DEBUG (00:51): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -526,21 +526,21 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wnt_twoWords...
-DEBUG (00:53): twoWords = [hello, world]
+DEBUG (00:51): twoWords = [hello, world]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wnt_middlePlusTailPattern...
-DEBUG (00:53): middlePlusTail = [a b c d e, f g h, i j]
+DEBUG (00:51): middlePlusTail = [a b c d e, f g h, i j]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wnt_longTextMultipleMiddleLines...
-DEBUG (00:53): longText size=5
+DEBUG (00:51): longText size=5
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -553,133 +553,133 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wnt_hebrewLongLastRaw...
-DEBUG (00:53): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
+DEBUG (00:51): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test splitWords_empty...
-DEBUG (00:53): splitWords('') size=0
+DEBUG (00:51): splitWords('') size=0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test splitWords_collapsesMultiSpace...
-DEBUG (00:53): splitWords spaces = [hello, world]
+DEBUG (00:51): splitWords spaces = [hello, world]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test splitWords_hebrew...
-DEBUG (00:53): splitWords hebrew size=2
+DEBUG (00:51): splitWords hebrew size=2
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wptw_empty...
-DEBUG (00:53): wptw empty size=1
+DEBUG (00:51): wptw empty size=1
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wptw_singleWordFits...
-DEBUG (00:53): wptw single = [hello]
+DEBUG (00:51): wptw single = [hello]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wptw_twoWordsFitOnOneLine...
-DEBUG (00:53): wptw twoFit = [a b]
+DEBUG (00:51): wptw twoFit = [a b]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wptw_perLineWidthCascade...
-DEBUG (00:53): wptw cascade = [a, b c]
+DEBUG (00:51): wptw cascade = [a, b c]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wptw_oversizedWordOverflowsAlone...
-DEBUG (00:53): wptw oversized = [x, huge, y]
+DEBUG (00:51): wptw oversized = [x, huge, y]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wpnt_empty...
-DEBUG (00:53): wpnt empty size=1
+DEBUG (00:51): wpnt empty size=1
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wpnt_middlePlusTail...
-DEBUG (00:53): wpnt middlePlusTail = [a b, c d, e]
+DEBUG (00:51): wpnt middlePlusTail = [a b, c d, e]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test wpnt_oversizedLastWordOnly...
-DEBUG (00:53): wpnt oversized = [x, verylongword]
+DEBUG (00:51): wpnt oversized = [x, verylongword]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test manifest_emptyDefaultWhenStorageEmpty...
-DEBUG (00:53): load() empty default = version=1 articles.size=0
+DEBUG (00:51): load() empty default = version=1 articles.size=0
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test manifest_isEmptyTrueOnFresh...
-DEBUG (00:53): isEmpty() on fresh = true
+DEBUG (00:51): isEmpty() on fresh = true
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test manifest_saveLoadRoundtrip...
-DEBUG (00:53): roundtrip saved=true loaded.articles.size=2
+DEBUG (00:51): roundtrip saved=true loaded.articles.size=2
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test manifest_articleIdsOrder...
-DEBUG (00:53): articleIds = [alpha, bravo, charlie]
+DEBUG (00:51): articleIds = [alpha, bravo, charlie]
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test manifest_titleOfHit...
-DEBUG (00:53): titleOf('shalom') = 'ש�?ו�?'
+DEBUG (00:51): titleOf('shalom') = 'ש�?ו�?'
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test manifest_titleOfMiss...
-DEBUG (00:53): titleOf('nonexistent') = null
+DEBUG (00:51): titleOf('nonexistent') = null
 PASS
 M4 install: startEmpty=true currentVersion=1 targetVersion=3 startIds=[]
 M4 install: DONE installed=30 of 30
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test md_h1...
-DEBUG (00:53): parse('# Title') = {symbol (8389346)=>Title, symbol (344)=>1}
+DEBUG (00:51): parse('# Title') = {symbol (8389346)=>Title, symbol (344)=>1}
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -746,168 +746,168 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtInsideTopRowReturnsZero...
-DEBUG (00:53): rowIndexAt(30,0,60,5) = 0
+DEBUG (00:51): rowIndexAt(30,0,60,5) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtOutsideListReturnsNull...
-DEBUG (00:53): rowIndexAt(9999,0,60,5) = null
+DEBUG (00:51): rowIndexAt(9999,0,60,5) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtRespectsScroll...
-DEBUG (00:53): rowIndexAt(30,120,60,5) = 2
+DEBUG (00:51): rowIndexAt(30,120,60,5) = 2
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextZeroReturnsNull...
-DEBUG (00:53): moreArticlesText(10, 10) = null
+DEBUG (00:51): moreArticlesText(10, 10) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextOneReturnsSingular...
-DEBUG (00:53): moreArticlesText(11, 10) = 1 more article fits
+DEBUG (00:51): moreArticlesText(11, 10) = 1 more article fits
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextMultipleReturnsPlural...
-DEBUG (00:53): moreArticlesText(15, 10) = 5 more articles fit
+DEBUG (00:51): moreArticlesText(15, 10) = 5 more articles fit
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextNegativeReturnsNull...
-DEBUG (00:53): moreArticlesText(5, 10) = null
+DEBUG (00:51): moreArticlesText(5, 10) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInsideFirstReturnsZero...
-DEBUG (00:53): blockAt(30, ...) = 0
+DEBUG (00:51): blockAt(30, ...) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInsideSecondReturnsOne...
-DEBUG (00:53): blockAt(80, ...) = 1
+DEBUG (00:51): blockAt(80, ...) = 1
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInGapReturnsNull...
-DEBUG (00:53): blockAt(60 in gap) = null
+DEBUG (00:51): blockAt(60 in gap) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtPastEndReturnsNull...
-DEBUG (00:53): blockAt(9999 past end) = null
+DEBUG (00:51): blockAt(9999 past end) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtNegativeReturnsNull...
-DEBUG (00:53): blockAt(-5) = null
+DEBUG (00:51): blockAt(-5) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtEmptyArrayReturnsNull...
-DEBUG (00:53): blockAt(0, []) = null
+DEBUG (00:51): blockAt(0, []) = null
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordAtCenterEqualsDiameter...
-DEBUG (00:53): safeChordWidth(195, 0) = 390
+DEBUG (00:51): safeChordWidth(195, 0) = 390
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordShrinksOffCenter...
-DEBUG (00:53): safeChordWidth(195, 100) = 334
+DEBUG (00:51): safeChordWidth(195, 100) = 334
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordAtRadiusIsZero...
-DEBUG (00:53): safeChordWidth(195, 195) = 0
+DEBUG (00:51): safeChordWidth(195, 195) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordPastRadiusIsZero...
-DEBUG (00:53): safeChordWidth(195, 200) = 0
+DEBUG (00:51): safeChordWidth(195, 200) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordNegativeDyMirrorsPositive...
-DEBUG (00:53): safeChordWidth(195, -100) = 334
+DEBUG (00:51): safeChordWidth(195, -100) = 334
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_minSafeYForKnownWidth...
-DEBUG (00:53): minSafeY(195, 280) = 60
+DEBUG (00:51): minSafeY(195, 280) = 60
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test safeArea_minSafeYWiderThanDiameter...
-DEBUG (00:53): minSafeY(195, 500) = 195
+DEBUG (00:51): minSafeY(195, 500) = 195
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test lpw_centerEqualsFullDiameterMinusPadding...
-DEBUG (00:53): linePaddedWidth(208, 208, 25) = 366
+DEBUG (00:51): linePaddedWidth(208, 208, 25) = 366
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test lpw_offCenterReducesByChord...
-DEBUG (00:53): linePaddedWidth(208, 108, 25) = 314
+DEBUG (00:51): linePaddedWidth(208, 108, 25) = 314
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test lpw_clampsToZeroAtEdge...
-DEBUG (00:53): linePaddedWidth(208, 0, 25) = 0
+DEBUG (00:51): linePaddedWidth(208, 0, 25) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test lpw_clampsToZeroWhenPaddingExceedsChord...
-DEBUG (00:53): linePaddedWidth(208, 1, 25) = 0
+DEBUG (00:51): linePaddedWidth(208, 1, 25) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -926,98 +926,98 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_emptyQueryReturnsTopByPopularity...
-DEBUG (00:53): empty-query size=3 ids=[b,c,a]
+DEBUG (00:51): empty-query size=3 ids=[b,c,a]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_emptyQueryCapsAtTopK...
-DEBUG (00:53): 60-articles empty-query size=50
+DEBUG (00:51): 60-articles empty-query size=50
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_emptyArticlesReturnsEmpty...
-DEBUG (00:53): empty-articles size=0
+DEBUG (00:51): empty-articles size=0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_prefixMatchOnly...
-DEBUG (00:53): prefix-ש size=2 ids=[sh,sb]
+DEBUG (00:51): prefix-ש size=2 ids=[sh,sb]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_substringNonPrefixIsTier2...
-DEBUG (00:53): substring-�?ו size=1
+DEBUG (00:51): substring-�?ו size=1
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_prefixBeforeSubstring...
-DEBUG (00:53): prefix-vs-sub size=3 ids=[lover,love,alove]
+DEBUG (00:51): prefix-vs-sub size=3 ids=[lover,love,alove]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_popularityWithinTier...
-DEBUG (00:53): popularity ids=[high,low]
+DEBUG (00:51): popularity ids=[high,low]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_titleStableTiebreakOnPopularityTie...
-DEBUG (00:53): tiebreak ids=[a,z]
+DEBUG (00:51): tiebreak ids=[a,z]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_noMatchesReturnsEmpty...
-DEBUG (00:53): no-match size=0
+DEBUG (00:51): no-match size=0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_hebrewSubstringMatch...
-DEBUG (00:53): hebrew-prefix size=1 ids=[torah]
+DEBUG (00:51): hebrew-prefix size=1 ids=[torah]
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesEmptyQueryReturnsArraySize...
-DEBUG (00:53): totalMatches('', size=7) = 7
+DEBUG (00:51): totalMatches('', size=7) = 7
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesCountsExactly...
-DEBUG (00:53): totalMatches('ש', 4 mixed) = 3
+DEBUG (00:51): totalMatches('ש', 4 mixed) = 3
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesEmptyArticlesReturnsZero...
-DEBUG (00:53): totalMatches('foo', []) = 0
+DEBUG (00:51): totalMatches('foo', []) = 0
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test strings_helloIsHebrew...
-DEBUG (00:53): Strings.hello() = 'ש�?ו�?'
+DEBUG (00:51): Strings.hello() = 'ש�?ו�?'
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -1036,7 +1036,7 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleStartsWithH1...
-DEBUG (00:53): sampleArticle prefix: '# ש�?ו�? הי�?...'
+DEBUG (00:51): sampleArticle prefix: '# ש�?ו�? הי�?...'
 PASS
 M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
 M4 install: SKIP (manifest already at target version)
@@ -1055,7 +1055,7 @@ M4 install: SKIP (manifest already at target version)
 M5 rank: buf='' (empty — no results shown)
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleHasManyLines...
-DEBUG (00:53): newline count = 48
+DEBUG (00:51): newline count = 48
 PASS
 
 ==============================================================================
@@ -1118,7 +1118,7 @@ layoutProgress_scrollEndedBeforeLoadStarted          PASS
 layoutProgress_scrollEndedWhileLoadInProgress        PASS
 layoutProgress_clampedScrollNegativeBecomesZero      PASS
 layoutProgress_clampedScrollContentSmallerThanScreen PASS
-layoutProgress_initialBatchIsBoundedForAnyBodyLength PASS
+layoutProgress_initialBatchIsBoundedForAnyBodyLength FAIL
 wrap_emptyInput                                      PASS
 wrap_singleWordFits                                  PASS
 wrap_twoWordsFitOnOneLine                            PASS
@@ -1217,6 +1217,5 @@ strings_sampleArticleIsMultiline                     PASS
 strings_sampleArticleHasManyLines                    PASS
 Ran 154 tests
 
-PASSED (passed=154, failed=0, errors=0)
+FAILED (passed=153, failed=1, errors=0)
 
-TESTS OK
