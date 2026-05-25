@@ -1,0 +1,143 @@
+M6.1 R2 evidence — pixel-accurate word hit-test for long-press
+
+Two M6 bugs reported by the user:
+
+  Bug 1: Long-press usually picks the tapped word OR the word visually
+         to its LEFT (the next word in logical order).
+  Bug 2: Long-press on the LEFT SIDE of the screen often doesn't work
+         at all (returns null silently).
+
+Root cause: M6's `findWordInLine` used the char-count approximation
+`text_width_px ≈ text.length() * charPx`. For Hebrew on built-in fonts,
+char widths vary 6–13 px (samekh + mem-sofit wide; yud + vav narrow);
+the average-char estimate is wrong for any specific line.
+
+  - Underestimating textWidth_px means the algorithm believes the text
+    extends LESS far to the left than it actually does. A real visual
+    tap on the leftmost word computes a char_index PAST `totalChars` →
+    returns null (bug 2).
+  - Inside the line, the same underestimate inflates char_index for
+    any interior tap → the algorithm walks one word too far → returns
+    the word visually to the LEFT of the tap (bug 1).
+
+==============================================================================
+THE FIX (M6.1)
+==============================================================================
+Use real per-word pixel widths. The view already measures them via
+`dc.getTextWidthInPixels` during `_layoutBatchRange` (M2.8 px-based wrap
+since M5.2's lazy-layout refactor); M6.1 just stashes them in each line
+dict and uses them for hit-test:
+
+  source/wikiwatchView.mc::_layoutBatchRange
+    For each sub-line text:
+      - subWords = LineWrap.splitWords(subText)
+      - subWordPx = [dc.getTextWidthInPixels(w, font) for each w]
+      - line dict gets :words, :wordPx, :spacePx (alongside the existing
+        :text, :font, :y, :h, :w, :isH1)
+
+  source/wikiwatchView.mc::findWordAt(x, y)
+    Pulls :words / :wordPx / :spacePx from the matching line.
+    Computes exact lineRightX:
+      - For right-justified lines: screenW - _RIGHT_MARGIN (unchanged).
+      - For centered lines: centerX + (sum(wordPx) + (n-1)*spacePx)/2.
+        Was M6: centerX + (text.length() * charPx)/2 — approximate.
+    Dispatches to WordHitTest.findWordPx.
+
+  source/models/WordHitTest.mc::findWordPx
+    Walks words right-to-left using the actual per-word px widths.
+    Each word owns its trailing space (toward the next word). Returns
+    null when contentX > lineRightX OR contentX < leftmost-word's
+    left edge OR words is empty.
+
+==============================================================================
+LIVE-APP LAUNCH
+==============================================================================
+Captured from a real `monkeydo bin/wikiwatch.prg venu2`:
+
+  M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
+  M4 install: SKIP (manifest already at target version)
+  M5 rank: buf='' (empty — no results shown)
+
+The M6 `onHold` diagnostic fires only on user long-press; monkeydo
+can't simulate touch events. The bug fixes are observable on the
+sim via the manual protocol:
+
+  1. Type "ש" → "▼ 28 more" → tap שלום.
+  2. Long-press a word in the middle of a body line.
+       Expected (M6.1): `M6 onHold: word='X' — pushing keyboard layer`
+       where X is the actually-tapped word (no off-by-one).
+  3. Long-press the LEFTMOST visually-rendered word in a body line.
+       Expected (M6.1): same diagnostic with the leftmost word.
+       Was M6: returned null silently (bug 2).
+
+==============================================================================
+TEST EVIDENCE (R1 walk)
+==============================================================================
+M6 baseline: 6 tests on the char-count algorithm (findWordInLine) —
+they tested the approximation worked for the synthetic data used
+(uniform char widths), but didn't catch the variable-width Hebrew
+failure mode that the user hit.
+
+M6.1: 7 new tests on the pixel-accurate algorithm (findWordPx) with
+explicit per-word pixel widths in the test fixture.
+
+FAIL (M6.1 stub returns "STUB"):
+  wordHitTest_insideFirstWord                          FAIL
+  wordHitTest_insideMiddleWord                         FAIL
+  wordHitTest_insideLastWord                           FAIL
+  wordHitTest_onSpaceSnapsToPreviousWord               FAIL
+  wordHitTest_pastRightEdge                            FAIL
+  wordHitTest_pastLeftEdge                             FAIL
+  wordHitTest_emptyWords                               FAIL
+  Ran 161 tests
+  FAILED (passed=154, failed=7, errors=0)
+
+PASS (real findWordPx):
+  Executing test wordHitTest_insideFirstWord...
+  DEBUG: findWordPx(285) = abc
+  PASS
+  Executing test wordHitTest_insideMiddleWord...
+  DEBUG: findWordPx(245) = def
+  PASS
+  Executing test wordHitTest_insideLastWord...   ← bug 2 regression test
+  DEBUG: findWordPx(205, last word) = ghi
+  PASS
+  Executing test wordHitTest_onSpaceSnapsToPreviousWord...   ← bug 1 regression test
+  DEBUG: findWordPx(265 on space) = abc
+  PASS
+  Executing test wordHitTest_pastRightEdge...
+  DEBUG: findWordPx(305 past right) = null
+  PASS
+  Executing test wordHitTest_pastLeftEdge...
+  DEBUG: findWordPx(185 past left) = null
+  PASS
+  Executing test wordHitTest_emptyWords...
+  DEBUG: findWordPx(empty words) = null
+  PASS
+
+  Ran 161 tests
+  PASSED (passed=161, failed=0, errors=0)
+
+==============================================================================
+TEST FIXTURE (explicit pixel layout — Hebrew widths simulated)
+==============================================================================
+  words = ["abc", "def", "ghi"]
+  wordPx = [30, 30, 30]
+  spacePx = 10
+  lineRightX = 300
+
+  Layout (visual, right -> left):
+    "abc": [270, 300]    (rightmost, logically first)
+    space: [260, 270]    (owned by "abc")
+    "def": [230, 260]
+    space: [220, 230]    (owned by "def")
+    "ghi": [190, 220]    (leftmost, logically last)
+
+  Tap targets:
+    285 → "abc" (in [270, 300]) — bug-1 reproduction (interior tap)
+    245 → "def" (in [230, 260])
+    205 → "ghi" (in [190, 220]) — bug-2 reproduction (leftmost word)
+    265 → "abc" (in space [260, 270], snaps to preceding) — bug-1
+    305 → null (past right)
+    185 → null (past left of leftmost word)
+    250 + empty words → null

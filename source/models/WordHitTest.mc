@@ -1,48 +1,59 @@
 import Toybox.Lang;
 
-// M6 long-press word hit-test. Pure module — only Toybox.Lang.
+// M6.1 pixel-accurate word hit-test for long-press. Pure module —
+// only Toybox.Lang.
 //
-// Used by wikiwatchView.findWordAt() → wikiwatchDelegate.onHold to map
-// a long-press in the article reader to the word under the finger, which
-// is then pre-filled into a new keyboard layer.
+// Replaces M6's char-count approximation (findWordInLine) which used
+// `text.length() * charPx` — for mixed-width Hebrew that produces ±1
+// word error inside lines AND a dead zone on the left side (when the
+// estimated text_width was smaller than the actual rendered width,
+// taps on visually-present leftmost words computed a char_index past
+// totalChars and returned null).
 //
-// Hebrew RTL note: CIQ's BiDi renderer puts the first LOGICAL character
-// at the visual right edge for right-anchored text. The math here treats
-// the text as right-anchored at lineRightX (visual right edge) and the
-// char_index 0 == first logical char == visually rightmost. Walking
-// `words` in logical order produces the correct visual mapping under
-// BiDi.
+// New algorithm walks words right-to-left using the actual per-word
+// pixel widths (which wikiwatchView._layoutBatchRange already measures
+// via dc.getTextWidthInPixels and now stashes in each line dict's
+// :words / :wordPx / :spacePx fields).
 //
-// Each word "owns" its trailing space — a tap that lands on whitespace
-// snaps to the preceding word. This matches the natural "I just read this
-// word, then tapped just past it" interaction.
+// Hebrew RTL: CIQ's BiDi renderer puts the first LOGICAL char (and
+// first logical WORD) at the visual right edge. words[0] is logically
+// first AND visually rightmost. Walking left from lineRightX subtracts
+// wordPx + spacePx per word.
+//
+// Each word "owns" the space to its left (toward the next word). A tap
+// on whitespace snaps to the preceding word — natural for "I just read
+// this word, then tapped just past it".
 module WordHitTest {
-    function findWordInLine(
+    function findWordPx(
         contentX as Number,
-        text as String,
+        words as Array<String>,
+        wordPx as Array<Number>,
         lineRightX as Number,
-        charPx as Number
+        spacePx as Number
     ) as String? {
-        if (text.length() == 0) { return null; }
-        if (contentX > lineRightX) { return null; }
-        if (charPx <= 0) { return null; }
-        var charIndex = (lineRightX - contentX) / charPx;
-        if (charIndex < 0) { return null; }
-        var totalChars = text.length();
-        if (charIndex >= totalChars) { return null; }
-        var words = LineWrap.splitWords(text);
         var n = words.size();
         if (n == 0) { return null; }
-        var charsSoFar = 0;
+        if (contentX > lineRightX) { return null; }
+        var rightEdge = lineRightX;
         for (var i = 0; i < n; i++) {
-            var word = words[i] as String;
-            var endExclusive = charsSoFar + word.length();
+            var wordW = wordPx[i] as Number;
+            // This word's bounds (its own glyphs, no space yet).
+            var leftEdge = rightEdge - wordW;
+            // "Own" the trailing space (toward the next word, visually LEFT
+            // since we're walking right-to-left). Last word has no trailing
+            // space.
+            var leftEdgeWithSpace = leftEdge;
             if (i < n - 1) {
-                endExclusive = endExclusive + 1;   // +1 for the trailing space
+                leftEdgeWithSpace = leftEdgeWithSpace - spacePx;
             }
-            if (charIndex < endExclusive) { return word; }
-            charsSoFar = endExclusive;
+            if (contentX >= leftEdgeWithSpace) {
+                return words[i] as String;
+            }
+            rightEdge = leftEdgeWithSpace;
         }
-        return null;
+        return null;  // contentX < leftmost word's left edge
     }
+
+    // M6 char-count helper REMOVED in M6.1 — replaced by findWordPx
+    // (pixel-accurate). The view no longer calls findWordInLine.
 }
