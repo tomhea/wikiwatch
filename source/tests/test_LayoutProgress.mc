@@ -116,18 +116,20 @@ function layoutProgress_clampedScrollContentSmallerThanScreen(logger as Logger) 
     return r == 0;
 }
 
-// M5.3: bounded first-batch invariant. Encodes the contract that
+// M5.3/M5.4: bounded first-batch invariant. Encodes the contract that
 // wikiwatchView's first paint processes at most _INITIAL_LINES raw lines
-// regardless of body length. This is what makes שלום (50 raw) feel as fast
-// to first-paint as שבת (2 raw).
+// regardless of body length. M5.4 tightened from 5 to 2 so שלום (50 raw)
+// first-paints as fast as שבת (2 raw) — both produce 2 lines of work.
 (:test)
 function layoutProgress_initialBatchIsBoundedForAnyBodyLength(logger as Logger) as Boolean {
-    var INITIAL = 5;  // matches wikiwatchView._INITIAL_LINES in M5.3
+    var INITIAL = 2;  // matches wikiwatchView._INITIAL_LINES in M5.4
     var shortBatch = LayoutProgress.nextBatchEnd(0, 2, INITIAL);    // שבת (2 raw lines)
     var longBatch  = LayoutProgress.nextBatchEnd(0, 50, INITIAL);   // שלום (50 raw lines)
     logger.debug("INITIAL=" + INITIAL + " shortBatch=" + shortBatch + " longBatch=" + longBatch);
-    // Short body processes all of its lines (= totalLines, since < INITIAL).
-    // Long body is CAPPED at INITIAL.
-    // The MAX work per first paint = INITIAL raw lines regardless of body length.
-    return shortBatch == 2 && longBatch == INITIAL && longBatch <= INITIAL;
+    // Short body: processes all 2 of its lines.
+    // Long body: capped at INITIAL=2.
+    // Both bodies process EXACTLY the same number of raw lines on first
+    // paint when the body has >= INITIAL lines, so wall-clock first-paint
+    // becomes effectively identical.
+    return shortBatch == 2 && longBatch == INITIAL && longBatch == shortBatch;
 }

@@ -19,12 +19,12 @@ import Toybox.WatchUi;
 //   _contentHeight — sum of block heights + inter-article gaps.
 class ResultsView extends WatchUi.View {
     private const _ROW_FONT = Graphics.FONT_TINY;
-    private const _TOP_PAD_PCT = 15;        // skip the top 15% of the screen
-    private const _BOTTOM_PAD_PCT = 15;     // and the bottom 15%
-    private const _LEFT_MARGIN = 40;
-    private const _RIGHT_MARGIN = 40;
-    private const _SUB_LINE_GAP = 2;        // M5.3: tight (same article)
-    private const _INTER_ARTICLE_GAP = 16;  // M5.3: looser (between articles)
+    private const _TOP_PAD_PCT = 16;        // M5.4: 15->16
+    private const _BOTTOM_PAD_PCT = 16;     // M5.4: 15->16
+    private const _LEFT_MARGIN = 50;        // M5.4: 40->50
+    private const _RIGHT_MARGIN = 50;       // M5.4: 40->50
+    private const _SUB_LINE_GAP = 0;        // M5.4: 2->0 (line-touching for same article)
+    private const _INTER_ARTICLE_GAP = 16;  // M5.3: between articles
     private const _FOOTER_HEIGHT = 30;      // "X more articles fit"
     private const _FOOTER_GAP = 6;
 

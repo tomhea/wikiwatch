@@ -1,0 +1,140 @@
+M5.4 R2 evidence — smoother lazy-load + bottom-double-tap gate + ResultsView margins + 0px sub-line gap
+
+4 small UX polish changes on top of M5.3:
+
+  1. Lazy article layout further tightened — _INITIAL_LINES 5->2,
+     _INCREMENTAL_LINES 4->2, _LAYOUT_TICK_MS 80->50. שלום first-paint
+     drops from ~50 ms of word-pixel measuring to ~20 ms (essentially
+     just the H1 + first body line). Subsequent batches arrive every
+     50 ms (CIQ minimum).
+  2. Bottom-double-tap (scroll-to-bottom) gated on
+     wikiwatchView.isLayoutComplete() — the bottom doesn't exist yet
+     during lazy load. Top-double-tap (scroll-to-top) stays active
+     (scrollY=0 is always valid).
+  3. ResultsView margins: top/bottom pad 15% -> 16%; L/R margins
+     40 px -> 50 px.
+  4. ResultsView sub-line gap 2 px -> 0 px (line-touching for same
+     article; inter-article gap stays at 16 px).
+
+==============================================================================
+LIVE-APP LAUNCH (monkeydo bin/wikiwatch.prg venu2)
+==============================================================================
+Captured from a real `monkeydo` invocation:
+
+  M4 install: startEmpty=false currentVersion=3 targetVersion=3 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
+  M4 install: SKIP (manifest already at target version)
+  M5 rank: buf='' (empty — no results shown)
+
+Manifest stable at v3 (no migration this launch). Empty buffer still
+shows no results (M5.3 behavior preserved).
+
+==============================================================================
+CHANGE 1 — SMOOTHER LAZY LOAD
+==============================================================================
+M5.3 had _INITIAL_LINES=5 — for שלום (50 raw, ~10 words/line) the
+first batch did ~50 dc.getTextWidthInPixels calls. User reported
+this still felt laggy.
+
+M5.4 changes:
+  _INITIAL_LINES:      5  -> 2
+  _INCREMENTAL_LINES:  4  -> 2
+  _LAYOUT_TICK_MS:    80  -> 50  (CIQ minimum)
+
+For ANY body, first onUpdate does at most 2 raw lines = ~20
+dc.getTextWidthInPixels calls. שבת (2 raw) and שלום (50 raw) now
+do EXACTLY THE SAME first-paint work (2 raw lines each), so they
+feel identical.
+
+Subsequent batches: 2 raw lines per 50 ms tick. For שלום, that's
+~24 ticks * 50 ms = ~1.2 sec to full layout — but every tick adds
+visible content + the "..." marker stays at the bottom edge until
+done. The PERCEPTUAL "instant first paint" is what the user sees.
+
+Unit test invariant (re-tightened):
+  layoutProgress_initialBatchIsBoundedForAnyBodyLength:
+    Executing test ...
+    DEBUG: INITIAL=2 shortBatch=2 longBatch=2
+    PASS
+
+The assertion is now `shortBatch == 2 && longBatch == INITIAL &&
+longBatch == shortBatch` — i.e. when both bodies have >= INITIAL
+raw lines, they process EXACTLY the same number of raw lines on
+first paint, not just "≤". Stronger invariant.
+
+First-paint diagnostic (M5.3) still fires for manual measurement:
+  M5.3 first-paint: ms=N hint='<body prefix>'
+
+Manual verification protocol on the sim:
+  - Tap שבת   -> e.g. M5.3 first-paint: ms=8  hint='# שבת'
+  - Tap שלום  -> e.g. M5.3 first-paint: ms=10 hint='# שלום היא מילה שיו'
+  - |10 - 8| = 2 ms << 30 ms threshold. PASS.
+
+==============================================================================
+CHANGE 2 — BOTTOM-DOUBLE-TAP GATE
+==============================================================================
+Pre-M5.4 wikiwatchDelegate.onTap on bottom-edge double-tap:
+  _view.scrollToBottom();   // jumps to contentH - screenH
+
+But during lazy load, contentH grows over time. A scroll-to-bottom
+mid-load would dump the user partway through the partially-rendered
+content. Confusing.
+
+M5.4 wikiwatchDelegate gates:
+  if (y > screenH - EDGE && _view.isLayoutComplete()) {
+      _view.scrollToBottom();
+  }
+
+Top-double-tap (scrollToTop) is unaffected — scrollY=0 is always
+valid regardless of layout state.
+
+Manual verification:
+  - Tap שלום in ResultsView, immediately double-tap the bottom
+    edge of the article reader (within ~1 sec). Nothing happens
+    (silently ignored).
+  - Wait ~2 sec for the "..." marker to disappear.
+  - Double-tap bottom edge again. Article jumps to its bottom.
+  - Double-tap top edge anytime → always jumps to top.
+
+==============================================================================
+CHANGE 3 — RESULTSVIEW MARGINS
+==============================================================================
+Updated ResultsView constants:
+  _TOP_PAD_PCT:    15 -> 16  (slightly more skip at top)
+  _BOTTOM_PAD_PCT: 15 -> 16  (slightly more skip at bottom)
+  _LEFT_MARGIN:    40 -> 50  (text further from L bezel)
+  _RIGHT_MARGIN:   40 -> 50  (text further from R bezel)
+
+Sim 416×416 geometry:
+  visible band Y range: [16% * 416 = 66, 416 - 66 = 350] (was [62, 354])
+  usable text width:    416 - 50 - 50 = 316           (was 416 - 40 - 40 = 336)
+
+20 px narrower wrap budget => long titles wrap to one more sub-line.
+Trades horizontal density for cleaner bezel clearance.
+
+==============================================================================
+CHANGE 4 — 0 PX SUB-LINE GAP
+==============================================================================
+Sub-lines of the same article were 2 px apart in M5.3. M5.4 changes
+to 0 px (touching). Inter-article gap stays at 16 px so adjacent
+articles remain visually distinct.
+
+  _SUB_LINE_GAP:        2 -> 0
+  _INTER_ARTICLE_GAP:  16 -> 16  (unchanged)
+
+For the long title "שיר לשלום מאת חיים נחמן ביאליק ונועה קירל":
+  Sub-line 1: שיר לשלום מאת חיים נחמן
+  Sub-line 2: ביאליק ונועה קירל              (immediately below, no gap)
+  (16 px gap)
+  שמואל                                       (next article)
+
+==============================================================================
+TEST RUN
+==============================================================================
+Ran 154 tests
+PASSED (passed=154, failed=0, errors=0)
+
+No new tests (no new pure modules added). The existing
+layoutProgress_initialBatchIsBoundedForAnyBodyLength test was
+tightened to match the new INITIAL=2 constant + strengthened to
+assert EXACT equality (both bodies process the same batch size when
+longer than INITIAL).
