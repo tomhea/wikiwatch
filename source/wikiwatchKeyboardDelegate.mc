@@ -126,6 +126,17 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     }
 
     private function _recomputeSuggestions() as Void {
+        // M5.3: empty-buffer guard — show NO suggestions / NO "more" footer
+        // until the user types something. Avoids visual noise + skips the
+        // rank work entirely.
+        if (_buffer.length() == 0) {
+            _ranked = new [0];
+            _totalMatches = 0;
+            System.println("M5 rank: buf='' (empty — no results shown)");
+            _view.setSuggestions(_ranked);
+            _view.setMoreCount(0);
+            return;
+        }
         _ranked = Search.rank(_buffer, _articles);
         _totalMatches = Search.totalMatches(_buffer, _articles);
         var top = _takeTop(_ranked, MAX_SUGGESTIONS);

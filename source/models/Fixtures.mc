@@ -24,7 +24,7 @@ import Toybox.Lang;
 module Fixtures {
     function manifest() as Dictionary {
         return {
-            :version => 2,
+            :version => 3,
             :articles => [
                 { :id => "shalom",            :title => "שלום",                                                    :popularity => 100 },
                 { :id => "shabbat",           :title => "שבת",                                                     :popularity => 99  },
@@ -70,7 +70,7 @@ module Fixtures {
         if (id.equals("shemonah-esreh"))     { return _short("שמונה עשרה", "תפילה מרכזית הנאמרת שלוש פעמים ביום."); }
         if (id.equals("shemesh"))            { return _short("שמש", "השמש היא הכוכב במרכז מערכת השמש שלנו."); }
         if (id.equals("shlomo-hamelech"))    { return _short("שלמה המלך", "מלך ישראל הידוע בחכמתו ובבניית המקדש."); }
-        if (id.equals("shir-lashalom-long")) { return _short("שיר לשלום", "השיר נכתב במקור על ידי יעקב רוטבליט. הכותרת בקטלוג היא דוגמת קצה לבדיקת גלישת שורות."); }
+        if (id.equals("shir-lashalom-long")) { return _short("שיר לשלום מאת חיים נחמן ביאליק ונועה קירל", "השיר נכתב במקור על ידי יעקב רוטבליט. הכותרת בקטלוג היא דוגמת קצה לבדיקת גלישת שורות."); }
         if (id.equals("shmuel"))             { return _short("שמואל", "נביא ושופט אחרון בתקופת השופטים."); }
         if (id.equals("shofar"))             { return _short("שופר", "כלי נשיפה מקרני בעלי חיים, נשמע בראש השנה."); }
         if (id.equals("shoftim"))            { return _short("שופטים", "ספר מקראי המתאר את תקופת השופטים בישראל."); }

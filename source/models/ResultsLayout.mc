@@ -17,6 +17,26 @@ module ResultsLayout {
         return diff + " more articles fit";
     }
 
+    // M5.3: variable-height row hit-test. Given an array of `block` dicts
+    // (each with :top => contentY-offset, :height => block height) sorted
+    // by :top, return the index of the block whose y range contains
+    // contentY, or null if contentY falls in a gap, past the end, or
+    // before the start.
+    //
+    // Used by ResultsView.rowAt to dispatch a tap on ANY of an article's
+    // wrapped sub-lines back to the article (block-level dispatch).
+    function blockAt(contentY as Number, blocks as Array<Dictionary>) as Number? {
+        if (contentY < 0) { return null; }
+        var n = blocks.size();
+        for (var i = 0; i < n; i++) {
+            var b = blocks[i] as Dictionary;
+            var top = b[:top] as Number;
+            var bottom = top + (b[:height] as Number);
+            if (contentY >= top && contentY < bottom) { return i; }
+        }
+        return null;
+    }
+
     function rowIndexAt(y as Number, scrollY as Number, rowHeight as Number, rowCount as Number) as Number? {
         if (rowHeight <= 0 || rowCount <= 0) { return null; }
         var contentY = y + scrollY;
