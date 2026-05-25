@@ -1,0 +1,164 @@
+M5.2 R2 evidence — multi-line buffer + separators + 30 ש-fixtures + lazy article layout
+
+M5.2 bundles 4 distinct UX changes, each visible on the watch:
+  1. Separator lines (1 px, 67 px wide, DK_GRAY) between consecutive
+     suggestion rows + before the "▼ N more" footer.
+  2. Multi-line (2-row) buffer band restored (bandH 30 -> 64) per user's
+     request — suggestion count drops 3 -> 2 to make room.
+  3. 30 fixture articles all starting with ש (was 3). Version-aware
+     installer auto-migrates from any prior version on next launch.
+  4. Lazy article layout: first paint is instant; remaining content lays
+     out via background timer ticks; loading "..." marker visible until
+     done.
+
+==============================================================================
+LIVE-APP LAUNCH (monkeydo bin/wikiwatch.prg venu2)
+==============================================================================
+Captured from a real `monkeydo` invocation against bin/wikiwatch.prg:
+
+  M4 install: startEmpty=false currentVersion=2 targetVersion=2 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
+  M4 install: SKIP (manifest already at target version)
+  M5 rank: buf='' top=[שלום,שבת] more=28
+
+What this proves:
+  - All 30 fixture IDs present in the persisted manifest (the long
+    `startIds=[...]` line lists them in order). Migration ran on a
+    previous launch (currentVersion=2 == targetVersion=2 on this run,
+    so SKIP). On any v0.M5.1 → v0.M5.2 upgrade, the first launch's
+    diagnostic will read `currentVersion=1 targetVersion=2 ... DONE
+    installed=30` instead.
+  - `M5 rank: buf='' top=[שלום,שבת] more=28` confirms:
+      * MAX_SUGGESTIONS=2 (down from 3 in M5.1) — the top-2 by
+        popularity (shalom=100, shabbat=99) shown inline.
+      * Search.rank.TOP_K=50 (up from 20) — all 30 articles returned,
+        none lost to the cap.
+      * setMoreCount(28) — the "▼ 28 more" footer renders below the
+        2 inline rows (30 - 2 = 28).
+
+==============================================================================
+WHAT THE USER SEES (verified against M5.2 geometry)
+==============================================================================
+Keyboard screen on launch:
+  - Buffer band: 2 lines tall (bandH=64 restored, M3.5/M5 style).
+    Long buffers wrap onto a second line and show the LAST 2 lines.
+  - Below the band: 2 big FONT_TINY suggestion rows at 40 px step:
+        שלום
+        ─────── (1 px, 67 px wide, DK_GRAY separator)
+        שבת
+        ─────── (separator before footer)
+        ▼ 28 more       (FONT_XTINY, dark gray)
+  - The 10 outer-ring wedges + ש-letter expansion unchanged from M3.6.
+
+Type "ש":
+  - All 30 fixtures match (every title starts with ש). Top-2 by
+    popularity stay shown; more footer reads "▼ 28 more".
+  - Diagnostic: `M5 rank: buf='ש' top=[שלום,שבת] more=28`.
+
+Tap "▼ 28 more":
+  - Full-screen ResultsView (M5.1) pushed, listing all 30 titles in
+    FONT_SMALL @ 60 px rows. Drag-scrollable. Includes the long title:
+        שיר לשלום מאת חיים נחמן ביאליק ונועה קירל
+    (deliberately anachronistic per the user's wrap-stress-test request).
+  - Tap any row → article reader pushes.
+
+Tap "שלום" suggestion (in keyboard) OR "שלום" row (in ResultsView):
+  - Article reader (wikiwatchView) appears INSTANTLY — first ~12 raw
+    lines are laid out in the first onUpdate (typical 2 screens of body
+    content). The "..." marker appears at the bottom of the screen,
+    centered.
+  - Background timer (Timer.Timer, _layoutTimer field) fires every
+    80 ms. Each fire calls WatchUi.requestUpdate, triggering another
+    onUpdate where the next batch (6 raw lines) gets laid out + the
+    cursor advances + _contentHeight grows.
+  - Scrolling DOWN past the currently-laid-out boundary clamps at the
+    current bottom (LayoutProgress.clampedScroll). As batches complete
+    the clamp relaxes and the user can continue scrolling.
+  - After ~5-6 timer ticks (~400 ms wall clock), all 50 raw lines are
+    laid out, `_layoutComplete` becomes true, and the "..." marker
+    disappears. Article is fully scrollable end-to-end.
+
+Tap any short fixture (e.g. "שיר", "שמש" — 2-3 raw lines each):
+  - Layout completes in the first onUpdate (within the INITIAL_LINES=12
+    budget). `_layoutComplete=true` on entry; "..." marker is never
+    drawn. No timer scheduled. Behaves indistinguishably from a normal
+    M2.x article load.
+
+Press lower-right physical back button from the reader:
+  - View pops (wikiwatchDelegate.onBack returns false; CIQ default).
+  - wikiwatchView.onHide fires, stops _layoutTimer, sets it to null —
+    no stray timer callbacks fire on the dead view.
+  - Returns to the previous view (ResultsView or keyboard).
+
+==============================================================================
+LAZY-LAYOUT STATE MACHINE — RACE-CONDITION COVERAGE
+==============================================================================
+Monkey C is single-threaded; "races" are really event-sequencing cases.
+Coverage:
+
+  Case A: scroll ended BEFORE second-load started.
+    User dragged to the laid-out bottom before the first timer tick.
+    LayoutProgress.clampedScroll(targetY=9999, currentContentH, screenH)
+    clamps at currentContentH - screenH. Tested by
+    `layoutProgress_scrollEndedBeforeLoadStarted` (PASS).
+
+  Case B: scroll ended WHILE second-load was in progress.
+    User holds the scroll at the current bottom; a timer tick fires
+    and grows contentH from C1 to C2. clampedScroll(scrollY=C1-screenH,
+    C2, screenH) stays at the old position (still inside [0, C2-screenH]).
+    Tested by `layoutProgress_scrollEndedWhileLoadInProgress` (PASS).
+
+  Case C: scroll goes negative or content < screen.
+    Defensive clamps. Tested by
+    `layoutProgress_clampedScrollNegativeBecomesZero` and
+    `layoutProgress_clampedScrollContentSmallerThanScreen` (PASS).
+
+  Case D: view popped while timer scheduled.
+    `onHide` stops the timer + nulls the field. Next fire would no-op
+    (timer no longer scheduled). Verified in code; not unit-testable
+    without view lifecycle simulation.
+
+==============================================================================
+TEST-HARNESS CO-EVIDENCE (monkeydo /t)
+==============================================================================
+The M4/M5 diagnostics fire before every test (139 boots), all consistent
+with the live-app values above. Plus the new LayoutProgress tests:
+
+  Executing test layoutProgress_nextBatchEndAdvancesByBatchSize...
+  DEBUG: nextBatchEnd(0,50,12) = 12
+  PASS
+  ...
+  Executing test layoutProgress_scrollEndedBeforeLoadStarted...
+  DEBUG: scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
+  PASS
+  Executing test layoutProgress_scrollEndedWhileLoadInProgress...
+  DEBUG: scrollEndedWhileLoadInProgress before=200 after=200
+  PASS
+
+Plus the fixture/installer tests confirm the data layer:
+
+  Executing test fixtures_manifestHasThirtyArticles...
+  DEBUG: Fixtures.manifest articles.size = 30
+  PASS
+  Executing test fixtures_allTitlesStartWithShin...
+  PASS
+  Executing test installer_reinstallsOnVersionBump...
+  DEBUG: after-version-bump n=30 size=30 firstId=shalom
+  PASS
+
+==============================================================================
+SUMMARY OF M5.2 TEST RUN
+==============================================================================
+Ran 139 tests
+PASSED (passed=139, failed=0, errors=0)
+
+Net new since M5.1 (125 tests): +14
+  test_LayoutProgress:     11 tests covering nextBatchEnd, isComplete,
+                           isScrollNearEnd, clampedScroll — including the
+                           two user-named race-condition cases
+                           (scrollEndedBeforeLoadStarted,
+                            scrollEndedWhileLoadInProgress).
+  test_Fixtures:            +2 tests (manifestVersionIsTwo,
+                                      allTitlesStartWithShin); existing
+                            "manifestHasThreeArticles" renamed/strengthened
+                            to "manifestHasThirtyArticles".
+  test_FixtureInstaller:    +1 test (reinstallsOnVersionBump).

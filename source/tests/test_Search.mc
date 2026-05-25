@@ -28,14 +28,15 @@ function search_emptyQueryReturnsTopByPopularity(logger as Logger) as Boolean {
 }
 
 (:test)
-function search_emptyQueryCapsAtTwenty(logger as Logger) as Boolean {
+function search_emptyQueryCapsAtTopK(logger as Logger) as Boolean {
+    // M5.2: TOP_K was 20, bumped to 50. Verify the cap with 60 articles.
     var arts = [];
-    for (var i = 0; i < 25; i++) {
+    for (var i = 0; i < 60; i++) {
         arts.add({ :id => "id" + i, :title => "title" + i, :popularity => i });
     }
     var r = Search.rank("", arts);
-    logger.debug("25-articles empty-query size=" + r.size());
-    return r.size() == 20;
+    logger.debug("60-articles empty-query size=" + r.size());
+    return r.size() == 50;
 }
 
 (:test)

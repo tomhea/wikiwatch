@@ -20,7 +20,10 @@ import Toybox.Lang;
 // up to a few thousand articles. If M7 grows to tens of thousands and
 // per-keystroke rank lags, a per-prefix index can be added in M5.x.
 module Search {
-    const TOP_K = 20;
+    // M5.2: bumped 20 -> 50 to fit the 30-fixture corpus without losing
+    // any articles to the cap. The cap still exists as a safety net for
+    // future huge corpora (M7+); ResultsView paginates whatever fits.
+    const TOP_K = 50;
 
     function rank(query as String, articles as Array<Dictionary>) as Array<Dictionary> {
         var n = articles.size();

@@ -19,7 +19,7 @@ import Toybox.WatchUi;
 // instance field — local Timer.Timer gets GC'd before the delay elapses.
 class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private const PRESS_FLASH_MS = 200;
-    private const MAX_SUGGESTIONS = 3;
+    private const MAX_SUGGESTIONS = 2;
 
     private var _view as wikiwatchKeyboardView;
     private var _buffer as String;
