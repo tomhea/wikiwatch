@@ -25,14 +25,14 @@ import Toybox.WatchUi;
 //                      before fire); stopped + cleared in onHide
 class wikiwatchView extends WatchUi.View {
     private const _RIGHT_MARGIN = 100;
-    // M5.3: bounded first-batch — shrank 12->5 so short and long articles
-    // first-paint in comparable wall-clock time. Per-batch work is dominated
-    // by dc.getTextWidthInPixels calls; 5 raw lines * ~10 words = ~50 calls,
-    // matching the "feels instant" baseline of short articles like שבת.
-    // Subsequent batches are smaller (4) so per-tick work stays predictable.
-    private const _INITIAL_LINES = 5;
-    private const _INCREMENTAL_LINES = 4;
-    private const _LAYOUT_TICK_MS = 80;      // >= 50 ms (CIQ minimum)
+    // M5.4: tightened further — _INITIAL_LINES 5->2 so first paint is
+    // essentially the H1 + first body line only (~20 dc.getTextWidthInPixels
+    // calls). _INCREMENTAL_LINES 4->2 for finer-grained ticks.
+    // _LAYOUT_TICK_MS 80->50 (CIQ minimum) so subsequent batches arrive as
+    // fast as the platform allows.
+    private const _INITIAL_LINES = 2;
+    private const _INCREMENTAL_LINES = 2;
+    private const _LAYOUT_TICK_MS = 50;      // CIQ minimum
 
     private var _body as String;
     private var _rawLines as Array<String>?;
@@ -138,6 +138,13 @@ class wikiwatchView extends WatchUi.View {
 
     function getScreenHeight() as Number {
         return _screenHeight;
+    }
+
+    // M5.4: exposed so the delegate can gate behavior that doesn't make sense
+    // mid-load (e.g. double-tap-to-bottom — there's no fully-laid-out bottom
+    // yet). Returns false until the lazy layout has consumed all raw lines.
+    function isLayoutComplete() as Boolean {
+        return _layoutComplete;
     }
 
     private function _scheduleNextTick() as Void {

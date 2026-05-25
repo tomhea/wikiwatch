@@ -66,7 +66,12 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
         if (isDouble) {
             if (y < EDGE_ZONE_PX) {
                 _view.scrollToTop();
-            } else if (y > _view.getScreenHeight() - EDGE_ZONE_PX) {
+            } else if (y > _view.getScreenHeight() - EDGE_ZONE_PX
+                       && _view.isLayoutComplete()) {
+                // M5.4: ignore bottom double-tap until lazy layout is
+                // done — there's no fully-laid-out bottom yet, and the
+                // scroll-clamp would dump the user in the middle of
+                // partially-rendered content.
                 _view.scrollToBottom();
             }
         }
