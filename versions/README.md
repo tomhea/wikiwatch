@@ -41,6 +41,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M4 | `v0.M4` | `00382a0` | 2026-05-24 | 138 KB | Storage layer — `Manifest` + `ArticleStore` + `Fixtures` + `FixtureInstaller`. R4-gated `setValue`. First-launch fixture install (3 Hebrew articles). No on-watch UX delta. | 112 |
 | M5 | `v0.M5` | `2df7c54` | 2026-05-24 | 143 KB | Live search — `Search.rank` (prefix > substring > popularity); keyboard center shows real ranked Hebrew titles instead of stubs; tap a suggestion to push the M2.x article reader. `wikiwatchView` becomes `initialize(body)`. | 122 |
 | M5.1 | `v0.M5.1` | `c15a8cf` | 2026-05-25 | 147 KB | Bigger suggestion taps (3×FONT_TINY @ 40 px, was 5×FONT_XTINY @ 22 px) + "▼ N more" footer that pushes a new full-screen scrollable `ResultsView` listing all top-20 in FONT_SMALL rows. New pure `ResultsLayout.rowIndexAt` for the hit-test math. | 125 |
+| M5.2 | `v0.M5.2` | `edf23bb` | 2026-05-25 | 156 KB | Bundle: 2-line buffer restored (`bandH` 30 → 64, rounded edges) + 1-px row separators + 30 ש-prefix fixtures (version-aware install) + lazy article layout via `LayoutProgress` + `Timer.Timer` + "..." marker + "X more articles fit" footer in ResultsView. | 146 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -688,7 +689,72 @@ M5 rank: buf='' top=[שלום,תורה,שבת] more=0
 
 **User-visible change:** before M5.1, the 5 cramped FONT_XTINY rows were hard to tap and there was no path past the top 5. After M5.1, 3 big comfortably-tappable FONT_TINY rows show in the keyboard center, plus a "▼ N more" footer (when there are more) that opens a full-screen scrollable list of all top-20 in FONT_SMALL rows. Tap-to-open works from both the inline rows and the full-screen list; back from the article reader returns to whichever view pushed it.
 
-**Artifact:** `wikiwatch-M5.1.prg` (147 052 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M5.1.prg` (147 052 bytes).
+
+---
+
+## M5.2 — Multi-line buffer + separators + 30 ש-fixtures + lazy article layout + rounded buffer + "X more articles fit" footer (tag `v0.M5.2`)
+
+Six user-requested UX changes after testing M5.1. All shipped as one bundle.
+
+**Why now:** M5.1 made suggestion taps bigger and added the ResultsView, but the user immediately surfaced 4 polish issues — and then 2 more on top:
+
+1. **No visual separation** between suggestion rows — they blended.
+2. **Lost the 2-line buffer** that M3.5/M5 had; M5.1 shrunk it for the 3 big rows.
+3. **Only 3 fixture articles** — the M5.1 "▼ N more" + ResultsView paths were dormant.
+4. **Article reader takes too long to load** — `שלום` (50 raw lines) blocks the watch because `_layout` measures every word in one synchronous pass.
+5. **Rectangle text box looks harsh** — soften with rounded corners.
+6. **ResultsView caps at top-K with no hint about overflow** — show "X more articles fit" at the bottom.
+
+**What landed:**
+
+| # | Change | Where |
+|---|---|---|
+| 1 | 1-px DK_GRAY separator (67 px wide, centered) between consecutive suggestion rows + before "▼ N more" footer | `wikiwatchKeyboardView.mc` |
+| 2 | 2-line buffer restored: `_BAND_H` 30 → 64, `_BAND_Y_OFFSET` -95 → -110. Tradeoff: `_MAX_SUGGESTIONS` 3 → 2 to fit | `wikiwatchKeyboardView.mc`, `wikiwatchKeyboardDelegate.mc` |
+| 3 | `Fixtures.mc` rewritten with 30 articles all starting with `ש`, `:version => 2`. Includes the long anachronistic title `שיר לשלום מאת חיים נחמן ביאליק ונועה קירל` per user spec. `FixtureInstaller` version-aware (auto-migrates). `Search.TOP_K` 20 → 50 | `Fixtures.mc`, `FixtureInstaller.mc`, `Search.mc` |
+| 4 | Lazy article layout via new pure `LayoutProgress` module. First `onUpdate` lays out `_INITIAL_LINES=12` raw lines (~ 2 screens). `Timer.Timer` (`_LAYOUT_TICK_MS=80`) wakes the view via `WatchUi.requestUpdate` so the next `onUpdate` can lay out `_INCREMENTAL_LINES=6` more. Scroll clamps to currently-laid-out `_contentHeight`. "..." marker visible until `_layoutComplete`. `onHide` stops the timer | `wikiwatchView.mc`, `LayoutProgress.mc` |
+| 5 | `fillRectangle` → `fillRoundedRectangle(_BAND_CORNER_RADIUS=8)` for a softer "input box" look | `wikiwatchKeyboardView.mc` |
+| 6 | New pure `Search.totalMatches(query, articles)` (un-capped match count) + pure `ResultsLayout.moreArticlesText(total, displayed)` (singular "1 more article fits" / plural "X more articles fit" / null when 0). `ResultsView` ctor takes `totalMatches`; renders the footer when `total > displayed`. Dormant in M5.2 (TOP_K=50 ≥ 30 fixtures), live as soon as the corpus exceeds the cap | `Search.mc`, `ResultsLayout.mc`, `ResultsView.mc`, `wikiwatchKeyboardDelegate.mc` |
+
+**New pure modules / functions (all `Toybox.Lang` only):**
+- `LayoutProgress.mc` — 4 helpers: `nextBatchEnd`, `isComplete`, `isScrollNearEnd`, `clampedScroll`.
+- `Search.totalMatches(query, articles)`.
+- `ResultsLayout.moreArticlesText(total, displayed)`.
+
+**Test changes (+21, 125 → 146):**
+- `test_LayoutProgress.mc` — 11 tests including the user-named race-condition cases (`scrollEndedBeforeLoadStarted`, `scrollEndedWhileLoadInProgress`) + defensive clamps + content-growth stability.
+- `test_Fixtures.mc` — `+2` (`manifestVersionIsTwo`, `allTitlesStartWithShin`); existing `manifestHasThreeArticles` strengthened to `manifestHasThirtyArticles`.
+- `test_FixtureInstaller.mc` — `+1` (`reinstallsOnVersionBump`).
+- `test_Search.mc` — `+3` `totalMatches` tests; cap test renamed `search_emptyQueryCapsAtTwenty` → `search_emptyQueryCapsAtTopK` with 60 input articles + TOP_K=50.
+- `test_ResultsLayout.mc` — `+4` `moreArticlesText` tests (zero / singular / plural / negative).
+
+**R1 evidence:** `docs/m5-2-fail.txt` (13 FAIL on base stubs) + `docs/m5-2-extras-fail.txt` (7 FAIL on extras stubs) → `docs/m5-2-pass.txt` (146/146 PASS).
+
+**R2 evidence:** `docs/m5-2-r2-evidence.txt` captured from a live `monkeydo bin/wikiwatch.prg venu2`:
+
+```
+M4 install: startEmpty=false currentVersion=2 targetVersion=2 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema]
+M4 install: SKIP (manifest already at target version)
+M5 rank: buf='' top=[שלום,שבת] more=28 total=30
+```
+
+All 30 fixture IDs present. `more=28 total=30` proves the wire from Search.totalMatches through the delegate to ResultsView is in place. `total > displayed` triggers the new footer (dormant in M5.2 since 30 ≤ TOP_K=50; becomes live with M7+ corpora).
+
+**User-visible changes** (vs M5.1):
+- Buffer band has rounded corners, 2 lines tall again.
+- 2 (not 3) big suggestion rows + "▼ 28 more" footer (was 0 with 3 fixtures).
+- Thin separator lines between rows.
+- Tapping a long article (e.g. שלום) shows the first screen INSTANTLY with a "..." loading marker; full article is scrollable within ~400 ms.
+- ResultsView lists all 30 in big FONT_SMALL rows; "X more articles fit" footer infrastructure ready for when the corpus exceeds the cap.
+
+**Lazy-layout race-condition coverage** (Monkey C is single-threaded; "races" are event-sequencing cases):
+- A: scroll ended BEFORE second-load started → `clampedScroll(9999, 400, 200) == 200`.
+- B: scroll ended WHILE second-load was in progress → scroll position stable as contentH grows.
+- C: defensive clamps (negative scrollY, content < screen).
+- D: view popped while timer scheduled → `onHide` stops the timer.
+
+**Artifact:** `wikiwatch-M5.2.prg` (156 284 bytes). Current head of `main`.
 
 ---
 
@@ -708,7 +774,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 125 tests pass at v0.M5.1
+& scripts\test.ps1     # 146 tests pass at v0.M5.2
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
