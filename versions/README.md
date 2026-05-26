@@ -45,6 +45,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M5.3 | `v0.M5.3` | `ef4a84f` | 2026-05-26 | 159 KB | Bundle: shir-lashalom-long title fix + empty-buffer guard + round-screen-aware ResultsView (15%/15% pad + 40 px L/R margins) + multiline title blocks (`ResultsLayout.blockAt`) + bounded first-paint (`_INITIAL_LINES` 12 → 5 so שלום and שבת load in comparable time). | 154 |
 | M5.4 | `v0.M5.4` | `dce2ad8` | 2026-05-26 | 159 KB | Polish: tighter lazy-load (`_INITIAL_LINES` 5 → 2, `_INCREMENTAL_LINES` 4 → 2, `_LAYOUT_TICK_MS` 80 → 50; bounded-batch test STRENGTHENED to exact equality) + bottom-double-tap gated on `isLayoutComplete` + ResultsView margins 15 → 16% / 40 → 50 px + 0 px intra-article sub-line gap. | 154 |
 | M6 | `v0.M6` | `eaf7d99` | 2026-05-26 | 162 KB | Long-press a word in the article reader → push a new keyboard layer pre-filled with that word. New pure `WordHitTest.findWordInLine` (char-count + Hebrew-RTL aware). New `wikiwatchView.findWordAt` + `wikiwatchDelegate.onHold`. `wikiwatchKeyboardDelegate` ctor takes `initialBuffer`. Inlines the project's `onHold` spike via a `System.println` diagnostic. | 160 |
+| M6.1 | `v0.M6.1` | `b27a0dc` | 2026-05-26 | 161 KB | Fix M6 off-by-one + left-side dead zone: replace char-count `findWordInLine` with `findWordPx` using actual per-word pixel widths stored in each `_lines` sub-line (`:words / :wordPx / :spacePx`). Exact `lineRightX` from `sum(wordPx) + (n-1)*spacePx`. Removed `_approxCharPx`. | 161 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -925,7 +926,66 @@ back button pops each layer cleanly.
 
 **User-visible change:** in the article reader, long-press any word — a new keyboard view slides in with that word in the buffer. The view stack can now grow several layers deep (article → keyboard' → article' → keyboard'' → ...). Back-press through each layer returns to the previous, preserving scroll positions.
 
-**Artifact:** `wikiwatch-M6.prg` (161 580 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M6.prg` (161 580 bytes).
+
+---
+
+## M6.1 — Fix M6 off-by-one + left-side dead zone (tag `v0.M6.1`)
+
+Two bugs surfaced in M6's long-press feedback as soon as it shipped:
+1. Long-pressing a word usually returned **either the correct word or the visually-adjacent word to its left** ("the next word").
+2. Long-press **didn't work on the left side of the screen** — sometimes returned null, sometimes returned the wrong word.
+
+Both trace to the same root cause: M6's `findWordInLine` approximated text width via `text.length() * charPx`. Hebrew character widths range from ~6 px (narrow letters) to ~13 px (wide letters), so a single average is off by tens of pixels per line. Underestimating `text_width_px` made the computed `text_left_x` fall to the right of where the text actually started → taps in the leftmost zone landed past the computed end and returned null (bug 2). Inside the line, the same skew shifted the per-char index by ±1, biasing the result to the visually-adjacent word (bug 1).
+
+**Why this is the right fix:** the article view already calls `dc.getTextWidthInPixels(word, font)` for every word during M2.8 px-wrap. Those measurements were thrown away after wrap. M6.1 stashes them on each sub-line dict so the long-press hit-test can walk words right-to-left using exact pixel positions instead of guessing.
+
+**What landed:**
+
+**Replaced module function** (`source/models/WordHitTest.mc`, `Toybox.Lang` only):
+- `findWordPx(contentX, words, wordPx, lineRightX, spacePx) as String?` — walks `words` right-to-left starting at `lineRightX`, subtracting `wordPx[i]` then `spacePx` per word. Each word "owns" the space to its left (toward the visually-next word) so taps on whitespace snap to the preceding word.
+- Hebrew RTL: `words[0]` is logically first AND visually rightmost; walking left consumes them in logical order.
+- `findWordInLine` (the M6 char-count function) **removed**. No callers remain.
+
+**View wiring** (`source/wikiwatchView.mc`):
+- `_layoutBatchRange` now stores `:words` / `:wordPx` / `:spacePx` on each sub-line dict (`splitWords` once, `dc.getTextWidthInPixels` once per word — same data the px-wrap already consumes).
+- `findWordAt(x, y)` rewritten: computes exact `lineRightX` from the stored arrays (`centerX + (sum(wordPx) + (n-1)*spacePx)/2` for centered H1/narrow lines, `screenW - _RIGHT_MARGIN` for body lines), dispatches to `WordHitTest.findWordPx`.
+- `_approxCharPx` deleted — no longer needed.
+
+**Test changes (+7 new, −6 old, net 154 → 161):**
+- `test_WordHitTest.mc` — 7 px-accurate cases replacing the 6 char-count cases:
+  - `insideFirstWord` — tap inside rightmost word → returns words[0].
+  - `insideMiddleWord` — tap inside center word → returns words[1].
+  - `insideLastWord` — tap inside leftmost word (bug-2 regression) → returns words[2].
+  - `onSpaceSnapsToPreviousWord` — tap on whitespace between two words (bug-1 regression) → returns the visually-right word.
+  - `pastRightEdge` — tap right of `lineRightX` → null.
+  - `pastLeftEdge` — tap left of leftmost word's start → null.
+  - `emptyWords` — empty `words` array → null.
+
+**R1 evidence** ([docs/m6-1-fail.txt](docs/m6-1-fail.txt)) — `findWordPx` stub returns null:
+
+```
+DEBUG: insideFirstWord got=null exp=abc
+FAIL: WordHitTestTests.wordHitTest_insideFirstWord
+DEBUG: insideMiddleWord got=null exp=def
+FAIL: WordHitTestTests.wordHitTest_insideMiddleWord
+... (7 total FAIL)
+Ran 161 tests
+FAILED (passed=154, failed=7, errors=0)
+```
+
+After implementation ([docs/m6-1-pass.txt](docs/m6-1-pass.txt)):
+
+```
+Ran 161 tests
+PASSED (passed=161, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m6-1-r2-evidence.txt](docs/m6-1-r2-evidence.txt)) — bug analysis + manual long-press protocol. The view-side change is observable on the watch by long-pressing a word on the **left** of any line (previously returned null) and by long-pressing words **next to spaces** (previously biased to the visually-left neighbor). Both now resolve to the visually-correct word.
+
+**User-visible change:** long-press in the article reader now lands on the word actually under the finger, including on the left side of the screen. No more dead zone, no more off-by-one.
+
+**Artifact:** `wikiwatch-M6.1.prg` (161 420 bytes). Current head of `main`.
 
 ---
 
@@ -945,7 +1005,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 160 tests pass at v0.M6
+& scripts\test.ps1     # 161 tests pass at v0.M6.1
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
