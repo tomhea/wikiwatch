@@ -41,6 +41,18 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _pressTimer = null;
         var arts = Manifest.load()[:articles] as Array<Dictionary>?;
         _articles = (arts == null) ? new [0] : arts;
+        // M6.2: pre-load each article body into :body so Search.rank can do
+        // tier-3 body fallback matching. Body lives in ArticleStore — load
+        // once per keyboard layer (~50 KB resident at the current corpus,
+        // well under the 9 MB Storage cap and inside the per-layer alloc
+        // budget). Small cost paid once at construction.
+        for (var i = 0; i < _articles.size(); i++) {
+            var a = _articles[i] as Dictionary;
+            var body = ArticleStore.bodyOf(a[:id] as String);
+            if (body != null) {
+                a.put(:body, body);
+            }
+        }
         _ranked = new [0];
         _totalMatches = 0;
         _recomputeSuggestions();

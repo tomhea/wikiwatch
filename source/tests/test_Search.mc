@@ -171,6 +171,145 @@ function search_totalMatchesEmptyArticlesReturnsZero(logger as Logger) as Boolea
     return t == 0;
 }
 
+// --- M6.2: ASCII-punctuation normalization + body-content search ---
+
+(:test)
+function search_normalizeStripsAsciiDoubleQuote(logger as Logger) as Boolean {
+    // " (ASCII 0x22) used for gershayim-style Hebrew acronyms (שב"ק, ש"ס).
+    // _normalize must strip all occurrences so matching ignores them.
+    var got = Search._normalize("שב\"ק");
+    logger.debug("normalize('שב\"ק')='" + got + "' (want 'שבק')");
+    return got.equals("שבק");
+}
+
+(:test)
+function search_normalizeStripsAsciiSingleQuote(logger as Logger) as Boolean {
+    // ' (ASCII 0x27) used for geresh-style abbreviation (ש'מ for שמואל).
+    var got = Search._normalize("ש'מ");
+    logger.debug("normalize(\"ש'מ\")='" + got + "' (want 'שמ')");
+    return got.equals("שמ");
+}
+
+(:test)
+function search_normalizeReplacesAsciiHyphenWithSpace(logger as Logger) as Boolean {
+    // - (ASCII 0x2D) treated as space — compound terms (שיר-השירים) match
+    // the same as their space-separated form.
+    var got = Search._normalize("שיר-השירים");
+    logger.debug("normalize('שיר-השירים')='" + got + "' (want 'שיר השירים')");
+    return got.equals("שיר השירים");
+}
+
+(:test)
+function search_normalizeAllThreeChars(logger as Logger) as Boolean {
+    // Mixed input with " + ' + - : strip the quotes, hyphen becomes space.
+    // ש"י-עגנון → שי עגנון.
+    var got = Search._normalize("ש\"י-עגנון");
+    logger.debug("normalize('ש\"י-עגנון')='" + got + "' (want 'שי עגנון')");
+    return got.equals("שי עגנון");
+}
+
+(:test)
+function search_normalizeEmptyReturnsEmpty(logger as Logger) as Boolean {
+    var got = Search._normalize("");
+    logger.debug("normalize('')='" + got + "'");
+    return got.equals("");
+}
+
+(:test)
+function search_normalizeIdempotent(logger as Logger) as Boolean {
+    // _normalize(_normalize(s)) == _normalize(s) for any input.
+    var src = "ש\"י-עגנון";
+    var once = Search._normalize(src);
+    var twice = Search._normalize(once);
+    logger.debug("once='" + once + "' twice='" + twice + "'");
+    return once.equals(twice);
+}
+
+(:test)
+function search_rankMatchesTitleIgnoringQuotes(logger as Logger) as Boolean {
+    // Query "שבק" must match title שב"ק (gershayim stripped during ranking).
+    var arts = [
+        { :id => "sbk", :title => "שב\"ק", :popularity => 50 }
+    ];
+    var r = Search.rank("שבק", arts);
+    logger.debug("rank('שבק', שב\"ק) size=" + r.size());
+    return r.size() == 1 && ((r[0] as Dictionary)[:id] as String).equals("sbk");
+}
+
+(:test)
+function search_rankMatchesHyphenAsSpace(logger as Logger) as Boolean {
+    // Query "שיר השירים" matches title "שיר-השירים-המלא" because
+    // both sides normalize hyphens to spaces.
+    var arts = [
+        { :id => "shsh", :title => "שיר-השירים-המלא", :popularity => 50 }
+    ];
+    var r = Search.rank("שיר השירים", arts);
+    logger.debug("rank('שיר השירים', שיר-השירים-המלא) size=" + r.size());
+    return r.size() == 1 && ((r[0] as Dictionary)[:id] as String).equals("shsh");
+}
+
+(:test)
+function search_rankPreservesDisplayedTitleWithPunctuation(logger as Logger) as Boolean {
+    // After ranking, the returned dict's :title is the ORIGINAL string
+    // (with the gershayim / geresh / hyphen still intact) — normalization
+    // is for matching only, never mutates the data.
+    var arts = [
+        { :id => "sbk", :title => "שב\"ק", :popularity => 50 }
+    ];
+    var r = Search.rank("שבק", arts);
+    if (r.size() != 1) { return false; }
+    var got = (r[0] as Dictionary)[:title] as String;
+    logger.debug("preserved-title='" + got + "'");
+    return got.equals("שב\"ק");
+}
+
+(:test)
+function search_rankMatchesBodyWhenTitleDoesnt(logger as Logger) as Boolean {
+    // Article with :body containing the query but :title that doesn't —
+    // M6.2 adds body-fallback as tier 3.
+    var arts = [
+        { :id => "doc1", :title => "שלום", :popularity => 50,
+          :body => "מאמר זה דן בעניין אברהם אבינו ובהמשך גם בשרה." }
+    ];
+    var r = Search.rank("אברהם", arts);
+    logger.debug("rank('אברהם', body-only) size=" + r.size());
+    return r.size() == 1 && ((r[0] as Dictionary)[:id] as String).equals("doc1");
+}
+
+(:test)
+function search_rankTitleMatchesBeforeBodyMatches(logger as Logger) as Boolean {
+    // Title-matched articles must come BEFORE body-only matched articles
+    // regardless of popularity. body-only article has higher popularity
+    // (100) than the title-match article (10); title-match still wins.
+    var arts = [
+        { :id => "title-hit", :title => "אברהם",
+          :popularity => 10,  :body => "no relevant body" },
+        { :id => "body-hit",  :title => "שלום",
+          :popularity => 100, :body => "אברהם הופיע בפסוק זה." }
+    ];
+    var r = Search.rank("אברהם", arts);
+    logger.debug("rank size=" + r.size() + " ids=" + _searchIdsOf(r));
+    return r.size() == 2
+        && ((r[0] as Dictionary)[:id] as String).equals("title-hit")
+        && ((r[1] as Dictionary)[:id] as String).equals("body-hit");
+}
+
+(:test)
+function search_totalMatchesIncludesBodyHits(logger as Logger) as Boolean {
+    // M6.2: totalMatches counts title-or-body matches (not just title).
+    var arts = [
+        { :id => "a", :title => "שלום", :popularity => 0,
+          :body => "אברהם הופיע בפסוק" },
+        { :id => "b", :title => "אברהם", :popularity => 0,
+          :body => "no match here either" },
+        { :id => "c", :title => "תורה", :popularity => 0,
+          :body => "no relevant content" }
+    ];
+    var t = Search.totalMatches("אברהם", arts);
+    logger.debug("totalMatches('אברהם', mixed) = " + t + " (want 2)");
+    return t == 2;
+}
+
 // Helper: render an array of article dicts as "[id1,id2,...]" for debug logs.
 // Non-test (no `(:test)` annotation) so the harness doesn't try to run it.
 function _searchIdsOf(arr as Array) as String {

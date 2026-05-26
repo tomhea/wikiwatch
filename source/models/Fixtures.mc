@@ -5,9 +5,13 @@ import Toybox.Lang;
 // path AND the "▼ N more" → full-screen ResultsView path (which was
 // dormant in M4/M5/M5.1 with only 3 fixtures).
 //
-// Schema bumped from :version => 1 (M4) to :version => 2. FixtureInstaller
-// detects the mismatch and re-seeds automatically on next launch — no
+// Schema versions: M4 = 1, M5.2 = 2, M5.3 = 3, M6.2 = 4. FixtureInstaller
+// detects mismatches and re-seeds automatically on next launch — no
 // manual sim wipe needed.
+//
+// M6.2: +5 new ש-prefix entries that use ASCII " / ' / - in their titles
+// (ש"ס, שב"ק, ש"ץ, ש"י-עגנון, שלום-בית). Lets the live corpus exercise
+// Search._normalize (gershayim/geresh stripped, makaf treated as space).
 //
 // Titles are mostly real Hebrew Wikipedia-shaped entries (שלום, שבת,
 // שיר השירים, ...). The deliberately-anachronistic title
@@ -15,16 +19,16 @@ import Toybox.Lang;
 // explicit example — doubles as a long-title wrap stress test.
 //
 // Bodies: "shalom" keeps Strings.sampleArticle() (~50 raw lines, ~2 KB)
-// to exercise the lazy article-layout in wikiwatchView. The other 29
-// articles get short hardcoded 2–4 line Hebrew bodies (< 200 bytes each)
-// so the total fixture install stays well under the 9 MB Storage cap +
-// 16 KB per-value cap.
+// to exercise the lazy article-layout in wikiwatchView. The other articles
+// get short hardcoded 2–4 line Hebrew bodies (< 200 bytes each) so the
+// total fixture install stays well under the 9 MB Storage cap + 16 KB
+// per-value cap.
 //
 // Pure — only imports Toybox.Lang.
 module Fixtures {
     function manifest() as Dictionary {
         return {
-            :version => 3,
+            :version => 4,
             :articles => [
                 { :id => "shalom",            :title => "שלום",                                                    :popularity => 100 },
                 { :id => "shabbat",           :title => "שבת",                                                     :popularity => 99  },
@@ -55,7 +59,13 @@ module Fixtures {
                 { :id => "shulamit",          :title => "שולמית",                                                  :popularity => 50  },
                 { :id => "shimshon",          :title => "שמשון",                                                   :popularity => 48  },
                 { :id => "sheh",              :title => "שה",                                                      :popularity => 46  },
-                { :id => "shdema",            :title => "שדמה",                                                    :popularity => 44  }
+                { :id => "shdema",            :title => "שדמה",                                                    :popularity => 44  },
+                { :id => "shas",              :title => "ש\"ס",                                                    :popularity => 45  },
+                { :id => "shabak",            :title => "שב\"ק",                                                   :popularity => 43  },
+                { :id => "shatz",             :title => "ש\"ץ",                                                    :popularity => 41  },
+                { :id => "shai-agnon",        :title => "ש\"י-עגנון",                                              :popularity => 39  },
+                { :id => "shalom-bayit",      :title => "שלום-בית",                                                :popularity => 37  },
+                { :id => "sh-aharon",         :title => "ש'אהרון",                                                 :popularity => 35  }
             ]
         };
     }
@@ -91,6 +101,12 @@ module Fixtures {
         if (id.equals("shimshon"))           { return _short("שמשון", "אחד משופטי ישראל, הידוע בכוחו."); }
         if (id.equals("sheh"))               { return _short("שה", "בעל חיים, צאן."); }
         if (id.equals("shdema"))             { return _short("שדמה", "שדה זרוע, מן ספרי הנביאים."); }
+        if (id.equals("shas"))               { return _short("ש\"ס", "ראשי תיבות של שישה סדרים, ספרי המשנה והתלמוד."); }
+        if (id.equals("shabak"))             { return _short("שב\"ק", "ראשי תיבות של שבת קודש, כינוי קצר ליום השבת."); }
+        if (id.equals("shatz"))              { return _short("ש\"ץ", "ראשי תיבות של שליח ציבור, המוביל את התפילה."); }
+        if (id.equals("shai-agnon"))         { return _short("ש\"י-עגנון", "ראשי תיבות של שמואל יוסף, סופר ישראלי וחתן פרס נובל."); }
+        if (id.equals("shalom-bayit"))       { return _short("שלום-בית", "ערך הרמוניה בין בני הזוג במשפחה היהודית."); }
+        if (id.equals("sh-aharon"))          { return _short("ש'אהרון", "ראשי תיבות של שמואל אהרון, דמות בספרות העברית."); }
         return null;
     }
 

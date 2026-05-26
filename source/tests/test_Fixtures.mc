@@ -4,24 +4,45 @@ import Toybox.Test;
 // M4 tests for the Fixtures pure module. No Storage interaction.
 
 (:test)
-function fixtures_manifestHasThirtyArticles(logger as Logger) as Boolean {
+function fixtures_manifestHasThirtyFiveArticles(logger as Logger) as Boolean {
     // M5.2: corpus expanded from 3 -> 30 fixture articles so the keyboard's
     // "▼ N more" footer + full-screen ResultsView paths get exercised.
+    // M6.2: +5 more ש-prefix entries that exercise ASCII " / ' / - in
+    // titles (so search normalization is observable in the live corpus).
     var m = Fixtures.manifest();
     var arts = m[:articles] as Array;
     logger.debug("Fixtures.manifest articles.size = " + arts.size());
-    return arts.size() >= 30;
+    return arts.size() >= 35;
 }
 
 (:test)
-function fixtures_manifestVersionIsThree(logger as Logger) as Boolean {
-    // M5.2: version bump from 1 -> 2 lets FixtureInstaller detect that an
-    // older (M4/M5/M5.1) install needs to be re-seeded with the new corpus.
-    // M5.3: bump to 3 because the shir-lashalom-long body changed (its H1
-    // now matches the long manifest title).
+function fixtures_manifestVersionIsFour(logger as Logger) as Boolean {
+    // M5.2: version bump 1 -> 2 (corpus 3 -> 30 articles).
+    // M5.3: 2 -> 3 (shir-lashalom-long body H1 matches title).
+    // M6.2: 3 -> 4 (added ASCII-punctuation ש-prefix entries).
     var v = Fixtures.manifest()[:version] as Number;
     logger.debug("Fixtures.manifest version = " + v);
-    return v == 3;
+    return v == 4;
+}
+
+(:test)
+function fixtures_hasEntriesWithEachAsciiPunctuation(logger as Logger) as Boolean {
+    // M6.2: at least one ש-prefix title must contain ASCII " (gershayim
+    // substitute), one must contain ASCII ' (geresh substitute), and one
+    // must contain ASCII - (makaf substitute). Lets the live search
+    // exercise Search._normalize on the fixture corpus.
+    var arts = Fixtures.manifest()[:articles] as Array;
+    var hasQuote = false;
+    var hasApos = false;
+    var hasHyphen = false;
+    for (var i = 0; i < arts.size(); i++) {
+        var t = (arts[i] as Dictionary)[:title] as String;
+        if (t.find("\"") != null) { hasQuote = true; }
+        if (t.find("'") != null) { hasApos = true; }
+        if (t.find("-") != null) { hasHyphen = true; }
+    }
+    logger.debug("hasQuote=" + hasQuote + " hasApos=" + hasApos + " hasHyphen=" + hasHyphen);
+    return hasQuote && hasApos && hasHyphen;
 }
 
 (:test)

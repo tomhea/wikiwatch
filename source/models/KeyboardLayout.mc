@@ -11,6 +11,12 @@ module KeyboardLayout {
     const R_HIT_OUTER = 215;
     const R_OUTER = 205;
     const R_EXPANSION_INNER = 50;
+    // M6.2: DIGITS expansion adds ASCII " / ' / - to the digit row so users
+    // can type Hebrew acronyms (שב"ק, ש"ס) and hyphenated terms (שיר-השירים).
+    // 13 cells at 360/13 ≈ 27.69° each — slightly tight but tappable on the
+    // 416 px sim / 390 px real watch outer-ring band.
+    const DIGITS_EXPANSION_COUNT = 13;
+    const DIGITS_EXPANSION_ARC_DEG = 28;  // ~360/13 rounded up; minor overlap is fine
 
     function buttons() as Array<Dictionary> {
         return [
@@ -23,7 +29,7 @@ module KeyboardLayout {
             { :label => "מנס",  :type => :LETTER_GROUP, :letters => ["מ","נ","ס"],                   :centerAngleDeg => 216 },
             { :label => "עפצ",  :type => :LETTER_GROUP, :letters => ["ע","פ","צ"],                   :centerAngleDeg => 252 },
             { :label => "קרשת", :type => :LETTER_GROUP, :letters => ["ק","ר","ש","ת"],               :centerAngleDeg => 288 },
-            { :label => "0-9",  :type => :DIGITS,       :letters => ["0","1","2","3","4","5","6","7","8","9"], :centerAngleDeg => 324 }
+            { :label => "0-9",  :type => :DIGITS,       :letters => ["0","1","2","3","4","5","6","7","8","9","\"","'","-"], :centerAngleDeg => 324 }
         ];
     }
 
@@ -49,13 +55,16 @@ module KeyboardLayout {
         if (t == :DIGITS) {
             var digits = parent[:letters] as Array<String>;
             var result = [];
-            for (var i = 0; i < 10; i++) {
+            // M6.2: 13 cells (0..9 + " + ' + -) evenly distributed around the
+            // outer ring. Center angles step by 360/13 ≈ 27°; each cell is
+            // 28° wide (1° overlap at boundaries — hit-test grabs first match).
+            for (var i = 0; i < DIGITS_EXPANSION_COUNT; i++) {
                 result.add({
                     :label => digits[i],
-                    :centerAngleDeg => i * WEDGE_ARC_DEG,
+                    :centerAngleDeg => (i * 360) / DIGITS_EXPANSION_COUNT,
                     :rInner => R_INNER,
                     :rOuter => R_OUTER,
-                    :arcDeg => WEDGE_ARC_DEG
+                    :arcDeg => DIGITS_EXPANSION_ARC_DEG
                 });
             }
             return result;

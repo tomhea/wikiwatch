@@ -3,14 +3,23 @@ import Toybox.Lang;
 // M5 ranking for the live-search keyboard. Pure module — only imports
 // Toybox.Lang. Used by wikiwatchKeyboardDelegate on every buffer change.
 //
-// Ranking contract:
-//   Empty query: top-K (=20) by :popularity DESC, stable tiebreak by :title.
-//   Non-empty query:
-//     tier 1 = titles where title.find(query) == 0   (prefix match)
-//     tier 2 = titles where title.find(query) != null && != 0
-//                                                     (substring, not prefix)
-//     each tier sorted by :popularity DESC, stable tiebreak by :title
-//     result = [tier1..., tier2...] capped at TOP_K.
+// Ranking contract (M6.2):
+//   Empty query: top-K (=50) by :popularity DESC, stable tiebreak by :title.
+//   Non-empty query, with normalization on both sides (see _normalize):
+//     tier 1 = titles where normTitle.find(normQuery) == 0   (title prefix)
+//     tier 2 = titles where normTitle.find(normQuery) != null && != 0
+//                                                              (title substring)
+//     tier 3 = body where normBody.find(normQuery) != null AND no title hit
+//                                                              (body fallback)
+//     each tier sorted by :popularity DESC, stable tiebreak by :title.
+//     result = [tier1..., tier2..., tier3...] capped at TOP_K.
+//   Body matches require article[:body] to be present (caller pre-loads).
+//
+// Normalization (M6.2):
+//   ASCII " and ' are stripped (matching ignores them).
+//   ASCII - is converted to space (matches treat hyphenated words like
+//   space-separated words). Decision deferred from the project: keyboard
+//   input + corpus titles both use ASCII forms (not Hebrew U+05F4/U+05F3).
 //
 // Hebrew strings work because Monkey C String.find/length operate on
 // codepoints (proved by M1 storage round-trip + M3 InputBuffer tests).
@@ -33,10 +42,20 @@ module Search {
     function totalMatches(query as String, articles as Array<Dictionary>) as Number {
         var n = articles.size();
         if (query.length() == 0) { return n; }
+        var normQuery = _normalize(query);
         var count = 0;
         for (var i = 0; i < n; i++) {
-            var title = (articles[i] as Dictionary)[:title] as String;
-            if (title.find(query) != null) { count++; }
+            var a = articles[i] as Dictionary;
+            var normTitle = _normalize(a[:title] as String);
+            if (normTitle.find(normQuery) != null) {
+                count++;
+                continue;
+            }
+            // M6.2: body fallback (only when caller pre-loaded :body).
+            var body = a[:body];
+            if (body != null && (_normalize(body as String)).find(normQuery) != null) {
+                count++;
+            }
         }
         return count;
     }
@@ -51,25 +70,36 @@ module Search {
             return _take(sorted, TOP_K);
         }
 
+        var normQuery = _normalize(query);
         var tier1 = [];
         var tier2 = [];
+        var tier3 = [];
         for (var i = 0; i < n; i++) {
             var a = articles[i] as Dictionary;
-            var title = a[:title] as String;
-            var idx = title.find(query);
-            if (idx == null) { continue; }
-            if (idx == 0) {
+            var normTitle = _normalize(a[:title] as String);
+            var titleIdx = normTitle.find(normQuery);
+            if (titleIdx == 0) {
                 tier1.add(a);
-            } else {
+                continue;
+            }
+            if (titleIdx != null) {
                 tier2.add(a);
+                continue;
+            }
+            // M6.2 tier 3 — body fallback (only if caller pre-loaded :body).
+            var body = a[:body];
+            if (body != null && (_normalize(body as String)).find(normQuery) != null) {
+                tier3.add(a);
             }
         }
         _sortByPopularityThenTitle(tier1);
         _sortByPopularityThenTitle(tier2);
+        _sortByPopularityThenTitle(tier3);
 
         var combined = [];
         for (var i = 0; i < tier1.size(); i++) { combined.add(tier1[i]); }
         for (var i = 0; i < tier2.size(); i++) { combined.add(tier2[i]); }
+        for (var i = 0; i < tier3.size(); i++) { combined.add(tier3[i]); }
         return _take(combined, TOP_K);
     }
 
@@ -123,5 +153,29 @@ module Search {
             if (x != y) { return x - y; }
         }
         return la - lb;
+    }
+
+    // M6.2: normalize for matching. ASCII " (0x22) and ' (0x27) are stripped
+    // (Hebrew acronyms like שב"ק / ש'מ become שבק / שמ for matching). ASCII
+    // - (0x2D) becomes a space so hyphenated compounds (שיר-השירים) match the
+    // same as their space-separated form. Pure — only walks the char array.
+    function _normalize(s as String) as String {
+        if (s.length() == 0) { return s; }
+        var chars = s.toCharArray();
+        var n = chars.size();
+        var out = "";
+        for (var i = 0; i < n; i++) {
+            var c = (chars[i] as Char).toNumber();
+            if (c == 0x22 || c == 0x27) {
+                // Skip " and '.
+                continue;
+            }
+            if (c == 0x2D) {
+                out = out + " ";
+                continue;
+            }
+            out = out + (chars[i] as Char).toString();
+        }
+        return out;
     }
 }
