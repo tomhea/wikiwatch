@@ -1,0 +1,126 @@
+M6.3 R2 evidence — fix M6.2 OOM crash
+================================================================================
+
+Bug report (from the 2026-05-26 conversation):
+> The application crashes if the first char isn't "ש", and also when the first
+> char is "ש" and any second letter. Also on choosing some article and open it,
+> like "שלום". It seems like a big problem overall - find the bug
+
+Root cause
+----------
+The M6.2 body-search machinery combined two compounding problems:
+
+1. Search._normalize built its output via `out = out + ch` in a per-char loop.
+   In Monkey C every `+` on a String allocates a fresh String (Strings are
+   immutable), so an N-char input produces ~N intermediate strings whose
+   lengths sum to ~N(N+1)/2 → O(N²) byte-allocations. On the ~2 KB shalom
+   sampleArticle that's ~4 million byte-allocs per pass.
+
+2. KeyboardDelegate.initialize pre-loaded EVERY article body into
+   `_articles[i][:body]` so Search.rank could run a tier-3 body fallback.
+   On every keystroke `_recomputeSuggestions` called both `Search.rank` and
+   `Search.totalMatches`, each of which re-normalized every body whose title
+   didn't match — that's TWO O(N²) walks per keystroke per article that
+   missed by title. The pre-load also kept ~5 KB of bodies resident in
+   the delegate even when the user wasn't searching.
+
+Crash modes observed by the user:
+- First char != ש   → no title matches → every article (incl. shalom) hits
+                       the tier-3 path → OOM.
+- ש + second letter → most titles fail the prefix → tier-3 again → OOM.
+- Opening שלום       → pre-loaded bodies (~5 KB) + fresh body alloc from
+                       ArticleStore.bodyOf + the reader's layout buffers
+                       (~10 KB during px-wrap) → heap exhausted at push time.
+
+OOM in Monkey C is uncatchable — the VM kills the app immediately. No
+stack trace surfaces in monkeydo because the host process dies mid-print.
+
+Fix (this PR)
+-------------
+- `Search.rank`             removes tier-3 body fallback. Back to M5/M6
+                             title-only matching (with M6.2 ASCII normalization
+                             on titles, which is small + safe).
+- `Search.totalMatches`     removes body branch. Title-only count.
+- `Search._normalize`       gains a fast-path: when input has no " / ' / -,
+                             return the input unchanged (no allocation). The
+                             O(N²) slow path is now only reachable for short
+                             title/query inputs that actually contain those
+                             chars (max ~20 chars on the M6.2 fixtures →
+                             400 byte-allocs, fine).
+- `KeyboardDelegate.initialize`
+                            stops pre-loading bodies. Reclaims ~5 KB
+                             resident from the delegate footprint.
+
+Kept from M6.2: ASCII normalization on titles, the 3 new keyboard keys
+(" / ' / -), the 6 new ש-prefix fixtures using ASCII punctuation. The
+"can the user type Hebrew acronyms and find titles with them" part of
+M6.2 still works; only the body-search part is gone.
+
+R1 (unit tests, no sim required)
+--------------------------------
+Pre-fix (with the two new regression assertions, still on M6.2 impl)
+[docs/m6-3-fail.txt]:
+
+    search_rankIgnoresBodyKey                            FAIL
+    search_totalMatchesIgnoresBodyKey                    FAIL
+    ...
+    Ran 175 tests
+    FAILED (passed=173, failed=2, errors=0)
+
+Post-fix [docs/m6-3-pass.txt]:
+
+    Ran 175 tests
+    PASSED (passed=175, failed=0, errors=0)
+    TESTS OK
+
+Three M6.2 body-search tests REMOVED:
+- search_rankMatchesBodyWhenTitleDoesnt
+- search_rankTitleMatchesBeforeBodyMatches
+- search_totalMatchesIncludesBodyHits
+
+Three M6.3 regression tests ADDED (net 0 → still 175):
+- search_rankIgnoresBodyKey                       — even with :body present,
+                                                    rank must not match
+- search_totalMatchesIgnoresBodyKey               — same for totalMatches
+- search_normalizeFastPathReturnsIdenticalString  — non-punctuation input
+                                                    returns the same value
+
+R2 (live simulator after the fix)
+---------------------------------
+Live `monkeydo bin/wikiwatch.prg venu2`:
+
+    M4 install: startEmpty=false currentVersion=4 targetVersion=4
+                startIds=[shalom, ..., shas, shabak, shatz, shai-agnon,
+                          shalom-bayit, sh-aharon]
+    M4 install: SKIP (manifest already at target version)
+    M5 rank: buf='' (empty — no results shown)
+
+The initial load now does NOT walk every body through ArticleStore.bodyOf
+during KeyboardDelegate.initialize — the loop was removed. The fixture
+install still shows 36 IDs.
+
+Manual touch protocol (verified by user in sim with the new build):
+  1. Type ש → M5 rank logs `top=[שלום,שבת] more=N total=36`; no crash.
+  2. Type any non-ש first char (e.g. א) → M5 rank logs `top=[] more=0
+     total=0`; no crash (was OOM in M6.2 because every article hit the
+     body normalize path).
+  3. Type ש + any second letter → M5 rank logs matches; no crash.
+  4. Tap a suggestion (e.g. שלום) → article reader opens; no crash (M6.2
+     killed the app at push time from heap pressure).
+  5. Long-press a word in the article reader → keyboard layer pushes
+     with that word pre-filled (M6 + M6.1 behavior preserved).
+
+R-rule status
+-------------
+R1 175/175 pass (FAIL→PASS captured)
+R2 live sim shown above + manual protocol verified the three M6.2 crash
+   scenarios no longer crash
+R3 `Search.rank` / `Search.totalMatches` / `Search._normalize` all under
+   coverage; new regressions assert the M6.3 contracts
+R4 no new setValue calls
+R5 +5 KB freed by removing the body pre-load; fast-path normalize
+   eliminates the O(N²) string-concat allocation
+R6 Search.mc stays in source/models with Toybox.Lang only
+R7 fix/m6-2-oom-crash + "Fix: ... (M6.3)" follows the M5.x / M6.1 / M6.2
+   mini-version precedent
+R8 BUILD SUCCESSFUL with the two baseline warnings only

@@ -263,51 +263,60 @@ function search_rankPreservesDisplayedTitleWithPunctuation(logger as Logger) as 
     return got.equals("שב\"ק");
 }
 
+// M6.3: body-search was pulled out of Search.rank / Search.totalMatches
+// because the M6.2 implementation triggered uncatchable OOM in the
+// simulator (and would do the same on-watch). Root cause: per-keystroke
+// rank+totalMatches both ran _normalize() on every article body that
+// missed by title, and the original _normalize used O(N²) string concat
+// (out = out + char in a loop). On the ~2 KB shalom sampleArticle that
+// works out to ~4 million byte-allocations per pass, ~8 million per
+// keystroke. Combined with the M6.2 pre-load (KeyboardDelegate held all
+// ~5 KB of bodies resident), the article-reader push then blew the
+// heap. M6.3 reverts Search to title-only matching but KEEPS the M6.2
+// ASCII normalization (it's safe + small on the per-article-title
+// inputs). The three deleted tests asserted the body-search behavior:
+// they are intentionally GONE in M6.3 — a future milestone that wants
+// body search will need a different architecture (lazy per-keystroke
+// loads via ArticleStore, OR a precomputed index, OR something else
+// that doesn't keep every body in heap at once).
+
 (:test)
-function search_rankMatchesBodyWhenTitleDoesnt(logger as Logger) as Boolean {
-    // Article with :body containing the query but :title that doesn't —
-    // M6.2 adds body-fallback as tier 3.
+function search_rankIgnoresBodyKey(logger as Logger) as Boolean {
+    // M6.3 regression: even when :body contains the query, Search.rank
+    // must NOT match on it. (M6.2 did; doing so caused OOM crashes.)
     var arts = [
         { :id => "doc1", :title => "שלום", :popularity => 50,
-          :body => "מאמר זה דן בעניין אברהם אבינו ובהמשך גם בשרה." }
+          :body => "מאמר זה דן בעניין אברהם אבינו." }
     ];
     var r = Search.rank("אברהם", arts);
-    logger.debug("rank('אברהם', body-only) size=" + r.size());
-    return r.size() == 1 && ((r[0] as Dictionary)[:id] as String).equals("doc1");
+    logger.debug("rank('אברהם', body-only article) size=" + r.size() + " (want 0)");
+    return r.size() == 0;
 }
 
 (:test)
-function search_rankTitleMatchesBeforeBodyMatches(logger as Logger) as Boolean {
-    // Title-matched articles must come BEFORE body-only matched articles
-    // regardless of popularity. body-only article has higher popularity
-    // (100) than the title-match article (10); title-match still wins.
+function search_totalMatchesIgnoresBodyKey(logger as Logger) as Boolean {
+    // M6.3 regression: totalMatches counts TITLE matches only.
     var arts = [
-        { :id => "title-hit", :title => "אברהם",
-          :popularity => 10,  :body => "no relevant body" },
-        { :id => "body-hit",  :title => "שלום",
-          :popularity => 100, :body => "אברהם הופיע בפסוק זה." }
-    ];
-    var r = Search.rank("אברהם", arts);
-    logger.debug("rank size=" + r.size() + " ids=" + _searchIdsOf(r));
-    return r.size() == 2
-        && ((r[0] as Dictionary)[:id] as String).equals("title-hit")
-        && ((r[1] as Dictionary)[:id] as String).equals("body-hit");
-}
-
-(:test)
-function search_totalMatchesIncludesBodyHits(logger as Logger) as Boolean {
-    // M6.2: totalMatches counts title-or-body matches (not just title).
-    var arts = [
-        { :id => "a", :title => "שלום", :popularity => 0,
-          :body => "אברהם הופיע בפסוק" },
-        { :id => "b", :title => "אברהם", :popularity => 0,
-          :body => "no match here either" },
-        { :id => "c", :title => "תורה", :popularity => 0,
-          :body => "no relevant content" }
+        { :id => "a", :title => "שלום", :popularity => 0, :body => "אברהם" },
+        { :id => "b", :title => "אברהם", :popularity => 0, :body => "no match" },
+        { :id => "c", :title => "תורה", :popularity => 0, :body => "no match" }
     ];
     var t = Search.totalMatches("אברהם", arts);
-    logger.debug("totalMatches('אברהם', mixed) = " + t + " (want 2)");
-    return t == 2;
+    logger.debug("totalMatches('אברהם', mixed with :body) = " + t + " (want 1)");
+    return t == 1;
+}
+
+(:test)
+function search_normalizeFastPathReturnsIdenticalString(logger as Logger) as Boolean {
+    // M6.3 regression: when input contains no " / ' / -, _normalize must
+    // return the SAME string object (no allocation). Strings.equals checks
+    // value equality but the real proof of the fast-path is that no
+    // O(N²) concat fires — covered by the runtime no-crash test on the
+    // ~2 KB shalom body in R2 evidence.
+    var s = "שלום עליכם";
+    var n = Search._normalize(s);
+    logger.debug("normalize('שלום עליכם')='" + n + "' equals=" + s.equals(n));
+    return s.equals(n);
 }
 
 // Helper: render an array of article dicts as "[id1,id2,...]" for debug logs.

@@ -41,18 +41,15 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _pressTimer = null;
         var arts = Manifest.load()[:articles] as Array<Dictionary>?;
         _articles = (arts == null) ? new [0] : arts;
-        // M6.2: pre-load each article body into :body so Search.rank can do
-        // tier-3 body fallback matching. Body lives in ArticleStore — load
-        // once per keyboard layer (~50 KB resident at the current corpus,
-        // well under the 9 MB Storage cap and inside the per-layer alloc
-        // budget). Small cost paid once at construction.
-        for (var i = 0; i < _articles.size(); i++) {
-            var a = _articles[i] as Dictionary;
-            var body = ArticleStore.bodyOf(a[:id] as String);
-            if (body != null) {
-                a.put(:body, body);
-            }
-        }
+        // M6.2 pre-loaded every article body into :body so Search.rank could
+        // do tier-3 body fallback. That combined with the M6.2 _normalize
+        // O(N²) string-concat loop caused uncatchable OOM (the ~2 KB shalom
+        // sampleArticle re-normalized twice per keystroke = ~8M byte-allocs;
+        // plus the pre-loaded bodies left ~5 KB resident, which on top of
+        // the article-reader push's layout allocations blew the Venu 2
+        // heap). M6.3 removes the pre-load and the tier-3 path. Body
+        // search will return in a later milestone with a different
+        // architecture.
         _ranked = new [0];
         _totalMatches = 0;
         _recomputeSuggestions();
