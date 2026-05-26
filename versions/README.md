@@ -46,7 +46,8 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M5.4 | `v0.M5.4` | `dce2ad8` | 2026-05-26 | 159 KB | Polish: tighter lazy-load (`_INITIAL_LINES` 5 → 2, `_INCREMENTAL_LINES` 4 → 2, `_LAYOUT_TICK_MS` 80 → 50; bounded-batch test STRENGTHENED to exact equality) + bottom-double-tap gated on `isLayoutComplete` + ResultsView margins 15 → 16% / 40 → 50 px + 0 px intra-article sub-line gap. | 154 |
 | M6 | `v0.M6` | `eaf7d99` | 2026-05-26 | 162 KB | Long-press a word in the article reader → push a new keyboard layer pre-filled with that word. New pure `WordHitTest.findWordInLine` (char-count + Hebrew-RTL aware). New `wikiwatchView.findWordAt` + `wikiwatchDelegate.onHold`. `wikiwatchKeyboardDelegate` ctor takes `initialBuffer`. Inlines the project's `onHold` spike via a `System.println` diagnostic. | 160 |
 | M6.1 | `v0.M6.1` | `b27a0dc` | 2026-05-26 | 161 KB | Fix M6 off-by-one + left-side dead zone: replace char-count `findWordInLine` with `findWordPx` using actual per-word pixel widths stored in each `_lines` sub-line (`:words / :wordPx / :spacePx`). Exact `lineRightX` from `sum(wordPx) + (n-1)*spacePx`. Removed `_approxCharPx`. | 161 |
-| M6.2 | `v0.M6.2` | `e1b33d8` | 2026-05-26 | 164 KB | ASCII-punctuation in search + keyboard + body-content search. New pure `Search._normalize` (strip `"` and `'`, replace `-` with space); `Search.rank` gains tier-3 body fallback (matches when title misses AND `:body` present); `Search.totalMatches` same. `KeyboardLayout` DIGITS expansion 10 → 13 cells (`0..9 " ' -`, centers at `(i*360)/13`, arcDeg=28). `KeyboardDelegate.initialize` pre-loads bodies (~5 KB resident). Fixtures `:version` 3 → 4 + 6 new ש-prefix entries with ASCII " / ' / -. ASCII chars (not Hebrew U+05F4/U+05F3/U+05BE) so keyboard input + corpus stay codepoint-aligned. | 175 |
+| M6.2 | `v0.M6.2` | `e1b33d8` | 2026-05-26 | 164 KB | ASCII-punctuation in search + keyboard + body-content search. New pure `Search._normalize` (strip `"` and `'`, replace `-` with space); `Search.rank` gains tier-3 body fallback; `KeyboardLayout` DIGITS expansion 10 → 13 cells; `KeyboardDelegate.initialize` pre-loads bodies; fixtures `:version` 3 → 4 + 6 new ש-prefix entries with ASCII " / ' / -. **Shipped with an OOM bug — fixed in M6.3.** | 175 |
+| M6.3 | `v0.M6.3` | `0033552` | 2026-05-26 | 163 KB | Hotfix M6.2 OOM. M6.2's `_normalize` built output via O(N²) string-concat (`out = out + ch` per char); rank + totalMatches per keystroke re-normalized every body that missed by title; on the ~2 KB shalom body that was ~8M byte-allocs/keystroke → uncatchable OOM. Plus the ~5 KB pre-load + ~10 KB reader layout = heap exhausted on article-open. Fix: remove tier-3 body fallback from `Search.rank`, remove body branch from `Search.totalMatches`, remove body pre-load from `KeyboardDelegate.initialize`, add fast-path to `_normalize` (no allocation when input has no " / ' / -). Kept from M6.2: ASCII normalization on titles + 3 new keyboard keys + 6 new fixtures. | 175 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1075,7 +1076,71 @@ PASSED (passed=175, failed=0, errors=0)
 
 **User-visible change:** users can now type Hebrew acronyms and hyphenated terms on the keyboard. Search finds the right article whether or not the user knows the exact punctuation convention used in the title — `שבק` and `שב"ק` both find `שב"ק`; `שיר השירים` and `שיר-השירים` both find `שיר-השירים-המלא`. And typing a phrase that only appears in the article body still surfaces that article.
 
-**Artifact:** `wikiwatch-M6.2.prg` (163 820 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M6.2.prg` (163 820 bytes).
+
+**Caveat:** M6.2 shipped with an uncatchable OOM bug — see M6.3 below. Use `wikiwatch-M6.3.prg` for sideloading.
+
+---
+
+## M6.3 — Hotfix M6.2 OOM crash (tag `v0.M6.3`)
+
+M6.2 went out at 11:53; the user reported within minutes that the app crashed on three common interactions:
+
+1. Typing any first char that isn't `ש`.
+2. Typing `ש` followed by any second letter.
+3. Tapping a suggestion to open an article (any article, e.g. `שלום`).
+
+Root cause — two compounding problems in M6.2's body-search machinery:
+
+- **`Search._normalize` was O(N²).** It built its output via `out = out + ch` in a per-char loop. In Monkey C, Strings are immutable, so every `+` allocates a fresh String. An N-char input produces N intermediate strings whose lengths sum to ~N(N+1)/2 → O(N²) byte-allocations. On the ~2 KB shalom `sampleArticle` body, that's ~4 million byte-allocations per pass.
+- **Every body got re-normalized per keystroke.** M6.2's `_recomputeSuggestions` called both `Search.rank` and `Search.totalMatches`, and each of them walked every article that missed by title through `_normalize(body)`. Per keystroke: ~8 million byte-allocs over the shalom body alone.
+- **Plus the body pre-load held ~5 KB resident** in `KeyboardDelegate._articles` even when the user wasn't searching. On article-open, the reader's M2.8 px-wrap adds another ~10 KB transient. Total transient peak ~15+ KB above keyboard baseline → blew the Venu 2 heap.
+
+OOM in Monkey C is uncatchable. The VM kills the app immediately. No stack trace surfaces in `monkeydo` because the host process dies mid-print. (See [`memory/reference_ciq_quirks.md`](https://github.com/tomhea/wikiwatch/blob/main/.cache/) and the `garmin-ciq-simulator` skill for the project's standing notes on this.)
+
+**What landed:**
+
+**Search** (`source/models/Search.mc`):
+- `Search.rank` — removed tier-3 body fallback. Back to M5/M6 title-only matching, KEEPING the M6.2 ASCII normalization on titles (which is small + safe — title inputs are ~20 chars max).
+- `Search.totalMatches` — removed the body branch. Title-only count.
+- `Search._normalize` — added a fast-path: when the input contains no `"`, `'`, or `-`, return the input string unchanged (no allocation). The O(N²) slow path is now only reachable for short title/query inputs that actually contain those chars (~20 chars on fixtures → ~400 byte-allocs, fine).
+
+**KeyboardDelegate** (`source/wikiwatchKeyboardDelegate.mc`):
+- `initialize` — removed the body pre-load loop. Reclaims ~5 KB of resident heap.
+
+**Kept from M6.2:** ASCII normalization on titles, the 3 new keyboard keys (`"` / `'` / `-`) in the DIGITS expansion, the 6 new ש-prefix fixtures with ASCII punctuation in titles. So typing `שבק` still finds `שב"ק`; typing `שיר השירים` still finds `שיר-השירים-המלא`. Only the body-search part is gone.
+
+**Test changes (net 0; still 175):**
+- Removed 3 M6.2 body-search tests: `search_rankMatchesBodyWhenTitleDoesnt`, `search_rankTitleMatchesBeforeBodyMatches`, `search_totalMatchesIncludesBodyHits`.
+- Added 3 M6.3 regression tests:
+  - `search_rankIgnoresBodyKey` — even with `:body` present, `rank` must not match on it.
+  - `search_totalMatchesIgnoresBodyKey` — `totalMatches` counts title-only.
+  - `search_normalizeFastPathReturnsIdenticalString` — non-punctuation input is returned by value (the real fast-path proof is the runtime no-crash in R2).
+
+**R1 evidence** ([docs/m6-3-fail.txt](docs/m6-3-fail.txt)) — M6.3 regression assertions on M6.2 impl:
+
+```
+search_rankIgnoresBodyKey                            FAIL
+search_totalMatchesIgnoresBodyKey                    FAIL
+search_normalizeFastPathReturnsIdenticalString       PASS
+Ran 175 tests
+FAILED (passed=173, failed=2, errors=0)
+```
+
+After fix ([docs/m6-3-pass.txt](docs/m6-3-pass.txt)):
+
+```
+Ran 175 tests
+PASSED (passed=175, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m6-3-r2-evidence.txt](docs/m6-3-r2-evidence.txt)) — live `monkeydo bin/wikiwatch.prg venu2` after the fix. KeyboardDelegate.initialize no longer walks every body through `ArticleStore.bodyOf` at construction. Manual touch protocol confirmed by the user that all three M6.2 crash scenarios are now stable.
+
+**User-visible change:** the app no longer crashes. Body-text search no longer works (it returned in M6.2 and was rolled back here); title-search behaves as it did at M6 + M6.1 + M6.2's ASCII normalization. A future milestone will re-introduce body search with a different architecture — lazy per-keystroke `ArticleStore.bodyOf` reads, or a precomputed index, or similar — anything that doesn't keep every body resident AND doesn't re-walk every body per keystroke.
+
+**Lesson recorded in memory:** O(N²) string concat is a hard Monkey C anti-pattern. Even a short-looking loop will blow the heap on KB-sized inputs because Strings are immutable and every `+` allocates fresh. The project's known-caveats now flag this explicitly.
+
+**Artifact:** `wikiwatch-M6.3.prg` (163 388 bytes). Current head of `main`.
 
 ---
 
@@ -1093,7 +1158,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 175 tests pass at v0.M6.2
+& scripts\test.ps1     # 175 tests pass at v0.M6.3
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
