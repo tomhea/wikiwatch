@@ -49,6 +49,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M6.2 | `v0.M6.2` | `e1b33d8` | 2026-05-26 | 164 KB | ASCII-punctuation in search + keyboard + body-content search. New pure `Search._normalize` (strip `"` and `'`, replace `-` with space); `Search.rank` gains tier-3 body fallback; `KeyboardLayout` DIGITS expansion 10 → 13 cells; `KeyboardDelegate.initialize` pre-loads bodies; fixtures `:version` 3 → 4 + 6 new ש-prefix entries with ASCII " / ' / -. **Shipped with an OOM bug — fixed in M6.3.** | 175 |
 | M6.3 | `v0.M6.3` | `0033552` | 2026-05-26 | 163 KB | Hotfix M6.2 OOM. M6.2's `_normalize` built output via O(N²) string-concat (`out = out + ch` per char); rank + totalMatches per keystroke re-normalized every body that missed by title; on the ~2 KB shalom body that was ~8M byte-allocs/keystroke → uncatchable OOM. Plus the ~5 KB pre-load + ~10 KB reader layout = heap exhausted on article-open. Fix: remove tier-3 body fallback from `Search.rank`, remove body branch from `Search.totalMatches`, remove body pre-load from `KeyboardDelegate.initialize`, add fast-path to `_normalize` (no allocation when input has no " / ' / -). Kept from M6.2: ASCII normalization on titles + 3 new keyboard keys + 6 new fixtures. | 175 |
 | M6.4 | `v0.M6.4` | `775d975` | 2026-05-26 | 163 KB | Revert M6.2 keyboard `"` / `'` / `-` keys (user request: don't want to type those, search handles them). DIGITS expansion back to 10 cells (0..9 at 36° each); `DIGITS_EXPANSION_COUNT` / `DIGITS_EXPANSION_ARC_DEG` constants removed. KEPT Search._normalize + 6 ש-prefix fixtures with ASCII " / ' / - in titles — user types שבק and finds שב"ק via match-side normalization. | 174 |
+| M6.5 | `v0.M6.5` | `99ea899` | 2026-05-27 | 165 KB | Memory optimizations to address M6.4 stale-render bug on real Venu 2 (sim worked, watch UI didn't refresh; GC pressure hypothesis). (1) Cache `KeyboardLayout.buttons()` at module level — was ~850 B/call × every onUpdate + every onTap. (2) Cache `KeyboardLayout.subButtons(parent)` per centerAngleDeg. (3) Preallocate `_drawWedge` polygon buffer as view field, mutate in place — was ~4 KB/onUpdate. (4) DROP M6.1's `:words/:wordPx/:spacePx` per-sub-line storage — was ~6.5 KB resident on shalom; long-press now goes `onHold → requestLongPressHit → next onUpdate → _resolvePendingHit` measuring ONLY the tapped sub-line (~130 B transient). Plus `fm:NNNNNN` freeMemory overlay near keyboard bottom-center so user can SEE heap pressure live on the watch (no stdout). Net: ~10–15 KB resident reclaimed + ~25–50 KB/sec GC churn eliminated. | 176 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1182,7 +1183,57 @@ PASSED (passed=174, failed=0, errors=0)
 
 **User-visible change:** tapping DIGITS now opens an expansion with just `0..9` (no punctuation cells). Search behavior for punctuation-bearing titles is unchanged.
 
-**Artifact:** `wikiwatch-M6.4.prg` (163 356 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M6.4.prg` (163 356 bytes).
+
+---
+
+## M6.5 — Memory optimizations + `freeMemory` overlay (tag `v0.M6.5`)
+
+M6.4 worked in sim but on the real Venu 2 watch the UI stopped refreshing after taps. Functionally everything worked — state updated, taps registered, articles opened — but `WatchUi.requestUpdate()` calls weren't actually triggering `onUpdate` redraws. Classic symptom of CIQ throttling UI under GC pressure (the sim has more relaxed GC than the watch).
+
+This PR ships four memory wins + a UI-visible `freeMemory` overlay so the user can monitor heap pressure live on the watch.
+
+**Four wins:**
+
+1. **`KeyboardLayout.buttons()` cached at module level.** The 10-button array is immutable — there's no reason to allocate it fresh on every call. Was ~850 B/call × every `onUpdate` + every `onTap`. Now returns a cached ref. Steady-state cost: ~850 B kept resident forever.
+
+2. **`KeyboardLayout.subButtons(parent)` cached per parent's `centerAngleDeg`.** 10 unique parents (SPACE, BACKSPACE, 7 letter groups, DIGITS), so 10 cache slots, ~1.5 KB total once all are touched. Was ~150 B/call during expansion.
+
+3. **`_drawWedge` polygon buffer preallocated as view field.** Was allocating fresh `new [10]` + 10 `[sx, sy]` arrays per wedge per render (~4 KB/onUpdate). Now mutates the preallocated buffer in place. `dc.fillPolygon` copies what it needs, so post-call mutation is safe.
+
+4. **wikiwatchView per-sub-line `:words` / `:wordPx` / `:spacePx` storage DROPPED.** M6.1 added these for pixel-accurate `findWordAt` — cost ~6.5 KB resident on shalom-sized articles (50 sub-lines × ~130 B). Long-press now goes:
+   - `wikiwatchDelegate.onHold` → `view.requestLongPressHit(x, y)` (stores coords + `requestUpdate`)
+   - Next `onUpdate` runs `_resolvePendingHit(dc)` which measures ONLY the tapped sub-line's words inline (~130 B transient) and pushes the new keyboard layer.
+   - The old `wikiwatchView.findWordAt` method is gone; its only callsite (`wikiwatchDelegate.onHold`) now uses the lazy path.
+
+**Plus the `freeMemory` overlay** — rendered as `fm:NNNNNN` near the bottom-center of the keyboard's visible round display (LT_GRAY FONT_XTINY). On the sim it shows ~732 KB free; on the real watch it'll show much less. Lets the user observe heap pressure live (no stdout on the watch).
+
+**Net memory impact:** ~10-15 KB resident heap reclaimed (mostly from #4); ~25-50 KB/sec GC churn eliminated (mostly from #1 + #3). Steady-state cost: +~2.5 KB (the caches sit resident).
+
+**Test changes (+2 net, 174 → 176):**
+- `test_KeyboardLayout.mc` — `kbd_buttonsReturnsCachedReference` + `kbd_subButtonsReturnsCachedReference`. Both verify the cache by mutating one returned dict's label and observing the mutation on the next call (identity proxy via shared state). `try`/`finally` restores the original label.
+
+**R1 evidence** ([docs/m6-5-fail.txt](docs/m6-5-fail.txt)) — un-cached M6.4 code:
+
+```
+kbd_buttonsReturnsCachedReference                    FAIL
+kbd_subButtonsReturnsCachedReference                 FAIL
+Ran 176 tests
+FAILED (passed=174, failed=2, errors=0)
+```
+
+After implementation ([docs/m6-5-pass.txt](docs/m6-5-pass.txt)):
+
+```
+Ran 176 tests
+PASSED (passed=176, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m6-5-r2-evidence.txt](docs/m6-5-r2-evidence.txt)) — live `monkeydo bin/wikiwatch.prg venu2` + screenshot at [docs/screenshots/m6-5-freemem-overlay.png](docs/screenshots/m6-5-freemem-overlay.png) showing the new `fm:732656` overlay rendering at the bottom-center of the keyboard view.
+
+**User-visible change:** the keyboard reads `fm:NNNNNN` at the bottom-center of the visible round display. On the watch, the user watches this number while typing/expansion/article-open. If it stays comfortably above zero but the UI still doesn't refresh, the bug isn't memory — we'll need to look elsewhere (watchdog, view-stack confusion, firmware-specific issue).
+
+**Artifact:** `wikiwatch-M6.5.prg` (164 604 bytes). Current head of `main`.
 
 ---
 
@@ -1200,7 +1251,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 174 tests pass at v0.M6.4
+& scripts\test.ps1     # 176 tests pass at v0.M6.5
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
