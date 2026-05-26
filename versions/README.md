@@ -46,6 +46,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M5.4 | `v0.M5.4` | `dce2ad8` | 2026-05-26 | 159 KB | Polish: tighter lazy-load (`_INITIAL_LINES` 5 → 2, `_INCREMENTAL_LINES` 4 → 2, `_LAYOUT_TICK_MS` 80 → 50; bounded-batch test STRENGTHENED to exact equality) + bottom-double-tap gated on `isLayoutComplete` + ResultsView margins 15 → 16% / 40 → 50 px + 0 px intra-article sub-line gap. | 154 |
 | M6 | `v0.M6` | `eaf7d99` | 2026-05-26 | 162 KB | Long-press a word in the article reader → push a new keyboard layer pre-filled with that word. New pure `WordHitTest.findWordInLine` (char-count + Hebrew-RTL aware). New `wikiwatchView.findWordAt` + `wikiwatchDelegate.onHold`. `wikiwatchKeyboardDelegate` ctor takes `initialBuffer`. Inlines the project's `onHold` spike via a `System.println` diagnostic. | 160 |
 | M6.1 | `v0.M6.1` | `b27a0dc` | 2026-05-26 | 161 KB | Fix M6 off-by-one + left-side dead zone: replace char-count `findWordInLine` with `findWordPx` using actual per-word pixel widths stored in each `_lines` sub-line (`:words / :wordPx / :spacePx`). Exact `lineRightX` from `sum(wordPx) + (n-1)*spacePx`. Removed `_approxCharPx`. | 161 |
+| M6.2 | `v0.M6.2` | `e1b33d8` | 2026-05-26 | 164 KB | ASCII-punctuation in search + keyboard + body-content search. New pure `Search._normalize` (strip `"` and `'`, replace `-` with space); `Search.rank` gains tier-3 body fallback (matches when title misses AND `:body` present); `Search.totalMatches` same. `KeyboardLayout` DIGITS expansion 10 → 13 cells (`0..9 " ' -`, centers at `(i*360)/13`, arcDeg=28). `KeyboardDelegate.initialize` pre-loads bodies (~5 KB resident). Fixtures `:version` 3 → 4 + 6 new ש-prefix entries with ASCII " / ' / -. ASCII chars (not Hebrew U+05F4/U+05F3/U+05BE) so keyboard input + corpus stay codepoint-aligned. | 175 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -985,7 +986,96 @@ PASSED (passed=161, failed=0, errors=0)
 
 **User-visible change:** long-press in the article reader now lands on the word actually under the finger, including on the left side of the screen. No more dead zone, no more off-by-one.
 
-**Artifact:** `wikiwatch-M6.1.prg` (161 420 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M6.1.prg` (161 420 bytes).
+
+---
+
+## M6.2 — ASCII punctuation in search + keyboard + body-content search (tag `v0.M6.2`)
+
+Three coupled changes that together close out the keyboard's "I can't type the chars in these article titles" gap:
+
+1. The user can now type ASCII `"`, `'`, and `-` to compose Hebrew acronyms (`שב"ק`, `ש"ס`, `ש"ץ`) and hyphenated compounds (`שיר-השירים`, `שלום-בית`).
+2. The search engine **ignores** `"` and `'`, and treats `-` as a space — so typing `שבק` matches the title `שב"ק`, and `שיר השירים` matches `שיר-השירים-המלא`.
+3. The search engine ALSO matches against article **body** text (not just titles), so a query that lands inside an article's content but not its title still surfaces that article.
+
+**The decision (why ASCII and not Hebrew code points):** Hebrew has its own gershayim (״ U+05F4), geresh (׳ U+05F3), and makaf (־ U+05BE). Using them would mean the keyboard outputs one codepoint but the corpus titles (sourced from Hebrew Wikipedia in M8) may use another — and `Search.rank` compares codepoint exactly, so a mismatch silently breaks matches. Defaulting to ASCII for BOTH sides keeps keyboard input and corpus titles codepoint-aligned. No boundary translation needed.
+
+**What landed:**
+
+**Pure module additions** (`source/models/Search.mc`, `Toybox.Lang` only):
+- New `Search._normalize(s) as String` — walks the char array, skips ASCII `"` (0x22) and `'` (0x27), replaces ASCII `-` (0x2D) with space. Pure + idempotent.
+- `Search.rank` now matches `_normalize(query)` against `_normalize(title)` for tier 1 (prefix) + tier 2 (substring), plus a new tier 3 — body fallback when no title hit AND `article[:body]` is present. Tier ordering: title-prefix > title-substring > body-substring (popularity within each).
+- `Search.totalMatches` — same normalize + body-fallback semantics.
+- Returned dicts keep ORIGINAL `:title` — normalization is for matching only, never mutates the data.
+
+**Keyboard layout** (`source/models/KeyboardLayout.mc`):
+- `DIGITS_EXPANSION_COUNT` 10 → 13. `DIGITS_EXPANSION_ARC_DEG` = 28 (~360/13 with 1° overlap at boundaries — hit-test grabs first match).
+- DIGITS button's `:letters` now `["0".."9","\"","'","-"]`. Closed-state mini hint `"0 1 _ 9"` unchanged (the punctuation chars appear only after the user opens the expansion).
+- Cell centers step by `(i * 360) / 13`: 0, 27, 55, 83, 110, 138, 166, 193, 221, 249, 277, 305, 332.
+
+**View wiring** (`source/wikiwatchKeyboardDelegate.mc`):
+- `initialize` pre-loads `ArticleStore.bodyOf(id)` into each article dict's `[:body]` slot once at construction. ~5.4 KB resident for the 36-article corpus; ~50 KB worst-case at 300+ articles — under any single-alloc threshold and under R5's 4 KB single-alloc trigger (each `getValue` is its own small alloc).
+- No view-side changes needed: the existing DIGITS expansion renderer uses `s[:arcDeg]` from each sub-button dict, so it picks up the new 28° width automatically.
+
+**Fixtures** (`source/models/Fixtures.mc`):
+- `:version 3 → 4` → existing `FixtureInstaller` auto-migrates on next launch.
+- 6 new ש-prefix entries exercising ASCII punctuation:
+
+  | id | title | what it is |
+  |---|---|---|
+  | `shas` | ש"ס | Shas (Talmud / political party) |
+  | `shabak` | שב"ק | Sabbath colloquial |
+  | `shatz` | ש"ץ | Prayer leader (shaliach tzibur) |
+  | `shai-agnon` | ש"י-עגנון | S.Y. Agnon (combines " and -) |
+  | `shalom-bayit` | שלום-בית | Domestic harmony (hyphenated) |
+  | `sh-aharon` | ש'אהרון | Sh. Aharon (abbreviated first name) |
+
+  Corpus 30 → 36. Each entry has a short body that mentions the same chars so tier-3 body search is exercised end-to-end (the body of `shas`, `shabak`, `shatz`, `shai-agnon`, `sh-aharon` all contain the phrase "ראשי תיבות" which doesn't appear in any title — typing it now finds them).
+
+**Test changes (+14 net, 161 → 175):**
+- `test_Search.mc` — 12 new cases: 6 normalize (strip `"`, strip `'`, hyphen-as-space, all three, empty, idempotent) + 3 rank-with-normalization (matchesTitleIgnoringQuotes, matchesHyphenAsSpace, preservesDisplayedTitle) + 2 body-search (matchesBodyWhenTitleDoesnt, titleMatchesBeforeBodyMatches) + 1 totalMatches body inclusion.
+- `test_KeyboardLayout.mc` — 1 new (`subButtonsDigitsLastThreeAreAsciiPunctuation`) + 2 updated (`buttonNineIsDigits` 10 → 13 letters; `subButtonsDigitsReturnsTenAroundRing` → `…ReturnsThirteenAroundRing` with new center angles 0/138/249).
+- `test_Fixtures.mc` — 1 new (`hasEntriesWithEachAsciiPunctuation`) + 2 updated (`manifestVersionIsThree` → `…Four`; `manifestHasThirtyArticles` → `…HasThirtyFiveArticles`).
+
+**R1 evidence** ([docs/m6-2-fail.txt](docs/m6-2-fail.txt)) — stub `_normalize` returns input unchanged:
+
+```
+search_normalizeStripsAsciiDoubleQuote               FAIL
+search_normalizeStripsAsciiSingleQuote               FAIL
+search_normalizeReplacesAsciiHyphenWithSpace         FAIL
+search_normalizeAllThreeChars                        FAIL
+search_normalizeEmptyReturnsEmpty                    PASS
+search_normalizeIdempotent                           PASS
+search_rankMatchesTitleIgnoringQuotes                FAIL
+search_rankMatchesHyphenAsSpace                      FAIL
+search_rankPreservesDisplayedTitleWithPunctuation    FAIL
+search_rankMatchesBodyWhenTitleDoesnt                FAIL
+search_rankTitleMatchesBeforeBodyMatches             FAIL
+search_totalMatchesIncludesBodyHits                  FAIL
+kbd_buttonNineIsDigits                               FAIL
+kbd_subButtonsDigitsReturnsThirteenAroundRing        FAIL
+kbd_subButtonsDigitsLastThreeAreAsciiPunctuation     FAIL
+fixtures_manifestHasThirtyFiveArticles               FAIL
+fixtures_manifestVersionIsFour                       FAIL
+fixtures_hasEntriesWithEachAsciiPunctuation          FAIL
+Ran 175 tests
+FAILED (passed=159, failed=16, errors=0)
+```
+
+After implementation ([docs/m6-2-pass.txt](docs/m6-2-pass.txt)):
+
+```
+Ran 175 tests
+PASSED (passed=175, failed=0, errors=0)
+```
+
+(The 2 normalize tests that already passed against the stub were the trivial cases: `empty → empty` and `idempotent` — the identity stub satisfies both.)
+
+**R2 evidence** ([docs/m6-2-r2-evidence.txt](docs/m6-2-r2-evidence.txt)) — live `monkeydo bin/wikiwatch.prg venu2` shows the fixture install now lists 36 IDs including the 6 new entries (`shas, shabak, shatz, shai-agnon, shalom-bayit, sh-aharon`). The evidence file documents a 5-scenario manual touch protocol covering: punctuation in results display, gershayim ignored, makaf as space, body fallback, tier ordering (title-match wins over body-match regardless of popularity).
+
+**User-visible change:** users can now type Hebrew acronyms and hyphenated terms on the keyboard. Search finds the right article whether or not the user knows the exact punctuation convention used in the title — `שבק` and `שב"ק` both find `שב"ק`; `שיר השירים` and `שיר-השירים` both find `שיר-השירים-המלא`. And typing a phrase that only appears in the article body still surfaces that article.
+
+**Artifact:** `wikiwatch-M6.2.prg` (163 820 bytes). Current head of `main`.
 
 ---
 
@@ -993,11 +1083,9 @@ PASSED (passed=161, failed=0, errors=0)
 
 The bigger ladder beyond M5 is documented in the project memory (`memory/project_ladder.md`):
 
-- **M6** — Long-press a word in the article → push a new keyboard layer pre-filled with that word. Layer stack pop/push. (Spike needed first: `onHold` for long-press inside a custom view.)
-- **M7** — First-run chunked download from `wikiwatch.tomhe.app/` into `Application.Storage`; resumable.
-- **M8** — Digits page on the keyboard ("123" toggle). (M3.x already ships the DIGITS wedge with 0..9 expansion; M8 may evolve into a dedicated punctuation/symbols page.)
-- **M9** — Polish + measure corpus size; decide whether M10 is needed.
-- **M10** (conditional) — Static-dictionary compression if M9 shows storage-constrained.
+- **M7** — Real-network corpus from `wikiwatch.tomhe.app/`. Every launch: show the keyboard non-functionally for 1 second while pinging the server's `manifest.json`. No response / "up to date" → keyboard becomes functional. Version mismatch → "do you want to update?" prompt → wipe all `article:<id>` keys → re-download. First launch (no local manifest) goes straight into the install path. Server content is the M6.2 fixture corpus transformed into `manifest.json` + `article/<id>.txt` files (user uploads). Fixtures.mc + FixtureInstaller.mc DELETED — articles only come from the network.
+- **M8** — Polish + measure corpus size + Hebrew Wikipedia data generation. Real-watch sideload of M7's `.prg`, record corpus size + free Storage. Sub-PRs (`fix/<slug>` → `v0.M8.<sub>`) for polish items. **New scope:** collaboratively pick + clean real Hebrew Wikipedia article data + build `manifest.json` + `article/<id>.txt`. (Note: ladder reshaped 2026-05-26 — old M8 "digits page" merged into M3.x circular keyboard + M6.2's expansion; old M9 → M8; old M10 → M9.)
+- **M9** (conditional) — Static-dictionary compression if M8 shows the corpus doesn't fit in 9 MB.
 
 ## Reproducing any version
 
@@ -1005,7 +1093,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 161 tests pass at v0.M6.1
+& scripts\test.ps1     # 175 tests pass at v0.M6.2
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
