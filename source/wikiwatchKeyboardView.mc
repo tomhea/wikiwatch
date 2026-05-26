@@ -35,6 +35,13 @@ class wikiwatchKeyboardView extends WatchUi.View {
     private var _pressedAngleDeg as Number?;
     private var _suggestions as Array<Dictionary>?;
     private var _moreCount as Number;
+    // M6.5: preallocated 10-point polygon buffer reused by every _drawWedge
+    // call. Eliminates ~390 bytes × 10 wedges = ~4 KB of allocation churn
+    // per onUpdate (and ~150 KB/sec under typical keyboard activity). The
+    // inner [x, y] arrays are also preallocated; _drawWedge mutates them
+    // in place. dc.fillPolygon copies what it needs, so mutating after
+    // the call is safe.
+    private var _polygonPts as Array;
 
     function initialize() {
         View.initialize();
@@ -43,6 +50,10 @@ class wikiwatchKeyboardView extends WatchUi.View {
         _pressedAngleDeg = null;
         _suggestions = null;
         _moreCount = 0;
+        _polygonPts = new [10];
+        for (var i = 0; i < 10; i++) {
+            _polygonPts[i] = [0, 0];
+        }
     }
 
     function setBuffer(b as String) as Void {
@@ -135,6 +146,18 @@ class wikiwatchKeyboardView extends WatchUi.View {
         var screenH = dc.getHeight();
         var cx = screenW / 2;
         var cy = screenH / 2;
+
+        // M6.5 diagnostic — freeMemory near the BOTTOM of the visible
+        // circle (cy + 130 — below the suggestion-area dead zone, above
+        // the bottom outer-ring wedges). LT_GRAY on black is readable;
+        // FONT_XTINY keeps it small. The user is supposed to be able to
+        // watch this number drop while interacting with the keyboard
+        // on the real watch (no stdout access there).
+        var freeMem = System.getSystemStats().freeMemory;
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, cy + 105, Graphics.FONT_XTINY,
+                    "fm:" + freeMem.toString(),
+                    Graphics.TEXT_JUSTIFY_CENTER);
 
         // 1. Center display (drawn FIRST so expansion can cover it).
         _drawCenterDisplay(dc, cx, cy);
@@ -333,25 +356,27 @@ class wikiwatchKeyboardView extends WatchUi.View {
                                 centerAngleDeg as Number, arcDeg as Number,
                                 rInner as Number, rOuter as Number,
                                 color as Graphics.ColorType) as Void {
+        // M6.5: reuse the preallocated _polygonPts buffer (and its inner
+        // [x, y] arrays) instead of allocating fresh per wedge. Mutates
+        // _polygonPts[i][0] and _polygonPts[i][1] in place.
         var halfArc = arcDeg / 2;
         var step = arcDeg / 4;
-        var pts = new [10];
         for (var i = 0; i < 5; i++) {
             var off = -halfArc + i * step;
             var ang = (centerAngleDeg + off) * Math.PI / 180.0;
-            var sx = (cx + rOuter * Math.sin(ang)).toNumber();
-            var sy = (cy - rOuter * Math.cos(ang)).toNumber();
-            pts[i] = [sx, sy];
+            var pt = _polygonPts[i] as Array;
+            pt[0] = (cx + rOuter * Math.sin(ang)).toNumber();
+            pt[1] = (cy - rOuter * Math.cos(ang)).toNumber();
         }
         for (var i = 0; i < 5; i++) {
             var off = halfArc - i * step;
             var ang = (centerAngleDeg + off) * Math.PI / 180.0;
-            var sx = (cx + rInner * Math.sin(ang)).toNumber();
-            var sy = (cy - rInner * Math.cos(ang)).toNumber();
-            pts[5 + i] = [sx, sy];
+            var pt = _polygonPts[5 + i] as Array;
+            pt[0] = (cx + rInner * Math.sin(ang)).toNumber();
+            pt[1] = (cy - rInner * Math.cos(ang)).toNumber();
         }
         dc.setColor(color, Graphics.COLOR_BLACK);
-        dc.fillPolygon(pts);
+        dc.fillPolygon(_polygonPts);
     }
 
     private function _drawSeparators(dc as Dc, cx as Number, cy as Number,

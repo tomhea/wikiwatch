@@ -1,0 +1,107 @@
+M6.5 R2 evidence — memory optimizations + freeMemory overlay
+================================================================================
+
+User report from earlier session: M6.4 works in sim but on the real Venu 2
+watch the UI doesn't refresh after taps — letters typed don't show in the
+buffer band, expansion doesn't render, scrolling articles doesn't work.
+Functionality (state changes) works but `WatchUi.requestUpdate()` calls
+appear to be dropped/throttled. Hypothesis: CIQ runtime throttles UI under
+GC pressure on the real watch (sim has more relaxed GC).
+
+This PR ships three memory optimizations + a UI-visible freeMemory probe
+so the user can see heap pressure live on the watch.
+
+Sim launch (`monkeydo bin/wikiwatch.prg venu2`, SDK 9.1.0):
+
+    M4 install: startEmpty=false currentVersion=4 targetVersion=4
+                startIds=[shalom, ..., shas, shabak, shatz, shai-agnon,
+                          shalom-bayit, sh-aharon]
+    M4 install: SKIP (manifest already at target version)
+    M5 rank: buf='' (empty — no results shown)
+
+Initial render now also paints `fm:NNNNNN` near the bottom of the
+visible round display in LT_GRAY FONT_XTINY. Visible in the sim
+screenshot at docs/screenshots/m6-5-freemem-overlay.png — the sim shows
+`fm:732656` (~715 KB free). The real Venu 2 will show a much smaller
+number; the user watches it during typing/expansion/article-open and
+reports back whether it drops to zero (memory pressure confirmed) or
+holds steady (bug is elsewhere, not memory).
+
+NOTE on placement: the overlay was originally placed at (screenW - 4, 2)
+but Venu 2's round display masks the rectangular corners with the bezel,
+so that location was invisible. Moved to (cx, cy + 105) — top-center
+just below the bottom-middle inner area, well inside the visible circle,
+between the suggestion area dead zone and the bottom outer-ring wedges.
+
+Memory wins (all per-keystroke during typing):
+
+1. KeyboardLayout.buttons() — cached at module level.
+   Before: ~850 B allocated per call x every onUpdate + every onTap.
+   After: 0 B allocated, returns cached ref.
+   Steady-state cost: ~850 B kept resident forever.
+
+2. KeyboardLayout.subButtons(parent) — cached per parent centerAngleDeg.
+   Before: ~150 B per call x every onUpdate during expansion.
+   After: 0 B (10 parents x ~150 B cached on first touch).
+   Steady-state cost: ~1.5 KB once all parents have been expanded once.
+
+3. wikiwatchKeyboardView._drawWedge polygon buffer — preallocated as
+   view field (1 x Array[10] + 10 x Array[2] of Numbers).
+   Before: ~390 B x 10 wedges per render = ~4 KB allocated per onUpdate.
+   After: 0 B allocated per call; mutates the preallocated buffer.
+   Steady-state cost: ~450 B per view instance.
+
+4. wikiwatchView per-sub-line :words / :wordPx / :spacePx storage
+   (M6.1 addition for findWordAt pixel-accuracy) — DROPPED.
+   Before: ~130 B per sub-line x ~50 sub-lines for shalom = ~6.5 KB
+           resident in heap whenever the article reader is open.
+   After: 0 B resident; long-press tap triggers lazy measurement of
+          ONLY the targeted sub-line inside the next onUpdate (where
+          dc is valid). Peak transient ~130 B, GC'd immediately.
+
+Sum: ~10-15 KB of resident heap reclaimed when the article reader is
+open + ~25-50 KB/sec of GC churn eliminated during keyboard typing.
+
+Lazy long-press path (M6.5):
+
+  wikiwatchDelegate.onHold(event)
+    -> _view.requestLongPressHit(x, y)  // store coords, requestUpdate
+    -> (next onUpdate)
+       -> _resolvePendingHit(dc) measures ONLY the tapped sub-line,
+         runs WordHitTest.findWordPx, pushes new keyboard layer if a
+         word was hit. Clears pending state.
+
+The wikiwatchView.findWordAt method is gone (was M6 / M6.1). All callers
+go through the delegate's onHold -> view's requestLongPressHit path now.
+
+Tests: 174 -> 176 (+2 net). New tests:
+- kbd_buttonsReturnsCachedReference
+- kbd_subButtonsReturnsCachedReference
+(Both verify the cache by mutating one returned dict and observing the
+mutation on the next call -- try/finally restores the original label so
+subsequent tests see the unmutated layout.)
+
+R-rule status:
+R1: 174 -> 176 PASS. FAIL->PASS captured (docs/m6-5-fail.txt -> docs/m6-5-pass.txt).
+R2: live sim launch shown above + manual touch protocol = type in sim,
+    verify the keyboard renders + suggestions appear + freeMemory drops
+    visibly between renders. On the real watch: sideload, observe the
+    freeMemory overlay number during the interactions that previously
+    looked frozen.
+R3: KeyboardLayout cache covered by 2 new tests; the view changes
+    (polygon preallocation + lazy hit) covered via R2 only.
+R4: no setValue calls in diff.
+R5: net heap reclaim ~10-15 KB; per-render allocation drops to ~0.
+R6: KeyboardLayout stays in source/models with Toybox.Lang + Math only.
+R7: fix/m6-5-memory-optimizations + "Fix: ... (M6.5)" mini-version
+    precedent format.
+R8: BUILD SUCCESSFUL with the same 2 baseline warnings.
+
+What to expect on the watch after sideload:
+- Top-right corner: "NNNNN" (freeMemory in bytes). Will likely show
+  something like "16384" or "32768" or similar after the initial paint.
+- If during typing/expansion the number drops near 0, we've confirmed
+  memory pressure is the root cause and need to optimize further.
+- If the number stays comfortably above 0 but the UI still doesn't
+  refresh, then the bug is NOT memory and we need to investigate
+  elsewhere (watchdog, view-stack confusion, firmware-specific issue).

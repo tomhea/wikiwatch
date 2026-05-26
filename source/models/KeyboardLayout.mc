@@ -3,6 +3,16 @@ import Toybox.Math;
 
 // M3.1 Circular T9-style keyboard layout. Pure module (Toybox.Lang + Math
 // only; no WatchUi / Storage / Communications per R6). See plan for design.
+//
+// M6.5 memory optimization: buttons() and subButtons() return the SAME
+// cached Array on every call (the data is immutable — there's no reason
+// to allocate a fresh array every time). Eliminates per-keystroke +
+// per-render allocation churn that was overwhelming CIQ's GC on the real
+// Venu 2 (sim has more relaxed GC). Steady-state cost: ~2 KB of cached
+// dicts kept resident. Per-render savings: ~850 B (buttons) + up to
+// ~150 B per LETTER_GROUP/DIGITS expansion (subButtons), times every
+// onUpdate AND every onTap. The cache never invalidates — the layout
+// data is module-level constant.
 module KeyboardLayout {
     const NUM_BUTTONS = 10;
     const WEDGE_ARC_DEG = 36;
@@ -12,8 +22,15 @@ module KeyboardLayout {
     const R_OUTER = 205;
     const R_EXPANSION_INNER = 50;
 
+    // M6.5 caches. Initialized lazily on first call.
+    var _cachedButtons as Array<Dictionary>? = null;
+    var _cachedSubButtons as Dictionary? = null;  // keyed by parent's centerAngleDeg
+
     function buttons() as Array<Dictionary> {
-        return [
+        if (_cachedButtons != null) {
+            return _cachedButtons as Array<Dictionary>;
+        }
+        _cachedButtons = [
             { :label => "_",    :type => :SPACE,        :letters => [],                              :centerAngleDeg => 0 },
             { :label => "X",    :type => :BACKSPACE,    :letters => [],                              :centerAngleDeg => 36 },
             { :label => "אבג",  :type => :LETTER_GROUP, :letters => ["א","ב","ג"],                   :centerAngleDeg => 72 },
@@ -25,6 +42,7 @@ module KeyboardLayout {
             { :label => "קרשת", :type => :LETTER_GROUP, :letters => ["ק","ר","ש","ת"],               :centerAngleDeg => 288 },
             { :label => "0-9",  :type => :DIGITS,       :letters => ["0","1","2","3","4","5","6","7","8","9"], :centerAngleDeg => 324 }
         ];
+        return _cachedButtons as Array<Dictionary>;
     }
 
     // Polar hit-test against the outer ring. Returns the wedge whose
@@ -45,6 +63,20 @@ module KeyboardLayout {
     }
 
     function subButtons(parent as Dictionary, screenW as Number, screenH as Number) as Array<Dictionary> {
+        // M6.5: cache by parent's centerAngleDeg. The sub-button layout
+        // depends only on parent's type + letters + centerAngleDeg, all
+        // of which are determined by centerAngleDeg in our 10-button
+        // layout. screenW/H aren't even used in the body (kept in the
+        // signature for backward compat).
+        var key = parent[:centerAngleDeg] as Number;
+        if (_cachedSubButtons == null) {
+            _cachedSubButtons = {};
+        }
+        var cache = _cachedSubButtons as Dictionary;
+        var cached = cache[key];
+        if (cached != null) {
+            return cached as Array<Dictionary>;
+        }
         var t = parent[:type] as Symbol;
         if (t == :DIGITS) {
             var digits = parent[:letters] as Array<String>;
@@ -62,6 +94,7 @@ module KeyboardLayout {
                     :arcDeg => WEDGE_ARC_DEG
                 });
             }
+            cache.put(key, result);
             return result;
         }
         if (t == :LETTER_GROUP) {
@@ -104,9 +137,14 @@ module KeyboardLayout {
                     });
                 }
             }
+            cache.put(key, result);
             return result;
         }
-        return [];
+        // SPACE/BACKSPACE: no sub-buttons. Cache the empty array too so
+        // future calls are short-circuited.
+        var empty = [];
+        cache.put(key, empty);
+        return empty;
     }
 
     function subButtonAt(x as Number, y as Number, parent as Dictionary, screenW as Number, screenH as Number) as Dictionary or Null {

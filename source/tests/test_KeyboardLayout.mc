@@ -264,3 +264,60 @@ function kbd_subButtonAtInsideLevelTwoFinalReturnsLabel(logger as Logger) as Boo
     logger.debug("subButtonAt(208,383) = " + d[:label]);
     return (d[:label] as String).equals("ך");
 }
+
+
+// --- M6.5: cache identity tests. Verify that buttons() and subButtons(parent)
+// return the SAME Array reference on consecutive calls (i.e. the cache exists
+// and is being used). Approach: mutate one returned dict's label, observe the
+// mutation in the next call. If buttons() were re-allocating, the second call
+// would return a fresh array without the mutation. Self-cleaning via try/
+// finally so the rest of the test suite sees the original layout.
+
+(:test)
+function kbd_buttonsReturnsCachedReference(logger as Logger) as Boolean {
+    var a = KeyboardLayout.buttons();
+    var b = KeyboardLayout.buttons();
+    if (a.size() == 0 || b.size() == 0) { return false; }
+    var d0a = a[0] as Dictionary;
+    var d0b = b[0] as Dictionary;
+    var original = d0a[:label] as String;
+    var marker = "M6_5_BTN_TEST_MARKER";
+    d0a.put(:label, marker);
+    var same = false;
+    try {
+        var bLabel = d0b[:label] as String;
+        same = bLabel.equals(marker);
+        logger.debug("buttons()===buttons() ? " + same + " bLabel='" + bLabel + "'");
+    } catch (e) {
+        d0a.put(:label, original);
+        throw e;
+    }
+    d0a.put(:label, original);
+    return same;
+}
+
+(:test)
+function kbd_subButtonsReturnsCachedReference(logger as Logger) as Boolean {
+    // Same identity test for subButtons (per parent). Using אבג parent
+    // (3 sub-zones).
+    var parent = { :label => "אבג", :type => :LETTER_GROUP,
+                   :letters => ["א", "ב", "ג"], :centerAngleDeg => 72 };
+    var a = KeyboardLayout.subButtons(parent, 416, 416);
+    var b = KeyboardLayout.subButtons(parent, 416, 416);
+    if (a.size() == 0 || b.size() == 0) { return false; }
+    var d0a = a[0] as Dictionary;
+    var d0b = b[0] as Dictionary;
+    var original = d0a[:label] as String;
+    var marker = "M6_5_SUB_TEST_MARKER";
+    d0a.put(:label, marker);
+    var same = false;
+    try {
+        same = ((d0b[:label] as String).equals(marker));
+        logger.debug("subButtons===subButtons ? " + same);
+    } catch (e) {
+        d0a.put(:label, original);
+        throw e;
+    }
+    d0a.put(:label, original);
+    return same;
+}

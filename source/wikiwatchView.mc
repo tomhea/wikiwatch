@@ -49,6 +49,11 @@ class wikiwatchView extends WatchUi.View {
     private var _ctorTimeMs as Number;       // M5.3: first-paint timing
     private var _firstPaintLogged as Boolean;
     private var _screenWidth as Number;      // M6: cached for findWordAt
+    // M6.5: pending long-press hit, resolved in next onUpdate (which has dc).
+    // Replaces the M6 / M6.1 findWordAt + per-sub-line :words/:wordPx
+    // storage. -1 sentinel = no pending hit.
+    private var _pendingHitX as Number;
+    private var _pendingHitY as Number;
 
     function initialize(body as String) {
         View.initialize();
@@ -67,6 +72,18 @@ class wikiwatchView extends WatchUi.View {
         _ctorTimeMs = System.getTimer();
         _firstPaintLogged = false;
         _screenWidth = 0;
+        _pendingHitX = -1;
+        _pendingHitY = -1;
+    }
+
+    // M6.5: delegate calls this on long-press. We can't measure word widths
+    // without a live dc, so we just save the tap coords + requestUpdate.
+    // The next onUpdate runs _resolvePendingHit which measures + pushes
+    // the new keyboard layer.
+    function requestLongPressHit(x as Number, y as Number) as Void {
+        _pendingHitX = x;
+        _pendingHitY = y;
+        WatchUi.requestUpdate();
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -91,6 +108,11 @@ class wikiwatchView extends WatchUi.View {
         _layoutComplete = LayoutProgress.isComplete(_layoutCursor, totalRaw);
 
         _renderVisibleLines(dc);
+
+        // M6.5: resolve a pending long-press now that dc is in hand.
+        if (_pendingHitX >= 0) {
+            _resolvePendingHit(dc);
+        }
 
         // Loading marker + schedule next tick while incremental layout has work.
         if (!_layoutComplete) {
@@ -150,18 +172,20 @@ class wikiwatchView extends WatchUi.View {
         return _layoutComplete;
     }
 
-    // M6: long-press hit-test. Given a screen (x, y), returns the word at
-    // that point or null. Used by wikiwatchDelegate.onHold to push a new
-    // keyboard layer pre-filled with the tapped word. Returns null if the
-    // tap is outside any laid-out line, outside the line's text, or if
-    // _lines hasn't been initialized yet (e.g. first onUpdate hasn't run).
-    //
-    // M6.1: pixel-accurate. Uses the per-word px widths stored in each
-    // line dict (:words / :wordPx / :spacePx) via the new pure
-    // WordHitTest.findWordPx — fixes the M6 char-count off-by-one and
-    // left-side dead zone.
-    function findWordAt(x as Number, y as Number) as String? {
-        if (_lines == null) { return null; }
+    // M6.5: resolve a pending long-press tap. Called from onUpdate where
+    // dc is valid. Locates the sub-line under (contentY = y + _scrollY),
+    // measures THAT sub-line's words on the fly, runs WordHitTest, and
+    // pushes a new keyboard layer if a word was hit. Replaces the M6 /
+    // M6.1 findWordAt + per-sub-line :words/:wordPx storage (which kept
+    // ~6.5 KB resident on shalom-sized articles). Peak transient memory
+    // here is ~130 B (one sub-line's worth) — discarded as soon as the
+    // method returns.
+    private function _resolvePendingHit(dc as Dc) as Void {
+        var x = _pendingHitX;
+        var y = _pendingHitY;
+        _pendingHitX = -1;
+        _pendingHitY = -1;
+        if (_lines == null) { return; }
         var contentY = y + _scrollY;
         var lines = _lines as Array<Dictionary>;
         for (var i = 0; i < lines.size(); i++) {
@@ -169,21 +193,22 @@ class wikiwatchView extends WatchUi.View {
             var top = ln[:y] as Number;
             var height = ln[:h] as Number;
             if (contentY < top || contentY >= top + height) { continue; }
-            // Pull pre-measured per-word px from the line dict.
-            var words = ln[:words] as Array<String>;
-            var wordPx = ln[:wordPx] as Array<Number>;
-            var spacePx = ln[:spacePx] as Number;
-            if (words == null || words.size() == 0) { return null; }
+            // Measure THIS sub-line's words on demand.
+            var subText = ln[:text] as String;
+            var font = ln[:font] as Graphics.FontType;
+            var words = LineWrap.splitWords(subText);
+            if (words.size() == 0) { return; }
+            var wordPx = [];
+            for (var wi = 0; wi < words.size(); wi++) {
+                wordPx.add(dc.getTextWidthInPixels(words[wi] as String, font));
+            }
+            var spacePx = dc.getTextWidthInPixels(" ", font);
             // Compute this line's exact right edge based on its justify
-            // mode (mirrors _renderVisibleLines). Use sum(wordPx) +
-            // (n-1)*spacePx for the EXACT rendered text width — replaces
-            // M6's char-count estimate (text.length() * charPx) that
-            // caused the off-by-one + left-side bugs.
+            // mode (mirrors _renderVisibleLines).
             var w = ln[:w] as Number;
             var isH1 = ln[:isH1] as Boolean;
             var lineRightX;
             if (isH1 || w < _middleWidth) {
-                // Centered at screenW/2.
                 var centerX = _screenWidth / 2;
                 var nWords = words.size();
                 var textPx = 0;
@@ -195,12 +220,20 @@ class wikiwatchView extends WatchUi.View {
                 }
                 lineRightX = centerX + textPx / 2;
             } else {
-                // Right-justified at screenW - _RIGHT_MARGIN.
                 lineRightX = _screenWidth - _RIGHT_MARGIN;
             }
-            return WordHitTest.findWordPx(x, words, wordPx, lineRightX, spacePx);
+            var word = WordHitTest.findWordPx(x, words, wordPx, lineRightX, spacePx);
+            if (word != null) {
+                System.println("M6 onHold(lazy): word='" + word + "' — pushing keyboard layer");
+                var kbView = new wikiwatchKeyboardView();
+                var kbDelegate = new wikiwatchKeyboardDelegate(kbView, word as String);
+                WatchUi.pushView(kbView, kbDelegate, WatchUi.SLIDE_LEFT);
+            } else {
+                System.println("M6 onHold(lazy): no word at tap");
+            }
+            return;
         }
-        return null;
+        System.println("M6 onHold(lazy): no sub-line under tap");
     }
 
     private function _scheduleNextTick() as Void {
@@ -274,27 +307,22 @@ class wikiwatchView extends WatchUi.View {
                 } else {
                     w = widthsUsed[widthsUsed.size() - 1];
                 }
-                // M6.1: also measure per-word px for the SUB-LINE's words
-                // so findWordAt → WordHitTest.findWordPx can do pixel-
-                // accurate hit-test. Re-split the sub-line text (which
-                // is a join of N of the original words via wrapPx*) and
-                // measure each — straightforward since dc is in hand.
+                // M6.5: per-sub-line :words / :wordPx / :spacePx storage
+                // (added in M6.1 for pixel-accurate findWordAt) was a heap
+                // hog — ~6.5 KB resident for shalom-sized articles.
+                // Dropped here. Long-press hit-test now measures words
+                // lazily in _resolvePendingHit (during onUpdate where dc
+                // is valid), so we keep only the sub-line :text and
+                // recompute words/widths only for the ONE sub-line under
+                // the tap. Peak transient ~130 B vs ~6.5 KB resident.
                 var subText = subs[j] as String;
-                var subWords = LineWrap.splitWords(subText);
-                var subWordPx = [];
-                for (var swi = 0; swi < subWords.size(); swi++) {
-                    subWordPx.add(dc.getTextWidthInPixels(subWords[swi] as String, font));
-                }
                 lines.add({
                     :text => subText,
                     :font => font,
                     :y => y,
                     :h => fh,
                     :w => w,
-                    :isH1 => isH1,
-                    :words => subWords,
-                    :wordPx => subWordPx,
-                    :spacePx => spacePx
+                    :isH1 => isH1
                 });
                 y += fh + spacing;
             }

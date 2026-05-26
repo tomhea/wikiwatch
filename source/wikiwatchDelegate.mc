@@ -94,15 +94,12 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
         var x = coords[0];
         var y = coords[1];
         System.println("M6 onHold: x=" + x + " y=" + y);
-        var word = _view.findWordAt(x, y);
-        if (word != null) {
-            System.println("M6 onHold: word='" + word + "' — pushing keyboard layer");
-            var kbView = new wikiwatchKeyboardView();
-            var kbDelegate = new wikiwatchKeyboardDelegate(kbView, word as String);
-            WatchUi.pushView(kbView, kbDelegate, WatchUi.SLIDE_LEFT);
-        } else {
-            System.println("M6 onHold: no word at tap — ignored");
-        }
+        // M6.5: defer the actual word lookup to the view's next onUpdate
+        // (where dc is valid for per-word pixel measurement). The view
+        // does the measurement + push itself. We no longer store
+        // pre-measured :words/:wordPx per sub-line — that was ~6.5 KB
+        // of resident heap on shalom-sized articles.
+        _view.requestLongPressHit(x, y);
         return true;
     }
 
