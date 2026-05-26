@@ -147,15 +147,17 @@ class wikiwatchKeyboardView extends WatchUi.View {
         var cx = screenW / 2;
         var cy = screenH / 2;
 
-        // M6.5 diagnostic — freeMemory in the top-right corner so the user
-        // can SEE heap pressure live on the watch (stdout isn't accessible
-        // there). Tiny font, dim color, doesn't overlap the buffer band or
-        // any wedge. Remove in a later milestone if not needed.
+        // M6.5 diagnostic — freeMemory near the BOTTOM of the visible
+        // circle (cy + 130 — below the suggestion-area dead zone, above
+        // the bottom outer-ring wedges). LT_GRAY on black is readable;
+        // FONT_XTINY keeps it small. The user is supposed to be able to
+        // watch this number drop while interacting with the keyboard
+        // on the real watch (no stdout access there).
         var freeMem = System.getSystemStats().freeMemory;
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenW - 4, 2, Graphics.FONT_XTINY,
-                    freeMem.toString(),
-                    Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, cy + 105, Graphics.FONT_XTINY,
+                    "fm:" + freeMem.toString(),
+                    Graphics.TEXT_JUSTIFY_CENTER);
 
         // 1. Center display (drawn FIRST so expansion can cover it).
         _drawCenterDisplay(dc, cx, cy);

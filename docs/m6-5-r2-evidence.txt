@@ -19,10 +19,19 @@ Sim launch (`monkeydo bin/wikiwatch.prg venu2`, SDK 9.1.0):
     M4 install: SKIP (manifest already at target version)
     M5 rank: buf='' (empty — no results shown)
 
-Initial render now also paints `freeMemory.toString()` in the top-right
-corner of the keyboard in DK_GRAY FONT_XTINY. On the watch the user can
-SEE the number drop during interactions and tell us where memory hits
-zero (or holds steady — which would mean GC isn't the bottleneck).
+Initial render now also paints `fm:NNNNNN` near the bottom of the
+visible round display in LT_GRAY FONT_XTINY. Visible in the sim
+screenshot at docs/screenshots/m6-5-freemem-overlay.png — the sim shows
+`fm:732656` (~715 KB free). The real Venu 2 will show a much smaller
+number; the user watches it during typing/expansion/article-open and
+reports back whether it drops to zero (memory pressure confirmed) or
+holds steady (bug is elsewhere, not memory).
+
+NOTE on placement: the overlay was originally placed at (screenW - 4, 2)
+but Venu 2's round display masks the rectangular corners with the bezel,
+so that location was invisible. Moved to (cx, cy + 105) — top-center
+just below the bottom-middle inner area, well inside the visible circle,
+between the suggestion area dead zone and the bottom outer-ring wedges.
 
 Memory wins (all per-keystroke during typing):
 
