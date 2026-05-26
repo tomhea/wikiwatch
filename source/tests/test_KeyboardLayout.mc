@@ -60,7 +60,10 @@ function kbd_buttonEightIsQuadLetter(logger as Logger) as Boolean {
 
 (:test)
 function kbd_buttonNineIsDigits(logger as Logger) as Boolean {
-    // M6.2: DIGITS letters array grew from 10 (0..9) to 13 (0..9, ", ', -).
+    // M6.4: reverted to 10 digits (0..9). M6.2 had added " / ' / - cells
+    // for typing Hebrew acronyms; user decided they were unnecessary since
+    // Search._normalize handles the punctuation on the match side — typing
+    // שבק still finds the title שב"ק without ever entering a quote.
     var b = KeyboardLayout.buttons();
     if (b.size() < 10) { return false; }
     var k = b[9] as Dictionary;
@@ -68,12 +71,9 @@ function kbd_buttonNineIsDigits(logger as Logger) as Boolean {
     logger.debug("[9] label=" + k[:label] + " type=" + k[:type] + " letters.size=" + letters.size());
     return k[:type] == :DIGITS
         && (k[:centerAngleDeg] as Number) == 324
-        && letters.size() == 13
+        && letters.size() == 10
         && letters[0].equals("0")
-        && letters[9].equals("9")
-        && letters[10].equals("\"")
-        && letters[11].equals("'")
-        && letters[12].equals("-");
+        && letters[9].equals("9");
 }
 
 (:test)
@@ -169,42 +169,23 @@ function kbd_subButtonsLetterGroupFourReturnsFour(logger as Logger) as Boolean {
 }
 
 (:test)
-function kbd_subButtonsDigitsReturnsThirteenAroundRing(logger as Logger) as Boolean {
-    // M6.2: DIGITS expansion grew from 10 cells to 13 (0..9 + " + ' + -)
-    // evenly distributed around the outer ring (each ~27.7° wide).
+function kbd_subButtonsDigitsReturnsTenAroundRing(logger as Logger) as Boolean {
+    // M6.4: reverted to 10 digit cells at the original 36°-wide spacing.
+    // (M6.2 had grown it to 13 to fit " / ' / -; backed out per user
+    // request since Search._normalize handles those chars on the match
+    // side without ever needing them as keyboard input.)
     var parent = { :label => "0-9", :type => :DIGITS,
-                   :letters => ["0","1","2","3","4","5","6","7","8","9","\"","'","-"],
+                   :letters => ["0","1","2","3","4","5","6","7","8","9"],
                    :centerAngleDeg => 324 };
     var subs = KeyboardLayout.subButtons(parent, 416, 416);
     logger.debug("subButtons(digits).size=" + subs.size());
-    if (subs.size() != 13) { return false; }
+    if (subs.size() != 10) { return false; }
     var s0 = subs[0] as Dictionary;
     var s5 = subs[5] as Dictionary;
     var s9 = subs[9] as Dictionary;
-    // 13 evenly distributed cells: centerAngleDeg(i) = (i * 360) / 13
-    // (integer division). i=0 → 0, i=5 → 138, i=9 → 249.
     return (s0[:label] as String).equals("0") && (s0[:centerAngleDeg] as Number) == 0
-        && (s5[:label] as String).equals("5") && (s5[:centerAngleDeg] as Number) == 138
-        && (s9[:label] as String).equals("9") && (s9[:centerAngleDeg] as Number) == 249;
-}
-
-(:test)
-function kbd_subButtonsDigitsLastThreeAreAsciiPunctuation(logger as Logger) as Boolean {
-    // M6.2: cells 10, 11, 12 of the DIGITS expansion are the new ASCII
-    // gershayim ("), geresh ('), and makaf (-) keys — for typing Hebrew
-    // acronyms (שב"ק, ש"ס) and hyphenated terms (שיר-השירים).
-    var parent = { :label => "0-9", :type => :DIGITS,
-                   :letters => ["0","1","2","3","4","5","6","7","8","9","\"","'","-"],
-                   :centerAngleDeg => 324 };
-    var subs = KeyboardLayout.subButtons(parent, 416, 416);
-    if (subs.size() != 13) { return false; }
-    var s10 = subs[10] as Dictionary;
-    var s11 = subs[11] as Dictionary;
-    var s12 = subs[12] as Dictionary;
-    logger.debug("punct labels: [10]='" + s10[:label] + "' [11]='" + s11[:label] + "' [12]='" + s12[:label] + "'");
-    return (s10[:label] as String).equals("\"")
-        && (s11[:label] as String).equals("'")
-        && (s12[:label] as String).equals("-");
+        && (s5[:label] as String).equals("5") && (s5[:centerAngleDeg] as Number) == 180
+        && (s9[:label] as String).equals("9") && (s9[:centerAngleDeg] as Number) == 324;
 }
 
 (:test)
