@@ -1,0 +1,118 @@
+M6.2 R2 evidence — ASCII-punctuation in search + keyboard + body-content search
+================================================================================
+
+Sim launch (live monkeydo bin/wikiwatch.prg venu2 on the Connect IQ simulator,
+SDK 9.1.0):
+
+M4 install: startEmpty=false currentVersion=4 targetVersion=4 startIds=[shalom, shabbat, shir, shema, shulchan-arukh, shir-hashirim, shemonah-esreh, shemesh, shlomo-hamelech, shir-lashalom-long, shmuel, shofar, shoftim, shekhinah, shalom-aleichem, shamayim-vaaretz, shmirat-shabbat, shirat-hayam, shir-eretz, shimon-bar-yochai, shemesh-bagilboa, sheleg, shemen-zayit, shaarei-tzedek, shabbat-hamalka, shir-mishirei, shulamit, shimshon, sheh, shdema, shas, shabak, shatz, shai-agnon, shalom-bayit, sh-aharon]
+M4 install: SKIP (manifest already at target version)
+M5 rank: buf='' (empty — no results shown)
+
+OBSERVABLE:
+- The fixture corpus now lists 36 entries (was 30 at M5.2/M5.3/M5.4/M6/M6.1).
+  The 6 new entries are visible in startIds: shas, shabak, shatz, shai-agnon,
+  shalom-bayit, sh-aharon. Their manifest titles use ASCII " / ' / -:
+    shas         → ש"ס
+    shabak       → שב"ק
+    shatz        → ש"ץ
+    shai-agnon   → ש"י-עגנון
+    shalom-bayit → שלום-בית
+    sh-aharon    → ש'אהרון
+- M4 install path correctly recognises that the stored manifest is already at
+  the target version (4), so no re-seed runs on this launch. (A first-launch
+  device or a device upgrading from v3 would see "M4 install: DONE
+  installed=36 of 36" instead — verified by the version-bump path tested in
+  fixture_installer tests.)
+- M5 rank: empty buffer → empty result set (existing M5.3 guard).
+
+DIAGNOSTIC DESIGN NOTE:
+The M5 rank diagnostic prints buf, top titles, and totalMatches on every
+buffer mutation. monkeydo does not programmatically simulate touch events,
+so the rest of the R2 evidence is the MANUAL test protocol below — the
+diagnostic lines that appear on the developer's stdout when each step is
+performed.
+
+
+Manual verification protocol (touchscreen, on the sim)
+=======================================================
+
+For each scenario below, expected stdout is the M5 rank line(s) that appear
+after each keypress, plus what the keyboard center should render.
+
+Scenario A — ASCII punctuation appears in the search results
+-------------------------------------------------------------
+With empty buffer, tap ש. Expected:
+    M5 rank: buf='ש' top=[שלום,שבת] more=34 total=36
+
+Notice total=36 (was 30 in M5.2..M6.1). All 6 new entries match the ש
+prefix. Tap "▼ 34 more" → ResultsView opens with all 36 ש-prefix entries.
+Scroll down → the 5 new punctuation-bearing titles render with their ASCII
+" / ' / - INTACT (e.g. ש"ס on its own row, שב"ק, ש"ץ, ש"י-עגנון,
+שלום-בית, ש'אהרון). The display preserves the originals.
+
+Scenario B — Gershayim (") ignored during matching
+---------------------------------------------------
+Buffer="שס" (without "). The title ש"ס in the corpus normalizes to "שס"
+during ranking. Expected:
+    M5 rank: buf='שס' top=[ש"ס,...] more=0 total=1   (or more if substrings hit too)
+
+Tap "ש" then DIGITS → expansion shows 13 cells (0..9 + " + ' + -). Tap ".
+Buffer becomes "ש"". Now tap ס:
+    M5 rank: buf='ש"ס' top=[ש"ס] more=0 total=1
+
+Both "שס" and "ש\"ס" queries match the same title.
+
+Scenario C — Makaf (-) treated as space
+-----------------------------------------
+Type "שלום בית" (with space). Expected:
+    M5 rank: buf='שלום בית' top=[שלום-בית] more=0 total=1
+
+The hyphen in שלום-בית normalizes to space during matching, so the
+space-separated query hits.
+
+Likewise, "שלום-בית" (with -) should match the same article. Both queries
+collapse to the same normalized form "שלום בית".
+
+Scenario D — Body-content fallback (tier 3)
+---------------------------------------------
+Type "ראשי תיבות" (the phrase appearing in several of the new article
+bodies but in NO article title). Expected:
+    M5 rank: buf='ראשי תיבות' top=[ש"ס,שב"ק] more=N total=N+2
+
+The matches are body-only (the phrase appears in shas, shabak, shatz,
+shai-agnon, sh-aharon bodies). Tier-3 results appear after any title hits
+and are popularity-sorted within that tier. Tapping a result opens the
+reader on that article (per the existing M5 push-on-tap flow).
+
+Scenario E — Title hit ranks BEFORE body hit (cross-tier)
+----------------------------------------------------------
+Type "שמואל". Article "shmuel" has title שמואל (title-prefix tier 1). The
+sh-aharon body mentions "שמואל אהרון" (body tier 3). Expected:
+    M5 rank: buf='שמואל' top=[שמואל,sh-aharon-title-here] more=0 total=2
+
+The title-match wins ordering regardless of relative popularity.
+
+
+R1 / R2 / R3 / R4 / R5 / R6 / R7 / R8 status
+=============================================
+R1: 175/175 pass (159 prior + 16 new asserting normalization / digit
+    expansion / fixture entries; the 16 captured FAIL→PASS in
+    docs/m6-2-fail.txt and docs/m6-2-pass.txt).
+R2: Initial sim launch reproduced above; manual touch protocol per scenarios.
+R3: Coverage extends to Search._normalize (pure), Search.rank tier-3 body
+    fallback, Search.totalMatches body inclusion, KeyboardLayout DIGITS
+    expansion to 13 cells, Fixtures version bump + 6 new entries.
+R4: New fixture bodies are <100 bytes each; well within existing R4 guards
+    in ArticleStore.putBody + Manifest.save.
+R5: Body pre-load in KeyboardDelegate.initialize: 36 bodies × ~150 B avg ≈
+    5.4 KB resident per keyboard layer. ~50 KB worst case if corpus grows
+    to 300+ articles. Well under any single-alloc threshold.
+R6: WordHitTest / Search / KeyboardLayout / Fixtures stayed in source/models
+    and import only Toybox.Lang (+ Toybox.Math for KeyboardLayout, already
+    allowed). KeyboardDelegate body pre-load is in source/ (already
+    non-pure) and uses ArticleStore (source/storage/). No R6 boundary
+    crossings.
+R7: Branch fix/m6-2-ascii-punctuation; PR title "M6.2: ASCII punctuation
+    in search + keyboard + body-content search".
+R8: BUILD SUCCESSFUL with the same 2 baseline warnings (no supported
+    languages + 24x24 launcher icon scaling to 70x70). No new warnings.
