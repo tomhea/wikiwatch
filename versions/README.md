@@ -48,6 +48,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M6.1 | `v0.M6.1` | `b27a0dc` | 2026-05-26 | 161 KB | Fix M6 off-by-one + left-side dead zone: replace char-count `findWordInLine` with `findWordPx` using actual per-word pixel widths stored in each `_lines` sub-line (`:words / :wordPx / :spacePx`). Exact `lineRightX` from `sum(wordPx) + (n-1)*spacePx`. Removed `_approxCharPx`. | 161 |
 | M6.2 | `v0.M6.2` | `e1b33d8` | 2026-05-26 | 164 KB | ASCII-punctuation in search + keyboard + body-content search. New pure `Search._normalize` (strip `"` and `'`, replace `-` with space); `Search.rank` gains tier-3 body fallback; `KeyboardLayout` DIGITS expansion 10 → 13 cells; `KeyboardDelegate.initialize` pre-loads bodies; fixtures `:version` 3 → 4 + 6 new ש-prefix entries with ASCII " / ' / -. **Shipped with an OOM bug — fixed in M6.3.** | 175 |
 | M6.3 | `v0.M6.3` | `0033552` | 2026-05-26 | 163 KB | Hotfix M6.2 OOM. M6.2's `_normalize` built output via O(N²) string-concat (`out = out + ch` per char); rank + totalMatches per keystroke re-normalized every body that missed by title; on the ~2 KB shalom body that was ~8M byte-allocs/keystroke → uncatchable OOM. Plus the ~5 KB pre-load + ~10 KB reader layout = heap exhausted on article-open. Fix: remove tier-3 body fallback from `Search.rank`, remove body branch from `Search.totalMatches`, remove body pre-load from `KeyboardDelegate.initialize`, add fast-path to `_normalize` (no allocation when input has no " / ' / -). Kept from M6.2: ASCII normalization on titles + 3 new keyboard keys + 6 new fixtures. | 175 |
+| M6.4 | `v0.M6.4` | `775d975` | 2026-05-26 | 163 KB | Revert M6.2 keyboard `"` / `'` / `-` keys (user request: don't want to type those, search handles them). DIGITS expansion back to 10 cells (0..9 at 36° each); `DIGITS_EXPANSION_COUNT` / `DIGITS_EXPANSION_ARC_DEG` constants removed. KEPT Search._normalize + 6 ש-prefix fixtures with ASCII " / ' / - in titles — user types שבק and finds שב"ק via match-side normalization. | 174 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1140,7 +1141,48 @@ PASSED (passed=175, failed=0, errors=0)
 
 **Lesson recorded in memory:** O(N²) string concat is a hard Monkey C anti-pattern. Even a short-looking loop will blow the heap on KB-sized inputs because Strings are immutable and every `+` allocates fresh. The project's known-caveats now flag this explicitly.
 
-**Artifact:** `wikiwatch-M6.3.prg` (163 388 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M6.3.prg` (163 388 bytes).
+
+---
+
+## M6.4 — Remove `"` / `'` / `-` keys from DIGITS expansion (tag `v0.M6.4`)
+
+User feedback after using M6.3 on the watch: the 0-9 extended ring contained the new `"` / `'` / `-` keys (added in M6.2) and they aren't wanted there. Search already handles those chars without the user ever needing to type them — typing `שבק` finds `שב"ק` because `Search._normalize` strips the gershayim during matching. The keys were redundant input clutter.
+
+**What landed:**
+
+`source/models/KeyboardLayout.mc`:
+- DIGITS button's `:letters` back to `["0".."9"]` (was 13 cells including `"` / `'` / `-`).
+- DIGITS expansion loop back to 10 sub-buttons at `WEDGE_ARC_DEG` (36°) each, centers at `i * 36`. Removed the `DIGITS_EXPANSION_COUNT` / `DIGITS_EXPANSION_ARC_DEG` constants — they were introduced in M6.2 solely to accommodate the 13-cell layout, no longer needed.
+
+**Kept** from M6.2/M6.3:
+- `Search._normalize` (strip `"` and `'`, replace `-` with space) on the match side. The hot path is the fast-path so it's free for normal Hebrew titles + queries; only kicks in for inputs that contain those chars.
+- 6 new ש-prefix fixtures with ASCII `"` / `'` / `-` in titles (`shas` `שב"ק`, `shabak` `ש"ס`, `shatz` `ש"ץ`, `shai-agnon` `ש"י-עגנון`, `shalom-bayit` `שלום-בית`, `sh-aharon` `ש'אהרון`). Validate that the normalization is observable on the live corpus.
+
+**Test changes (-1 net, 175 → 174):**
+- `test_KeyboardLayout.mc` — `kbd_subButtonsDigitsLastThreeAreAsciiPunctuation` REMOVED (no longer applicable). `kbd_buttonNineIsDigits` reverted to expect 10 letters. `kbd_subButtonsDigitsReturnsThirteenAroundRing` renamed to `…ReturnsTenAroundRing` with original 36°/180°/324° centers.
+
+**R1 evidence** ([docs/m6-4-fail.txt](docs/m6-4-fail.txt)) — the new 10-cell assertions on the M6.3 13-cell impl:
+
+```
+kbd_buttonNineIsDigits                               FAIL
+kbd_subButtonsDigitsReturnsTenAroundRing             ERROR
+Ran 174 tests
+FAILED (passed=172, failed=1, errors=1)
+```
+
+After revert ([docs/m6-4-pass.txt](docs/m6-4-pass.txt)):
+
+```
+Ran 174 tests
+PASSED (passed=174, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m6-4-r2-evidence.txt](docs/m6-4-r2-evidence.txt)) — live `monkeydo bin/wikiwatch.prg venu2` shows the 36-article corpus intact (including all the punctuation-bearing titles from M6.2). User verified in sim that DIGITS expansion is now 10 cells (no `"` / `'` / `-`), and typing `שבק` still finds `שב"ק` via normalization.
+
+**User-visible change:** tapping DIGITS now opens an expansion with just `0..9` (no punctuation cells). Search behavior for punctuation-bearing titles is unchanged.
+
+**Artifact:** `wikiwatch-M6.4.prg` (163 356 bytes). Current head of `main`.
 
 ---
 
@@ -1158,7 +1200,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 175 tests pass at v0.M6.3
+& scripts\test.ps1     # 174 tests pass at v0.M6.4
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
