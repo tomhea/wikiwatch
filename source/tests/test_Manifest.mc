@@ -92,3 +92,50 @@ function manifest_titleOfMiss(logger as Logger) as Boolean {
     logger.debug("titleOf('nonexistent') = " + t);
     return t == null;
 }
+
+// --- M7: wipeArticles ---
+
+(:test)
+function manifest_wipeArticlesDeletesAllArticleBodies(logger as Logger) as Boolean {
+    // Pre-seed Storage with a manifest + 3 article bodies. wipeArticles()
+    // should delete all 3 article:<id> keys; the manifest key stays.
+    Application.Storage.deleteValue("manifest");
+    Application.Storage.deleteValue("article:a1");
+    Application.Storage.deleteValue("article:a2");
+    Application.Storage.deleteValue("article:a3");
+    var m = {
+        :version => 7,
+        :articles => [
+            { :id => "a1", :title => "א", :popularity => 50 },
+            { :id => "a2", :title => "ב", :popularity => 40 },
+            { :id => "a3", :title => "ג", :popularity => 30 }
+        ]
+    };
+    Manifest.save(m);
+    Application.Storage.setValue("article:a1", "body-1");
+    Application.Storage.setValue("article:a2", "body-2");
+    Application.Storage.setValue("article:a3", "body-3");
+    var deleted = Manifest.wipeArticles();
+    // Manifest should still exist:
+    var manifestStillPresent = (Application.Storage.getValue("manifest") != null);
+    // Bodies should be gone:
+    var b1 = Application.Storage.getValue("article:a1");
+    var b2 = Application.Storage.getValue("article:a2");
+    var b3 = Application.Storage.getValue("article:a3");
+    Application.Storage.deleteValue("manifest");
+    logger.debug("wipeArticles deleted=" + deleted
+        + " manifestStillPresent=" + manifestStillPresent
+        + " b1=" + b1 + " b2=" + b2 + " b3=" + b3);
+    return deleted == 3
+        && manifestStillPresent
+        && b1 == null && b2 == null && b3 == null;
+}
+
+(:test)
+function manifest_wipeArticlesOnEmpty(logger as Logger) as Boolean {
+    // No manifest, no articles -> wipeArticles returns 0, doesn't crash.
+    Application.Storage.deleteValue("manifest");
+    var deleted = Manifest.wipeArticles();
+    logger.debug("wipeArticles on empty = " + deleted);
+    return deleted == 0;
+}
