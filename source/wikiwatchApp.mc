@@ -9,20 +9,26 @@ class wikiwatchApp extends Application.AppBase {
     }
 
     function onStart(state as Dictionary?) as Void {
-        FixtureInstaller.installIfEmpty();
+        // M7: no more fixture-install on startup. The corpus lives on the
+        // server (wikiwatch.tomhe.app/) and arrives via Downloader/
+        // InstallView on first launch + UpdateCheckView on every
+        // subsequent launch.
     }
 
     function onStop(state as Dictionary?) as Void {
     }
 
-    // M3: initial view is the static Hebrew keyboard. The article reader
-    // (wikiwatchView / wikiwatchDelegate) stays in source for M6 to push
-    // on top of the view stack when a word is long-pressed in an article.
+    // M7: branch on Storage state.
+    //   Storage empty           -> InstallView (full first-time download)
+    //   Storage has a manifest  -> UpdateCheckView (750ms background race;
+    //                              functional keyboard wins by default)
     function getInitialView() as [Views] or [Views, InputDelegates] {
-        var view = new wikiwatchKeyboardView();
-        // M6: KeyboardDelegate ctor now takes an initial-buffer string.
-        // First launch starts with an empty buffer.
-        return [ view, new wikiwatchKeyboardDelegate(view, "") ];
+        if (Manifest.isEmpty()) {
+            var iv = new InstallView();
+            return [ iv, new InstallDelegate() ];
+        }
+        var uv = new UpdateCheckView();
+        return [ uv, new UpdateCheckDelegate() ];
     }
 
 }

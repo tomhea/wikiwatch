@@ -188,8 +188,8 @@ Upload destination preserves the same path structure:
 
 ---
 
-## Open questions for the user
+## User decisions (locked in 2026-05-27)
 
-1. **Server TLS cert** — is `https://wikiwatch.tomhe.app/` already serving with a valid cert (Let's Encrypt or similar)? If not, the watch will reject the connection. (Garmin doesn't trust self-signed.)
-2. **Update prompt UX** — happy with "Yes" = top half tap, "No" = bottom half tap? Or do you want a different gesture (e.g. tap = yes, swipe = no)?
-3. **`UpdateCheckView` 1-sec budget** — confirm 1 second is the right wait. Could be 500 ms for snappier UX, or 2 sec for unreliable networks. Default to 1 sec in the plan.
+1. **TLS cert** — `https://wikiwatch.tomhe.app/` is serving with a valid cert. ✓
+2. **Update prompt UX** — "Yes" = tap top half, "No" = tap bottom half. ✓
+3. **`UpdateCheckView` budget** — **750 ms**. Compromise between 500 ms (too tight for cold BLE wake — Garmin's BLE proxy can take ~1500 ms when the phone hasn't talked to the watch recently) and 1000 ms (eats more startup latency than needed when network is warm). Easy to bump in a hotfix if real-watch testing shows it's too short.

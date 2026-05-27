@@ -54,6 +54,21 @@ module Manifest {
         return ids;
     }
 
+    // M7: deletes all "article:<id>" keys from Storage so a fresh download
+    // starts from a clean slate. Preserves the "manifest" key — the caller
+    // can wipe in any order relative to Manifest.save. Returns the number
+    // of article keys deleted (handy for diagnostics).
+    //
+    // Uses the current manifest's article list to know which keys to
+    // delete. If the manifest is empty/missing, no-op (returns 0).
+    function wipeArticles() as Number {
+        var ids = articleIds();
+        for (var i = 0; i < ids.size(); i++) {
+            Application.Storage.deleteValue("article:" + (ids[i] as String));
+        }
+        return ids.size();
+    }
+
     function titleOf(id as String) as String? {
         var arts = load()[:articles] as Array?;
         if (arts == null) { return null; }

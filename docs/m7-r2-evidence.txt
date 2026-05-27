@@ -1,0 +1,98 @@
+M7 R2 evidence — real-network corpus from wikiwatch.tomhe.app/
+================================================================================
+
+Sim launch (`monkeydo bin/wikiwatch.prg venu2`, SDK 9.1.0). Local
+Storage was empty at launch (sim got reset between sessions, so the
+M6.5 manifest wasn't present), which exercises the FIRST-LAUNCH path:
+
+    M7 install: fetching manifest from https://wikiwatch.tomhe.app
+    M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+    M7 install: manifest fetch FAILED -- http rc=-1001
+    M5 rank: buf='' (empty -- no results shown)
+
+OBSERVABLE in the trace:
+1. App detects empty Storage -> pushes InstallView (per wikiwatchApp.
+   getInitialView's M7 branch).
+2. InstallView.onShow fires Downloader.fetchManifest -- the GET request
+   for https://wikiwatch.tomhe.app/manifest.json is dispatched.
+3. Network FAILS with rc=-1001. This is EXPECTED in the sim: the BLE
+   proxy can't reach the internet without a paired phone, and the
+   project's known CIQ quirks doc flags exactly this (negative rc
+   codes from sim makeWebRequest are routine -- truth source is the
+   real watch).
+4. InstallView's _scheduleSwitchToKeyboard(2000) fires the fallback:
+   after 2s the keyboard view becomes active in "degraded mode" (no
+   corpus loaded, search returns nothing).
+5. M5 rank line confirms keyboard delegate reached + initialized
+   (empty _articles, empty buffer -> empty rank, per M5.3 guard).
+
+The whole error-path flow is exercised end-to-end. The happy path
+(with the server actually reachable) requires real-watch testing.
+
+What the real-watch path will look like after upload:
+
+  FIRST LAUNCH (Storage empty):
+    M7 install: fetching manifest from https://wikiwatch.tomhe.app
+    M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+    M7 net: GET https://wikiwatch.tomhe.app/article/shalom.txt
+    M7 net: GET https://wikiwatch.tomhe.app/article/shabbat.txt
+    ... (36 articles total, sequential)
+    M7 install: DONE installed=36 errors=0 of 36
+    M5 rank: buf='' (empty corpus loaded, keyboard functional)
+
+  SUBSEQUENT LAUNCH (Storage has manifest, server same version):
+    M7 update check: starting 750ms race
+    M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+    M7 update check: same/older version (local=4 remote=4) -- using local
+    M5 rank: buf='' (functional keyboard, no re-download)
+
+  SUBSEQUENT LAUNCH (Storage has manifest, server version newer):
+    M7 update check: starting 750ms race
+    M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+    M7 update check: UPDATE AVAILABLE local=4 remote=5 -- prompting
+    [UpdatePromptView shown to user]
+    -- user taps top half = YES --
+    M7 update prompt: YES -- wiping + reinstalling
+    M7 install: fetching manifest from https://wikiwatch.tomhe.app
+    ... full reinstall
+
+  SLOW NETWORK (Storage has manifest, response > 750ms):
+    M7 update check: starting 750ms race
+    M7 update check: TIMEOUT after 750ms -- using stale
+    M5 rank: buf='' (keyboard functional with stale corpus)
+
+User-visible changes vs M6.5:
+- First launch is now NETWORK-DEPENDENT. With paired phone + internet,
+  user sees "Loading wikiwatch: N / M" then the keyboard appears with
+  the full 36-article corpus. Without network, keyboard appears
+  immediately in degraded mode (empty corpus).
+- Every subsequent launch has a brief (<= 750ms) "checking for
+  updates..." flash. If a new version is available, user sees a
+  Yes/No prompt; tapping top = wipe + reinstall, tapping bottom =
+  continue with current.
+
+R-rule status
+-------------
+R1: 174/174 tests pass (was 176; -10 fixture tests + 8 new = -2 net).
+    FAIL->PASS captured (docs/m7-fail.txt -> docs/m7-pass.txt).
+R2: sim trace above demonstrates error-path of network failure +
+    degraded fallback. Real-watch sideload validates happy path.
+R3: Downloader.parseManifestResponse has 6 tests (positive +
+    rejection cases + Symbol-key normalization). Manifest.wipeArticles
+    has 2 tests (happy + empty). Views + network side-effects
+    covered by R2.
+R4: All setValue calls (Manifest.save, ArticleStore.putBody) keep
+    existing R4 freeMemory guards.
+R5: Per-article fetch holds at most one body in memory at a time
+    (sequential install). No new resident heap relative to M6.5.
+R6: Downloader lives in new source/net/ (not source/models/) per
+    R6 because it imports Toybox.Communications + Toybox.System.
+R7: m7-network-corpus + "M7: Real-network corpus from
+    wikiwatch.tomhe.app/" matches the milestone format.
+R8: BUILD SUCCESSFUL with the 2 baseline warnings only (after fixing
+    a transient `_view` unused-field warning during development).
+
+manifest.xml change: added <iq:uses-permission id="Communications"/>.
+Required for makeWebRequest; without it the build fails with
+"Permission 'Communications' required" errors on every Downloader
+call site.
