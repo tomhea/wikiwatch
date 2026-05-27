@@ -1,0 +1,186 @@
+{
+  "version": 4,
+  "totalBytes": 6615,
+  "articles": [
+    {
+      "id": "shalom",
+      "title": "שלום",
+      "popularity": 100
+    },
+    {
+      "id": "shabbat",
+      "title": "שבת",
+      "popularity": 99
+    },
+    {
+      "id": "shir",
+      "title": "שיר",
+      "popularity": 96
+    },
+    {
+      "id": "shema",
+      "title": "שמע ישראל",
+      "popularity": 95
+    },
+    {
+      "id": "shulchan-arukh",
+      "title": "שולחן ערוך",
+      "popularity": 92
+    },
+    {
+      "id": "shir-hashirim",
+      "title": "שיר השירים",
+      "popularity": 90
+    },
+    {
+      "id": "shemonah-esreh",
+      "title": "שמונה עשרה",
+      "popularity": 88
+    },
+    {
+      "id": "shemesh",
+      "title": "שמש",
+      "popularity": 86
+    },
+    {
+      "id": "shlomo-hamelech",
+      "title": "שלמה המלך",
+      "popularity": 85
+    },
+    {
+      "id": "shir-lashalom-long",
+      "title": "שיר לשלום מאת חיים נחמן ביאליק ונועה קירל",
+      "popularity": 84
+    },
+    {
+      "id": "shmuel",
+      "title": "שמואל",
+      "popularity": 82
+    },
+    {
+      "id": "shofar",
+      "title": "שופר",
+      "popularity": 80
+    },
+    {
+      "id": "shoftim",
+      "title": "שופטים",
+      "popularity": 78
+    },
+    {
+      "id": "shekhinah",
+      "title": "שכינה",
+      "popularity": 76
+    },
+    {
+      "id": "shalom-aleichem",
+      "title": "שלום עליכם",
+      "popularity": 74
+    },
+    {
+      "id": "shamayim-vaaretz",
+      "title": "שמיים וארץ",
+      "popularity": 72
+    },
+    {
+      "id": "shmirat-shabbat",
+      "title": "שמירת שבת",
+      "popularity": 70
+    },
+    {
+      "id": "shirat-hayam",
+      "title": "שירת הים",
+      "popularity": 68
+    },
+    {
+      "id": "shir-eretz",
+      "title": "שיר ארץ ישראל",
+      "popularity": 66
+    },
+    {
+      "id": "shimon-bar-yochai",
+      "title": "שמעון בר יוחאי",
+      "popularity": 64
+    },
+    {
+      "id": "shemesh-bagilboa",
+      "title": "שמש בגלבוע",
+      "popularity": 62
+    },
+    {
+      "id": "sheleg",
+      "title": "שלג",
+      "popularity": 60
+    },
+    {
+      "id": "shemen-zayit",
+      "title": "שמן זית",
+      "popularity": 58
+    },
+    {
+      "id": "shaarei-tzedek",
+      "title": "שערי צדק",
+      "popularity": 56
+    },
+    {
+      "id": "shabbat-hamalka",
+      "title": "שבת המלכה",
+      "popularity": 54
+    },
+    {
+      "id": "shir-mishirei",
+      "title": "שיר משירי דוד",
+      "popularity": 52
+    },
+    {
+      "id": "shulamit",
+      "title": "שולמית",
+      "popularity": 50
+    },
+    {
+      "id": "shimshon",
+      "title": "שמשון",
+      "popularity": 48
+    },
+    {
+      "id": "sheh",
+      "title": "שה",
+      "popularity": 46
+    },
+    {
+      "id": "shdema",
+      "title": "שדמה",
+      "popularity": 44
+    },
+    {
+      "id": "shas",
+      "title": "ש\"ס",
+      "popularity": 45
+    },
+    {
+      "id": "shabak",
+      "title": "שב\"ק",
+      "popularity": 43
+    },
+    {
+      "id": "shatz",
+      "title": "ש\"ץ",
+      "popularity": 41
+    },
+    {
+      "id": "shai-agnon",
+      "title": "ש\"י-עגנון",
+      "popularity": 39
+    },
+    {
+      "id": "shalom-bayit",
+      "title": "שלום-בית",
+      "popularity": 37
+    },
+    {
+      "id": "sh-aharon",
+      "title": "ש'אהרון",
+      "popularity": 35
+    }
+  ]
+}
