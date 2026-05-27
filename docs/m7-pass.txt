@@ -1,239 +1,238 @@
 BUILD SUCCESSFUL
 WARNING: C:\Users\tomhe\Documents\Garmin\wikiwatch\manifest.xml: No supported languages are defined. Language-specific resources will be ignored unless language support is added to the manifest file.
 WARNING: venu2: The launcher icon (24x24) isn't compatible with the specified launcher icon size of the device 'venu2' (70x70). The image will be scaled to the target size.
-WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\UpdatePromptView.mc:65: Member variable '_view' is not used.
 ------------------------------------------------------------------------------
 Executing test articleStore_putGetRoundtrip...
-DEBUG (22:15): put=true back len=26
+DEBUG (22:22): put=true back len=26
 PASS
 ------------------------------------------------------------------------------
 Executing test articleStore_bodyOfMissingReturnsNull...
-DEBUG (22:15): bodyOf('does-not-exist') = null
+DEBUG (22:22): bodyOf('does-not-exist') = null
 PASS
 ------------------------------------------------------------------------------
 Executing test articleStore_putBodyOverwrites...
-DEBUG (22:15): after-overwrite = 'second'
+DEBUG (22:22): after-overwrite = 'second'
 PASS
 ------------------------------------------------------------------------------
 Executing test doubleTap_noPreviousTapReturnsFalse...
-DEBUG (22:15): noPrev: isDoubleTap(0,0,100,50,300,80) = false
+DEBUG (22:22): noPrev: isDoubleTap(0,0,100,50,300,80) = false
 PASS
 ------------------------------------------------------------------------------
 Executing test doubleTap_timeTooFarApartReturnsFalse...
-DEBUG (22:15): timeFar: isDoubleTap(100,50,600,50,300,80) = false
+DEBUG (22:22): timeFar: isDoubleTap(100,50,600,50,300,80) = false
 PASS
 ------------------------------------------------------------------------------
 Executing test doubleTap_yTooFarApartReturnsFalse...
-DEBUG (22:15): yFar: isDoubleTap(100,50,200,250,300,80) = false
+DEBUG (22:22): yFar: isDoubleTap(100,50,200,250,300,80) = false
 PASS
 ------------------------------------------------------------------------------
 Executing test doubleTap_withinBothWindowsReturnsTrue...
-DEBUG (22:15): inWindow: isDoubleTap(100,50,250,70,300,80) = true
+DEBUG (22:22): inWindow: isDoubleTap(100,50,250,70,300,80) = true
 PASS
 ------------------------------------------------------------------------------
 Executing test doubleTap_negativeTimeDeltaReturnsFalse...
-DEBUG (22:15): negDelta: isDoubleTap(500,50,100,50,300,80) = false
+DEBUG (22:22): negDelta: isDoubleTap(500,50,100,50,300,80) = false
 PASS
 ------------------------------------------------------------------------------
 Executing test doubleTap_intervalBoundaryIsInclusive...
-DEBUG (22:15): boundary: at=400ms -> true, past=401ms -> false
+DEBUG (22:22): boundary: at=400ms -> true, past=401ms -> false
 PASS
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestSuccess...
-DEBUG (22:15): parse 200 + valid -> ok=true
+DEBUG (22:22): parse 200 + valid -> ok=true
 PASS
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsBadRc...
-DEBUG (22:15): parse 404 -> ok=false error=http rc=404
+DEBUG (22:22): parse 404 -> ok=false error=http rc=404
 PASS
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsNullData...
-DEBUG (22:15): parse 200 + null -> ok=false
+DEBUG (22:22): parse 200 + null -> ok=false
 PASS
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsMissingVersion...
-DEBUG (22:15): parse 200 + no-version -> ok=false
+DEBUG (22:22): parse 200 + no-version -> ok=false
 PASS
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsMissingArticles...
-DEBUG (22:15): parse 200 + no-articles -> ok=false
+DEBUG (22:22): parse 200 + no-articles -> ok=false
 PASS
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestNormalizesKeys...
-DEBUG (22:15): symbol id=x title=X string id=null
+DEBUG (22:22): symbol id=x title=X string id=null
 PASS
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendToEmpty...
-DEBUG (22:15): append('', 'ש') = 'ש'
+DEBUG (22:22): append('', 'ש') = 'ש'
 PASS
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendHebrew...
-DEBUG (22:15): append('ש', '�?') = 'ש�?'
+DEBUG (22:22): append('ש', '�?') = 'ש�?'
 PASS
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendSpace...
-DEBUG (22:15): append('ש', ' ') = 'ש '
+DEBUG (22:22): append('ש', ' ') = 'ש '
 PASS
 ------------------------------------------------------------------------------
 Executing test inputbuf_popLastFromTwoChars...
-DEBUG (22:15): popLast('ש�?') = 'ש'
+DEBUG (22:22): popLast('ש�?') = 'ש'
 PASS
 ------------------------------------------------------------------------------
 Executing test inputbuf_popLastFromEmpty...
-DEBUG (22:15): popLast('') = ''
+DEBUG (22:22): popLast('') = ''
 PASS
 ------------------------------------------------------------------------------
 Executing test inputbuf_clearReturnsEmpty...
-DEBUG (22:15): clear('ש�?ו�?') = ''
+DEBUG (22:22): clear('ש�?ו�?') = ''
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonsReturns10Wedges...
-DEBUG (22:15): buttons.size=10
+DEBUG (22:22): buttons.size=10
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonZeroIsSpace...
-DEBUG (22:15): [0] label=_ type=symbol (408) angle=0
+DEBUG (22:22): [0] label=_ type=symbol (407) angle=0
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonOneIsBackspace...
-DEBUG (22:15): [1] label=X type=symbol (409) angle=36
+DEBUG (22:22): [1] label=X type=symbol (408) angle=36
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonTwoIsAlefGroup...
-DEBUG (22:15): [2] label=�?בג type=symbol (395) letters=[�?, ב, ג] angle=72
+DEBUG (22:22): [2] label=�?בג type=symbol (394) letters=[�?, ב, ג] angle=72
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonEightIsQuadLetter...
-DEBUG (22:15): [8] letters=[ק, ר, ש, ת] angle=288
+DEBUG (22:22): [8] letters=[ק, ר, ש, ת] angle=288
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonNineIsDigits...
-DEBUG (22:15): [9] label=0-9 type=symbol (406) letters.size=10
+DEBUG (22:22): [9] label=0-9 type=symbol (405) letters.size=10
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtInsideAlefGroupReturnsIt...
-DEBUG (22:15): buttonAt(386,150)=�?בג type=symbol (395)
+DEBUG (22:22): buttonAt(386,150)=�?בג type=symbol (394)
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtInsideHitHaloReturnsWedge...
-DEBUG (22:15): buttonAt(351,162)=�?בג angle=72
+DEBUG (22:22): buttonAt(351,162)=�?בג angle=72
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtJustOutsideHaloReturnsNull...
-DEBUG (22:15): buttonAt(327,169) = null
+DEBUG (22:22): buttonAt(327,169) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtNewWiderHaloReturnsWedge...
-DEBUG (22:15): buttonAt(336,166)=�?בג
+DEBUG (22:22): buttonAt(336,166)=�?בג
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtCenterReturnsNull...
-DEBUG (22:15): buttonAt(208,208) = null
+DEBUG (22:22): buttonAt(208,208) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtOffRingReturnsNull...
-DEBUG (22:15): buttonAt(0,0) = null
+DEBUG (22:22): buttonAt(0,0) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsLetterGroupReturnsThree...
-DEBUG (22:15): subButtons(�?בג).size=3
+DEBUG (22:22): subButtons(�?בג).size=3
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsLetterGroupFourReturnsFour...
-DEBUG (22:15): subButtons(קרשת).size=4
+DEBUG (22:22): subButtons(קרשת).size=4
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsDigitsReturnsTenAroundRing...
-DEBUG (22:15): subButtons(digits).size=10
+DEBUG (22:22): subButtons(digits).size=10
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtInsideLetterExpansionReturnsLabel...
-DEBUG (22:15): subButtonAt(284,184) = ב
+DEBUG (22:22): subButtonAt(284,184) = ב
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtOutsideExpansionReturnsNull...
-DEBUG (22:15): subButtonAt(208,208) center = null
+DEBUG (22:22): subButtonAt(208,208) center = null
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsForYudKafLamedHasFinalKaf...
-DEBUG (22:15): subButtons(יכ�?).size=4
-DEBUG (22:15): �? angle=180 rInner=146 rOuter=205
+DEBUG (22:22): subButtons(יכ�?).size=4
+DEBUG (22:22): �? angle=180 rInner=146 rOuter=205
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsForMemNunSamekhHasTwoFinals...
-DEBUG (22:15): subButtons(�?נס).size=5
+DEBUG (22:22): subButtons(�?נס).size=5
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtInsideLevelTwoFinalReturnsLabel...
-DEBUG (22:15): subButtonAt(208,383) = �?
+DEBUG (22:22): subButtonAt(208,383) = �?
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_buttonsReturnsCachedReference...
-DEBUG (22:15): buttons()===buttons() ? true bLabel='M6_5_BTN_TEST_MARKER'
+DEBUG (22:22): buttons()===buttons() ? true bLabel='M6_5_BTN_TEST_MARKER'
 PASS
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsReturnsCachedReference...
-DEBUG (22:15): subButtons===subButtons ? true
+DEBUG (22:22): subButtons===subButtons ? true
 PASS
 ------------------------------------------------------------------------------
 Executing test layout_middleWidthM27Baseline...
-DEBUG (22:15): Layout.middleWidth(416, 25, 100) = 291
+DEBUG (22:22): Layout.middleWidth(416, 25, 100) = 291
 PASS
 ------------------------------------------------------------------------------
 Executing test layout_middleWidthDifferentScreen...
-DEBUG (22:15): Layout.middleWidth(400, 20, 80) = 300
+DEBUG (22:22): Layout.middleWidth(400, 20, 80) = 300
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndAdvancesByBatchSize...
-DEBUG (22:15): nextBatchEnd(0,50,12) = 12
+DEBUG (22:22): nextBatchEnd(0,50,12) = 12
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndClampsAtTotal...
-DEBUG (22:15): nextBatchEnd(48,50,12) = 50
+DEBUG (22:22): nextBatchEnd(48,50,12) = 50
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndIdempotentAtTotal...
-DEBUG (22:15): nextBatchEnd(50,50,12) = 50
+DEBUG (22:22): nextBatchEnd(50,50,12) = 50
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isCompleteWhenCursorAtTotal...
-DEBUG (22:15): isComplete(50,50) = true
+DEBUG (22:22): isComplete(50,50) = true
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isNotCompleteWhenCursorBelowTotal...
-DEBUG (22:15): isComplete(40,50) = false
+DEBUG (22:22): isComplete(40,50) = false
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isScrollNearEndWithinLookahead...
-DEBUG (22:15): isScrollNearEnd(500,800,200,150) = true
+DEBUG (22:22): isScrollNearEnd(500,800,200,150) = true
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isScrollNotNearEndWhenFar...
-DEBUG (22:15): isScrollNearEnd(100,2000,200,150) = false
+DEBUG (22:22): isScrollNearEnd(100,2000,200,150) = false
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_scrollEndedBeforeLoadStarted...
-DEBUG (22:15): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
+DEBUG (22:22): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_scrollEndedWhileLoadInProgress...
-DEBUG (22:15): scrollEndedWhileLoadInProgress before=200 after=200
+DEBUG (22:22): scrollEndedWhileLoadInProgress before=200 after=200
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_clampedScrollNegativeBecomesZero...
-DEBUG (22:15): clampedScroll(-50,500,200) = 0
+DEBUG (22:22): clampedScroll(-50,500,200) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_clampedScrollContentSmallerThanScreen...
-DEBUG (22:15): clampedScroll(50,100,200) = 0
+DEBUG (22:22): clampedScroll(50,100,200) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test layoutProgress_initialBatchIsBoundedForAnyBodyLength...
-DEBUG (22:15): INITIAL=2 shortBatch=2 longBatch=2
+DEBUG (22:22): INITIAL=2 shortBatch=2 longBatch=2
 PASS
 ------------------------------------------------------------------------------
 Executing test wrap_emptyInput...
-DEBUG (22:15): wrap('', 10) = []
+DEBUG (22:22): wrap('', 10) = []
 PASS
 ------------------------------------------------------------------------------
 Executing test wrap_singleWordFits...
@@ -243,7 +242,7 @@ Executing test wrap_twoWordsFitOnOneLine...
 PASS
 ------------------------------------------------------------------------------
 Executing test wrap_twoWordsSecondOverflows...
-DEBUG (22:15): wrap('hello world', 7) = [hello, world]
+DEBUG (22:22): wrap('hello world', 7) = [hello, world]
 PASS
 ------------------------------------------------------------------------------
 Executing test wrap_greedyFill...
@@ -256,7 +255,7 @@ Executing test wrap_longWordThenShort...
 PASS
 ------------------------------------------------------------------------------
 Executing test wrap_hebrewWords...
-DEBUG (22:15): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
+DEBUG (22:22): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
 PASS
 ------------------------------------------------------------------------------
 Executing test wrap_extraSpacesCollapse...
@@ -266,11 +265,11 @@ Executing test wtw_emptyText...
 PASS
 ------------------------------------------------------------------------------
 Executing test wtw_uniformWidthsWrapsOnOverflow...
-DEBUG (22:15): wtw_uniform = [hello, world]
+DEBUG (22:22): wtw_uniform = [hello, world]
 PASS
 ------------------------------------------------------------------------------
 Executing test wtw_variableWidthsNarrowsFirst...
-DEBUG (22:15): wtw_variable = [a, b c, d e]
+DEBUG (22:22): wtw_variable = [a, b c, d e]
 PASS
 ------------------------------------------------------------------------------
 Executing test wtw_startIndexOffsetSkipsEarlyEntries...
@@ -280,7 +279,7 @@ Executing test wtw_defaultBeyondArray...
 PASS
 ------------------------------------------------------------------------------
 Executing test wtw_hebrewWithVariableWidths...
-DEBUG (22:15): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
+DEBUG (22:22): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
 PASS
 ------------------------------------------------------------------------------
 Executing test wnt_emptyText...
@@ -290,102 +289,102 @@ Executing test wnt_singleShortWord...
 PASS
 ------------------------------------------------------------------------------
 Executing test wnt_twoWords...
-DEBUG (22:15): twoWords = [hello, world]
+DEBUG (22:22): twoWords = [hello, world]
 PASS
 ------------------------------------------------------------------------------
 Executing test wnt_middlePlusTailPattern...
-DEBUG (22:15): middlePlusTail = [a b c d e, f g h, i j]
+DEBUG (22:22): middlePlusTail = [a b c d e, f g h, i j]
 PASS
 ------------------------------------------------------------------------------
 Executing test wnt_longTextMultipleMiddleLines...
-DEBUG (22:15): longText size=5
+DEBUG (22:22): longText size=5
 PASS
 ------------------------------------------------------------------------------
 Executing test wnt_oversizedSingleWord...
 PASS
 ------------------------------------------------------------------------------
 Executing test wnt_hebrewLongLastRaw...
-DEBUG (22:15): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
+DEBUG (22:22): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
 PASS
 ------------------------------------------------------------------------------
 Executing test splitWords_empty...
-DEBUG (22:15): splitWords('') size=0
+DEBUG (22:22): splitWords('') size=0
 PASS
 ------------------------------------------------------------------------------
 Executing test splitWords_collapsesMultiSpace...
-DEBUG (22:15): splitWords spaces = [hello, world]
+DEBUG (22:22): splitWords spaces = [hello, world]
 PASS
 ------------------------------------------------------------------------------
 Executing test splitWords_hebrew...
-DEBUG (22:15): splitWords hebrew size=2
+DEBUG (22:22): splitWords hebrew size=2
 PASS
 ------------------------------------------------------------------------------
 Executing test wptw_empty...
-DEBUG (22:15): wptw empty size=1
+DEBUG (22:22): wptw empty size=1
 PASS
 ------------------------------------------------------------------------------
 Executing test wptw_singleWordFits...
-DEBUG (22:15): wptw single = [hello]
+DEBUG (22:22): wptw single = [hello]
 PASS
 ------------------------------------------------------------------------------
 Executing test wptw_twoWordsFitOnOneLine...
-DEBUG (22:15): wptw twoFit = [a b]
+DEBUG (22:22): wptw twoFit = [a b]
 PASS
 ------------------------------------------------------------------------------
 Executing test wptw_perLineWidthCascade...
-DEBUG (22:15): wptw cascade = [a, b c]
+DEBUG (22:22): wptw cascade = [a, b c]
 PASS
 ------------------------------------------------------------------------------
 Executing test wptw_oversizedWordOverflowsAlone...
-DEBUG (22:15): wptw oversized = [x, huge, y]
+DEBUG (22:22): wptw oversized = [x, huge, y]
 PASS
 ------------------------------------------------------------------------------
 Executing test wpnt_empty...
-DEBUG (22:15): wpnt empty size=1
+DEBUG (22:22): wpnt empty size=1
 PASS
 ------------------------------------------------------------------------------
 Executing test wpnt_middlePlusTail...
-DEBUG (22:15): wpnt middlePlusTail = [a b, c d, e]
+DEBUG (22:22): wpnt middlePlusTail = [a b, c d, e]
 PASS
 ------------------------------------------------------------------------------
 Executing test wpnt_oversizedLastWordOnly...
-DEBUG (22:15): wpnt oversized = [x, verylongword]
+DEBUG (22:22): wpnt oversized = [x, verylongword]
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_emptyDefaultWhenStorageEmpty...
-DEBUG (22:15): load() empty default = version=1 articles.size=0
+DEBUG (22:22): load() empty default = version=1 articles.size=0
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_isEmptyTrueOnFresh...
-DEBUG (22:15): isEmpty() on fresh = true
+DEBUG (22:22): isEmpty() on fresh = true
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_saveLoadRoundtrip...
-DEBUG (22:15): roundtrip saved=true loaded.articles.size=2
+DEBUG (22:22): roundtrip saved=true loaded.articles.size=2
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_articleIdsOrder...
-DEBUG (22:15): articleIds = [alpha, bravo, charlie]
+DEBUG (22:22): articleIds = [alpha, bravo, charlie]
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_titleOfHit...
-DEBUG (22:15): titleOf('shalom') = 'ש�?ו�?'
+DEBUG (22:22): titleOf('shalom') = 'ש�?ו�?'
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_titleOfMiss...
-DEBUG (22:15): titleOf('nonexistent') = null
+DEBUG (22:22): titleOf('nonexistent') = null
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_wipeArticlesDeletesAllArticleBodies...
-DEBUG (22:15): wipeArticles deleted=3 manifestStillPresent=true b1=null b2=null b3=null
+DEBUG (22:22): wipeArticles deleted=3 manifestStillPresent=true b1=null b2=null b3=null
 PASS
 ------------------------------------------------------------------------------
 Executing test manifest_wipeArticlesOnEmpty...
-DEBUG (22:15): wipeArticles on empty = 0
+DEBUG (22:23): wipeArticles on empty = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test md_h1...
-DEBUG (22:15): parse('# Title') = {symbol (8389346)=>Title, symbol (407)=>1}
+DEBUG (22:23): parse('# Title') = {symbol (406)=>1, symbol (8389346)=>Title}
 PASS
 ------------------------------------------------------------------------------
 Executing test md_h2...
@@ -419,99 +418,99 @@ Executing test md_hashAlone...
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtInsideTopRowReturnsZero...
-DEBUG (22:15): rowIndexAt(30,0,60,5) = 0
+DEBUG (22:23): rowIndexAt(30,0,60,5) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtOutsideListReturnsNull...
-DEBUG (22:15): rowIndexAt(9999,0,60,5) = null
+DEBUG (22:23): rowIndexAt(9999,0,60,5) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtRespectsScroll...
-DEBUG (22:15): rowIndexAt(30,120,60,5) = 2
+DEBUG (22:23): rowIndexAt(30,120,60,5) = 2
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextZeroReturnsNull...
-DEBUG (22:15): moreArticlesText(10, 10) = null
+DEBUG (22:23): moreArticlesText(10, 10) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextOneReturnsSingular...
-DEBUG (22:15): moreArticlesText(11, 10) = 1 more article fits
+DEBUG (22:23): moreArticlesText(11, 10) = 1 more article fits
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextMultipleReturnsPlural...
-DEBUG (22:15): moreArticlesText(15, 10) = 5 more articles fit
+DEBUG (22:23): moreArticlesText(15, 10) = 5 more articles fit
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextNegativeReturnsNull...
-DEBUG (22:15): moreArticlesText(5, 10) = null
+DEBUG (22:23): moreArticlesText(5, 10) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInsideFirstReturnsZero...
-DEBUG (22:15): blockAt(30, ...) = 0
+DEBUG (22:23): blockAt(30, ...) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInsideSecondReturnsOne...
-DEBUG (22:15): blockAt(80, ...) = 1
+DEBUG (22:23): blockAt(80, ...) = 1
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInGapReturnsNull...
-DEBUG (22:15): blockAt(60 in gap) = null
+DEBUG (22:23): blockAt(60 in gap) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtPastEndReturnsNull...
-DEBUG (22:15): blockAt(9999 past end) = null
+DEBUG (22:23): blockAt(9999 past end) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtNegativeReturnsNull...
-DEBUG (22:15): blockAt(-5) = null
+DEBUG (22:23): blockAt(-5) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtEmptyArrayReturnsNull...
-DEBUG (22:15): blockAt(0, []) = null
+DEBUG (22:23): blockAt(0, []) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_chordAtCenterEqualsDiameter...
-DEBUG (22:15): safeChordWidth(195, 0) = 390
+DEBUG (22:23): safeChordWidth(195, 0) = 390
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_chordShrinksOffCenter...
-DEBUG (22:15): safeChordWidth(195, 100) = 334
+DEBUG (22:23): safeChordWidth(195, 100) = 334
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_chordAtRadiusIsZero...
-DEBUG (22:15): safeChordWidth(195, 195) = 0
+DEBUG (22:23): safeChordWidth(195, 195) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_chordPastRadiusIsZero...
-DEBUG (22:15): safeChordWidth(195, 200) = 0
+DEBUG (22:23): safeChordWidth(195, 200) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_chordNegativeDyMirrorsPositive...
-DEBUG (22:15): safeChordWidth(195, -100) = 334
+DEBUG (22:23): safeChordWidth(195, -100) = 334
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_minSafeYForKnownWidth...
-DEBUG (22:15): minSafeY(195, 280) = 60
+DEBUG (22:23): minSafeY(195, 280) = 60
 PASS
 ------------------------------------------------------------------------------
 Executing test safeArea_minSafeYWiderThanDiameter...
-DEBUG (22:15): minSafeY(195, 500) = 195
+DEBUG (22:23): minSafeY(195, 500) = 195
 PASS
 ------------------------------------------------------------------------------
 Executing test lpw_centerEqualsFullDiameterMinusPadding...
-DEBUG (22:15): linePaddedWidth(208, 208, 25) = 366
+DEBUG (22:23): linePaddedWidth(208, 208, 25) = 366
 PASS
 ------------------------------------------------------------------------------
 Executing test lpw_offCenterReducesByChord...
-DEBUG (22:15): linePaddedWidth(208, 108, 25) = 314
+DEBUG (22:23): linePaddedWidth(208, 108, 25) = 314
 PASS
 ------------------------------------------------------------------------------
 Executing test lpw_clampsToZeroAtEdge...
-DEBUG (22:15): linePaddedWidth(208, 0, 25) = 0
+DEBUG (22:23): linePaddedWidth(208, 0, 25) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test lpw_clampsToZeroWhenPaddingExceedsChord...
-DEBUG (22:15): linePaddedWidth(208, 1, 25) = 0
+DEBUG (22:23): linePaddedWidth(208, 1, 25) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test lpw_symmetricAboveBelowCenter...
@@ -521,107 +520,107 @@ Executing test lpw_realWatchRadius...
 PASS
 ------------------------------------------------------------------------------
 Executing test search_emptyQueryReturnsTopByPopularity...
-DEBUG (22:15): empty-query size=3 ids=[b,c,a]
+DEBUG (22:23): empty-query size=3 ids=[b,c,a]
 PASS
 ------------------------------------------------------------------------------
 Executing test search_emptyQueryCapsAtTopK...
-DEBUG (22:15): 60-articles empty-query size=50
+DEBUG (22:23): 60-articles empty-query size=50
 PASS
 ------------------------------------------------------------------------------
 Executing test search_emptyArticlesReturnsEmpty...
-DEBUG (22:15): empty-articles size=0
+DEBUG (22:23): empty-articles size=0
 PASS
 ------------------------------------------------------------------------------
 Executing test search_prefixMatchOnly...
-DEBUG (22:15): prefix-ש size=2 ids=[sh,sb]
+DEBUG (22:23): prefix-ש size=2 ids=[sh,sb]
 PASS
 ------------------------------------------------------------------------------
 Executing test search_substringNonPrefixIsTier2...
-DEBUG (22:15): substring-�?ו size=1
+DEBUG (22:23): substring-�?ו size=1
 PASS
 ------------------------------------------------------------------------------
 Executing test search_prefixBeforeSubstring...
-DEBUG (22:15): prefix-vs-sub size=3 ids=[lover,love,alove]
+DEBUG (22:23): prefix-vs-sub size=3 ids=[lover,love,alove]
 PASS
 ------------------------------------------------------------------------------
 Executing test search_popularityWithinTier...
-DEBUG (22:15): popularity ids=[high,low]
+DEBUG (22:23): popularity ids=[high,low]
 PASS
 ------------------------------------------------------------------------------
 Executing test search_titleStableTiebreakOnPopularityTie...
-DEBUG (22:15): tiebreak ids=[a,z]
+DEBUG (22:23): tiebreak ids=[a,z]
 PASS
 ------------------------------------------------------------------------------
 Executing test search_noMatchesReturnsEmpty...
-DEBUG (22:15): no-match size=0
+DEBUG (22:23): no-match size=0
 PASS
 ------------------------------------------------------------------------------
 Executing test search_hebrewSubstringMatch...
-DEBUG (22:15): hebrew-prefix size=1 ids=[torah]
+DEBUG (22:23): hebrew-prefix size=1 ids=[torah]
 PASS
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesEmptyQueryReturnsArraySize...
-DEBUG (22:15): totalMatches('', size=7) = 7
+DEBUG (22:23): totalMatches('', size=7) = 7
 PASS
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesCountsExactly...
-DEBUG (22:15): totalMatches('ש', 4 mixed) = 3
+DEBUG (22:23): totalMatches('ש', 4 mixed) = 3
 PASS
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesEmptyArticlesReturnsZero...
-DEBUG (22:15): totalMatches('foo', []) = 0
+DEBUG (22:23): totalMatches('foo', []) = 0
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeStripsAsciiDoubleQuote...
-DEBUG (22:15): normalize('שב\"ק')='שבק' (want 'שבק')
+DEBUG (22:23): normalize('שב\"ק')='שבק' (want 'שבק')
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeStripsAsciiSingleQuote...
-DEBUG (22:15): normalize(\"ש'�?\")='ש�?' (want 'ש�?')
+DEBUG (22:23): normalize(\"ש'�?\")='ש�?' (want 'ש�?')
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeReplacesAsciiHyphenWithSpace...
-DEBUG (22:15): normalize('שיר-השירי�?')='שיר השירי�?' (want 'שיר השירי�?')
+DEBUG (22:23): normalize('שיר-השירי�?')='שיר השירי�?' (want 'שיר השירי�?')
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeAllThreeChars...
-DEBUG (22:15): normalize('ש\"י-עגנו�?')='שי עגנו�?' (want 'שי עגנו�?')
+DEBUG (22:23): normalize('ש\"י-עגנו�?')='שי עגנו�?' (want 'שי עגנו�?')
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeEmptyReturnsEmpty...
-DEBUG (22:15): normalize('')=''
+DEBUG (22:23): normalize('')=''
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeIdempotent...
-DEBUG (22:15): once='שי עגנו�?' twice='שי עגנו�?'
+DEBUG (22:23): once='שי עגנו�?' twice='שי עגנו�?'
 PASS
 ------------------------------------------------------------------------------
 Executing test search_rankMatchesTitleIgnoringQuotes...
-DEBUG (22:15): rank('שבק', שב\"ק) size=1
+DEBUG (22:23): rank('שבק', שב\"ק) size=1
 PASS
 ------------------------------------------------------------------------------
 Executing test search_rankMatchesHyphenAsSpace...
-DEBUG (22:15): rank('שיר השירי�?', שיר-השירי�?-ה�?�?�?) size=1
+DEBUG (22:23): rank('שיר השירי�?', שיר-השירי�?-ה�?�?�?) size=1
 PASS
 ------------------------------------------------------------------------------
 Executing test search_rankPreservesDisplayedTitleWithPunctuation...
-DEBUG (22:15): preserved-title='שב\"ק'
+DEBUG (22:23): preserved-title='שב\"ק'
 PASS
 ------------------------------------------------------------------------------
 Executing test search_rankIgnoresBodyKey...
-DEBUG (22:15): rank('�?ברה�?', body-only article) size=0 (want 0)
+DEBUG (22:23): rank('�?ברה�?', body-only article) size=0 (want 0)
 PASS
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesIgnoresBodyKey...
-DEBUG (22:15): totalMatches('�?ברה�?', mixed with :body) = 1 (want 1)
+DEBUG (22:23): totalMatches('�?ברה�?', mixed with :body) = 1 (want 1)
 PASS
 ------------------------------------------------------------------------------
 Executing test search_normalizeFastPathReturnsIdenticalString...
-DEBUG (22:15): normalize('ש�?ו�? ע�?יכ�?')='ש�?ו�? ע�?יכ�?' equals=true
+DEBUG (22:23): normalize('ש�?ו�? ע�?יכ�?')='ש�?ו�? ע�?יכ�?' equals=true
 PASS
 ------------------------------------------------------------------------------
 Executing test strings_helloIsHebrew...
-DEBUG (22:15): Strings.hello() = 'ש�?ו�?'
+DEBUG (22:23): Strings.hello() = 'ש�?ו�?'
 PASS
 ------------------------------------------------------------------------------
 Executing test strings_helloCharCount...
@@ -631,7 +630,7 @@ Executing test strings_hebrewLiteralRoundtripsThroughStorage...
 PASS
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleStartsWithH1...
-DEBUG (22:15): sampleArticle prefix: '# ש�?ו�? הי�?...'
+DEBUG (22:23): sampleArticle prefix: '# ש�?ו�? הי�?...'
 PASS
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleHasH4...
@@ -641,35 +640,35 @@ Executing test strings_sampleArticleIsMultiline...
 PASS
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleHasManyLines...
-DEBUG (22:15): newline count = 48
+DEBUG (22:23): newline count = 48
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_insideFirstWord...
-DEBUG (22:15): findWordPx(285) = abc
+DEBUG (22:23): findWordPx(285) = abc
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_insideMiddleWord...
-DEBUG (22:15): findWordPx(245) = def
+DEBUG (22:23): findWordPx(245) = def
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_insideLastWord...
-DEBUG (22:15): findWordPx(205, last word) = ghi
+DEBUG (22:23): findWordPx(205, last word) = ghi
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_onSpaceSnapsToPreviousWord...
-DEBUG (22:15): findWordPx(265 on space) = abc
+DEBUG (22:23): findWordPx(265 on space) = abc
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_pastRightEdge...
-DEBUG (22:15): findWordPx(305 past right) = null
+DEBUG (22:23): findWordPx(305 past right) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_pastLeftEdge...
-DEBUG (22:15): findWordPx(185 past left) = null
+DEBUG (22:23): findWordPx(185 past left) = null
 PASS
 ------------------------------------------------------------------------------
 Executing test wordHitTest_emptyWords...
-DEBUG (22:15): findWordPx(empty words) = null
+DEBUG (22:23): findWordPx(empty words) = null
 PASS
 
 ==============================================================================
