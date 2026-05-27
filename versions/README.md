@@ -50,6 +50,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M6.3 | `v0.M6.3` | `0033552` | 2026-05-26 | 163 KB | Hotfix M6.2 OOM. M6.2's `_normalize` built output via O(N²) string-concat (`out = out + ch` per char); rank + totalMatches per keystroke re-normalized every body that missed by title; on the ~2 KB shalom body that was ~8M byte-allocs/keystroke → uncatchable OOM. Plus the ~5 KB pre-load + ~10 KB reader layout = heap exhausted on article-open. Fix: remove tier-3 body fallback from `Search.rank`, remove body branch from `Search.totalMatches`, remove body pre-load from `KeyboardDelegate.initialize`, add fast-path to `_normalize` (no allocation when input has no " / ' / -). Kept from M6.2: ASCII normalization on titles + 3 new keyboard keys + 6 new fixtures. | 175 |
 | M6.4 | `v0.M6.4` | `775d975` | 2026-05-26 | 163 KB | Revert M6.2 keyboard `"` / `'` / `-` keys (user request: don't want to type those, search handles them). DIGITS expansion back to 10 cells (0..9 at 36° each); `DIGITS_EXPANSION_COUNT` / `DIGITS_EXPANSION_ARC_DEG` constants removed. KEPT Search._normalize + 6 ש-prefix fixtures with ASCII " / ' / - in titles — user types שבק and finds שב"ק via match-side normalization. | 174 |
 | M6.5 | `v0.M6.5` | `99ea899` | 2026-05-27 | 165 KB | Memory optimizations to address M6.4 stale-render bug on real Venu 2 (sim worked, watch UI didn't refresh; GC pressure hypothesis). (1) Cache `KeyboardLayout.buttons()` at module level — was ~850 B/call × every onUpdate + every onTap. (2) Cache `KeyboardLayout.subButtons(parent)` per centerAngleDeg. (3) Preallocate `_drawWedge` polygon buffer as view field, mutate in place — was ~4 KB/onUpdate. (4) DROP M6.1's `:words/:wordPx/:spacePx` per-sub-line storage — was ~6.5 KB resident on shalom; long-press now goes `onHold → requestLongPressHit → next onUpdate → _resolvePendingHit` measuring ONLY the tapped sub-line (~130 B transient). Plus `fm:NNNNNN` freeMemory overlay near keyboard bottom-center so user can SEE heap pressure live on the watch (no stdout). Net: ~10–15 KB resident reclaimed + ~25–50 KB/sec GC churn eliminated. | 176 |
+| M7 | `v0.M7` | `8726f04` | 2026-05-27 | 167 KB | Real-network corpus from `https://wikiwatch.tomhe.app/`. DELETED `Fixtures.mc` + `FixtureInstaller.mc` + their tests. NEW `source/net/Downloader.mc` (pure `parseManifestResponse` + side-effecting `fetchManifest` / `fetchArticle`). NEW `Manifest.wipeArticles()`. NEW views: `InstallView` (sequential per-article download with progress UI), `UpdatePromptView` (top half = Yes, bottom = No), `UpdateCheckView` (750ms race on every launch). `wikiwatchApp.getInitialView` branches on `Manifest.isEmpty()`: empty → InstallView; non-empty → UpdateCheckView. `manifest.xml` declares `<iq:uses-permission id="Communications"/>`. 174 tests (−10 fixture tests + 8 new). | 174 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1233,7 +1234,122 @@ PASSED (passed=176, failed=0, errors=0)
 
 **User-visible change:** the keyboard reads `fm:NNNNNN` at the bottom-center of the visible round display. On the watch, the user watches this number while typing/expansion/article-open. If it stays comfortably above zero but the UI still doesn't refresh, the bug isn't memory — we'll need to look elsewhere (watchdog, view-stack confusion, firmware-specific issue).
 
-**Artifact:** `wikiwatch-M6.5.prg` (164 604 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M6.5.prg` (164 604 bytes).
+
+---
+
+## M7 — Real-network corpus from `https://wikiwatch.tomhe.app/` (tag `v0.M7`)
+
+**The shape of the app fundamentally shifts at M7.** Before: a self-contained .prg with hard-coded fixture content. After: a real distributed system — a server you upload to (`wikiwatch.tomhe.app/`), and a client (the watch) that fetches the corpus on first launch and re-checks on every subsequent launch via a 750 ms background race.
+
+This unlocks M8 (real Hebrew Wikipedia content) — once the upload pipeline exists, swapping fixture content for real content is just `gen-server-corpus.ps1` + a redeploy.
+
+**Server contract** (see [docs/m7-plan.md](docs/m7-plan.md) for the full design + state machine):
+- `GET /manifest.json` → `{version, totalBytes, articles: [{id, title, popularity}]}`. Content-Type: `application/json`.
+- `GET /article/<id>.txt` → UTF-8 Hebrew Markdown body. Content-Type: `text/plain; charset=utf-8`.
+- TLS cert must be valid; user confirmed `wikiwatch.tomhe.app/` is serving correctly.
+
+**State machine** (CIQ view stack):
+
+```
+[launch]
+   |
+   Manifest.isEmpty()?
+      |
+      Yes → [InstallView] (full download, sequential)
+      |       (on done)  → [KeyboardView] (functional, fresh corpus)
+      |       (on error) → [KeyboardView] (degraded — empty corpus)
+      |
+      No  → [UpdateCheckView] (750 ms race vs Downloader.fetchManifest)
+              |
+              ├── timeout                                 → [KeyboardView] (functional, stale)
+              ├── fetch OK + same/older version           → [KeyboardView] (functional)
+              ├── fetch OK + newer version                → [UpdatePromptView]
+              └── parse/network error                     → [KeyboardView] (functional, stale)
+
+[UpdatePromptView] — top half (DK_GREEN) = "Yes", bottom half (DK_GRAY) = "No"
+   tap top   → Manifest.wipeArticles() → [InstallView]
+   tap bot   → [KeyboardView] (functional, stale)
+   back btn  → same as bottom
+```
+
+**What landed:**
+
+**New** `source/net/Downloader.mc` (R6: outside `source/models/` because it imports `Toybox.Communications` + `Toybox.System`):
+- `parseManifestResponse(rc, data) as Dictionary` — pure parser. Validates HTTP rc + dict shape AND converts the JSON String-keyed schema (`"version"`, `"articles": [{"id", ...}]`) into the in-memory Symbol-keyed schema (`:version`, `:articles => [{:id, ...}]`) used by `Manifest` / `Search` / `KeyboardDelegate`. This is the single boundary between raw server JSON and the app data model.
+- `fetchManifest(callback)` — `Communications.makeWebRequest` with `HTTP_RESPONSE_CONTENT_TYPE_JSON`.
+- `fetchArticle(id, callback)` — same with `HTTP_RESPONSE_CONTENT_TYPE_TEXT_PLAIN`.
+- `BASE_URL = "https://wikiwatch.tomhe.app"`.
+
+**New** `Manifest.wipeArticles() as Number`:
+- Deletes all `article:<id>` Storage keys (preserves the `manifest` key — caller can wipe + re-save in any order).
+- Returns count deleted.
+
+**New views** (all at `source/` root per project convention, NOT `source/views/`):
+- `InstallView` + `InstallDelegate` — `onShow → Downloader.fetchManifest`. On manifest receive: parse, `Manifest.save`, drive a sequential per-article fetch loop. Each fetch holds ≤1 body in memory. Final → `switchToView(KeyboardView)`. On error: log, `_scheduleSwitchToKeyboard(2000)` for "no network. try later." fallback.
+- `UpdatePromptView` + `UpdatePromptDelegate` — full-screen modal. Yes/No based on tap y-coord vs `screenH/2`.
+- `UpdateCheckView` + `UpdateCheckDelegate` — every-launch view. 750 ms `Timer.Timer` race against `Downloader.fetchManifest`. Renders the keyboard layout underneath for visual continuity; "checking for updates..." text overlay in yellow near the bottom. Taps absorbed during the check.
+
+**Modified** `source/wikiwatchApp.mc`:
+- `onStart` no longer calls `FixtureInstaller.installIfEmpty()` — the M7 flow handles corpus loading.
+- `getInitialView` branches: `Manifest.isEmpty()` → `InstallView`; else → `UpdateCheckView`.
+
+**Modified** `manifest.xml`:
+- Added `<iq:uses-permission id="Communications"/>`. Required for `makeWebRequest`; without it the build fails with "Permission 'Communications' required" errors.
+
+**Deleted:**
+- `source/models/Fixtures.mc` (118 lines — the hard-coded 36-article corpus).
+- `source/storage/FixtureInstaller.mc` (48 lines — version-aware install glue).
+- `source/tests/test_Fixtures.mc`, `source/tests/test_FixtureInstaller.mc` (10 tests total).
+
+**Test changes (−10 + 8 = −2 net, 176 → 174):**
+- `test_Downloader.mc` — 6 tests: `parseManifestSuccess`, `parseManifestRejectsBadRc`, `parseManifestRejectsNullData`, `parseManifestRejectsMissingVersion`, `parseManifestRejectsMissingArticles`, `parseManifestNormalizesKeys` (the JSON-String-keyed → in-memory-Symbol-keyed conversion).
+- `test_Manifest.mc` — 2 new: `wipeArticlesDeletesAllArticleBodies`, `wipeArticlesOnEmpty`.
+
+**R1 evidence** ([docs/m7-fail.txt](docs/m7-fail.txt)) — stub impls:
+
+```
+downloader_parseManifestSuccess                      FAIL
+downloader_parseManifestRejectsBadRc                 PASS
+downloader_parseManifestRejectsNullData              PASS
+downloader_parseManifestRejectsMissingVersion        PASS
+downloader_parseManifestRejectsMissingArticles       PASS
+downloader_parseManifestNormalizesKeys               FAIL
+manifest_wipeArticlesDeletesAllArticleBodies         FAIL
+manifest_wipeArticlesOnEmpty                         PASS
+Ran 184 tests
+FAILED (passed=181, failed=3, errors=0)
+```
+
+After implementation ([docs/m7-pass.txt](docs/m7-pass.txt)):
+
+```
+Ran 174 tests
+PASSED (passed=174, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m7-r2-evidence.txt](docs/m7-r2-evidence.txt)) — live `monkeydo bin/wikiwatch.prg venu2`:
+
+```
+M7 install: fetching manifest from https://wikiwatch.tomhe.app
+M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+M7 install: manifest fetch FAILED -- http rc=-1001
+M5 rank: buf='' (empty -- no results shown)
+```
+
+Demonstrates the error-path flow: sim BLE proxy can't reach the real internet without a paired phone (`rc=-1001`), `InstallView`'s 2s fallback timer fires, `switchToView(KeyboardView)`, keyboard reaches a functional state in "degraded mode" (no corpus). Real-watch sideload validates the happy path. The evidence file documents expected stdout for all 4 paths (first-launch, same-version, update-available, slow-network).
+
+**Design decisions** (from [docs/m7-plan.md](docs/m7-plan.md)):
+- **750 ms check budget** — compromise between 500 ms (too tight for cold BLE wake, can take ~1500 ms) and 1000 ms (eats more startup latency than needed). Easy to bump in a hotfix.
+- **Sequential, NOT concurrent** per-article install — keeps memory bounded (≤1 body in memory) and BLE proxy is single-channel anyway.
+- **Tap-based Yes/No prompt** — no swipe gesture; top-half = green = Yes, bottom-half = gray = No. Back button = No.
+- **`Manifest.save` happens upfront in `installAll`** — so partial-install state is recoverable on re-launch (we know which articles SHOULD be present).
+
+**User-visible change:** first launch with phone-paired internet shows "Loading wikiwatch: N / M articles" before the keyboard appears with the full corpus. Subsequent launches have a brief (≤750 ms) "checking for updates..." flash before becoming functional. If you (the server owner) bump `manifest.json`'s `version` field, all watches see the update prompt on next launch.
+
+**Artifact:** `wikiwatch-M7.prg` (166 300 bytes). Current head of `main`.
+
+**Server payload:** `docs/server/` (shipped in PR #48). 36 article body files + manifest.json. User uploads to `wikiwatch.tomhe.app/` matching the path structure.
 
 ---
 
@@ -1241,7 +1357,6 @@ PASSED (passed=176, failed=0, errors=0)
 
 The bigger ladder beyond M5 is documented in the project memory (`memory/project_ladder.md`):
 
-- **M7** — Real-network corpus from `wikiwatch.tomhe.app/`. Every launch: show the keyboard non-functionally for 1 second while pinging the server's `manifest.json`. No response / "up to date" → keyboard becomes functional. Version mismatch → "do you want to update?" prompt → wipe all `article:<id>` keys → re-download. First launch (no local manifest) goes straight into the install path. Server content is the M6.2 fixture corpus transformed into `manifest.json` + `article/<id>.txt` files (user uploads). Fixtures.mc + FixtureInstaller.mc DELETED — articles only come from the network.
 - **M8** — Polish + measure corpus size + Hebrew Wikipedia data generation. Real-watch sideload of M7's `.prg`, record corpus size + free Storage. Sub-PRs (`fix/<slug>` → `v0.M8.<sub>`) for polish items. **New scope:** collaboratively pick + clean real Hebrew Wikipedia article data + build `manifest.json` + `article/<id>.txt`. (Note: ladder reshaped 2026-05-26 — old M8 "digits page" merged into M3.x circular keyboard + M6.2's expansion; old M9 → M8; old M10 → M9.)
 - **M9** (conditional) — Static-dictionary compression if M8 shows the corpus doesn't fit in 9 MB.
 
@@ -1251,7 +1366,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 176 tests pass at v0.M6.5
+& scripts\test.ps1     # 174 tests pass at v0.M7
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
