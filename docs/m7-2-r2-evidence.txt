@@ -1,0 +1,4 @@
+M7 update check: starting 1000ms race
+M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+M7 update check: same/older version (local=4 remote=4) — using local
+M5 rank: buf='' (empty — no results shown)
