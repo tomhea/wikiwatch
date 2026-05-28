@@ -1,4 +1,5 @@
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.Test;
 
 // M7 tests for Downloader.parseManifestResponse.
@@ -82,4 +83,44 @@ function downloader_parseManifestNormalizesKeys(logger as Logger) as Boolean {
     return ((a[:id] as String).equals("x"))
         && ((a[:title] as String).equals("X"))
         && ((a[:popularity] as Number) == 50);
+}
+
+
+// --- M7.1: connectivity probe ---
+
+class FakeConnInfo {
+    var state as Number;
+    function initialize(s as Number) { state = s; }
+}
+
+(:test)
+function downloader_anyConnectedFallsBackToPhoneOnly(logger as Logger) as Boolean {
+    // Pre-CIQ-3.3 watches: no connectionInfo, just phoneConnected.
+    // _anyConnected should fall back to the bool.
+    var a = Downloader._anyConnected(null, true);
+    var b = Downloader._anyConnected(null, false);
+    logger.debug("null+true=" + a + " null+false=" + b);
+    return a == true && b == false;
+}
+
+(:test)
+function downloader_anyConnectedDetectsConnected(logger as Logger) as Boolean {
+    // CIQ 3.3+: connectionInfo is a dict keyed by connection type
+    // (CONNECTION_PHONE, CONNECTION_WIFI, CONNECTION_LTE). If ANY is
+    // in CONNECTED state, we have network.
+    var ci = { :phone => new FakeConnInfo(Toybox.System.CONNECTION_STATE_CONNECTED) };
+    var r = Downloader._anyConnected(ci, false);
+    logger.debug("phone-connected-only -> " + r);
+    return r == true;
+}
+
+(:test)
+function downloader_anyConnectedAllDisconnectedReturnsFalse(logger as Logger) as Boolean {
+    var ci = {
+        :phone => new FakeConnInfo(Toybox.System.CONNECTION_STATE_NOT_CONNECTED),
+        :wifi  => new FakeConnInfo(Toybox.System.CONNECTION_STATE_NOT_INITIALIZED)
+    };
+    var r = Downloader._anyConnected(ci, false);
+    logger.debug("all-disconnected -> " + r);
+    return r == false;
 }
