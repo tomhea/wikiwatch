@@ -24,6 +24,39 @@ import Toybox.System;
 module Downloader {
     const BASE_URL = "https://wikiwatch.tomhe.app";
 
+    // M7.1: connectivity probe. Skip the manifest fetch entirely if no
+    // network connection is up. Specifically guards against the USB-
+    // connected-sideload scenario where BLE is deprioritized + requests
+    // hang for ~30s, clogging CIQ's event loop (the actual root cause
+    // of the M6.4-style stale-render symptom we kept hitting on the
+    // watch after every M7-flavor change).
+    //
+    // Pure helper — takes the relevant DeviceSettings fields, returns
+    // true if any network connection is up.
+    //   connectionInfo: CIQ-3.3+ dict keyed by CONNECTION_PHONE /
+    //                   CONNECTION_WIFI / CONNECTION_LTE. Each value
+    //                   has a `state` property. null on older watches.
+    //   phoneConnected: pre-3.3 fallback for BLE-only check.
+    function _anyConnected(connectionInfo as Dictionary?, phoneConnected as Boolean) as Boolean {
+        if (connectionInfo != null) {
+            var keys = connectionInfo.keys();
+            for (var i = 0; i < keys.size(); i++) {
+                var info = connectionInfo[keys[i]];
+                if (info != null && info.state == System.CONNECTION_STATE_CONNECTED) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return phoneConnected;
+    }
+
+    function isNetworkAvailable() as Boolean {
+        var s = System.getDeviceSettings();
+        var ci = (s has :connectionInfo) ? s.connectionInfo : null;
+        return _anyConnected(ci, s.phoneConnected);
+    }
+
     // Pure parser. Validates rc + dict shape. Converts the JSON String-keyed
     // shape ({"version", "articles": [{"id", ...}]}) into the in-memory
     // Symbol-keyed shape (:version, :articles => [{:id, ...}]) used across

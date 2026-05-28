@@ -4,18 +4,22 @@ import Toybox.System;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-// M7 UpdateCheckView — shown for ≤750ms on every launch (when local
-// manifest is present). Fires a background fetch of /manifest.json,
-// races against a 750ms Timer. The first one to win decides what
-// happens next:
+// M7 UpdateCheckView — shown for ≤1000ms on every launch (when local
+// manifest is present AND network is available). Fires a background
+// fetch of /manifest.json, races against a 1-second Timer. The first
+// one to win decides what happens next:
 //
 //   Timer wins (no response yet)     -> switch to KeyboardView (functional)
 //   Fetch wins + same version        -> switch to KeyboardView (functional)
 //   Fetch wins + newer version       -> switch to UpdatePromptView
 //   Fetch wins + error/parse failure -> switch to KeyboardView (functional)
 //
-// 750ms picked as compromise between 500ms (too tight for cold BLE) and
-// 1000ms (eats more startup latency). Bumpable in a hotfix.
+// M7.1: bumped 750ms -> 1000ms. Real-watch testing showed 750ms was
+// too tight for cold BLE wake. Also note: wikiwatchApp.getInitialView
+// now skips this view entirely when Downloader.isNetworkAvailable()
+// returns false, so the keyboard becomes functional immediately when
+// there's no network (avoiding the M6.4-style event-loop clog from
+// requests hanging on a deprioritized BLE channel during USB sideload).
 //
 // Renders the same keyboard layout underneath, with a "checking for
 // updates..." text overlay near the bottom (shares pixel real estate
@@ -25,7 +29,7 @@ import Toybox.WatchUi;
 // Taps during the check are absorbed by UpdateCheckDelegate (the keyboard
 // is non-functional until the race resolves).
 class UpdateCheckView extends WatchUi.View {
-    private const _CHECK_TIMEOUT_MS = 750;
+    private const _CHECK_TIMEOUT_MS = 1000;
 
     private var _timeoutTimer as Timer.Timer?;
     private var _resolved as Boolean;
