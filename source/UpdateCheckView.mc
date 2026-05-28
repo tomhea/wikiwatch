@@ -31,6 +31,19 @@ import Toybox.WatchUi;
 class UpdateCheckView extends WatchUi.View {
     private const _CHECK_TIMEOUT_MS = 1000;
 
+    // M7.2: the post-check transition to the functional keyboard. Was
+    // SLIDE_LEFT in M7/M7.1 — but since the UpdateCheckView already
+    // renders the same keyboard pixels underneath, the SLIDE_LEFT
+    // animation looked like a duplicate keyboard sliding in on top.
+    // SLIDE_IMMEDIATE makes the transition invisible: "checking for
+    // updates..." text just vanishes + delegate gets swapped to the
+    // functional one. Public instance method so the R1 test can pin
+    // the value (MonkeyC won't let tests access class-level consts
+    // via ClassName.CONST syntax).
+    function transitionToKeyboard() as WatchUi.SlideType {
+        return WatchUi.SLIDE_IMMEDIATE;
+    }
+
     private var _timeoutTimer as Timer.Timer?;
     private var _resolved as Boolean;
     private var _kbView as wikiwatchKeyboardView;  // shown underneath for visual continuity
@@ -44,7 +57,7 @@ class UpdateCheckView extends WatchUi.View {
 
     function onShow() as Void {
         View.onShow();
-        System.println("M7 update check: starting 750ms race");
+        System.println("M7 update check: starting " + _CHECK_TIMEOUT_MS + "ms race");
         Downloader.fetchManifest(method(:onManifestReceived));
         _timeoutTimer = new Timer.Timer();
         (_timeoutTimer as Timer.Timer).start(method(:onTimeout), _CHECK_TIMEOUT_MS, false);
@@ -111,7 +124,7 @@ class UpdateCheckView extends WatchUi.View {
 
     private function _toFunctionalKeyboard() as Void {
         var del = new wikiwatchKeyboardDelegate(_kbView, "");
-        WatchUi.switchToView(_kbView, del, WatchUi.SLIDE_LEFT);
+        WatchUi.switchToView(_kbView, del, transitionToKeyboard());
     }
 }
 
