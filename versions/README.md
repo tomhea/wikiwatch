@@ -51,6 +51,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M6.4 | `v0.M6.4` | `775d975` | 2026-05-26 | 163 KB | Revert M6.2 keyboard `"` / `'` / `-` keys (user request: don't want to type those, search handles them). DIGITS expansion back to 10 cells (0..9 at 36° each); `DIGITS_EXPANSION_COUNT` / `DIGITS_EXPANSION_ARC_DEG` constants removed. KEPT Search._normalize + 6 ש-prefix fixtures with ASCII " / ' / - in titles — user types שבק and finds שב"ק via match-side normalization. | 174 |
 | M6.5 | `v0.M6.5` | `99ea899` | 2026-05-27 | 165 KB | Memory optimizations to address M6.4 stale-render bug on real Venu 2 (sim worked, watch UI didn't refresh; GC pressure hypothesis). (1) Cache `KeyboardLayout.buttons()` at module level — was ~850 B/call × every onUpdate + every onTap. (2) Cache `KeyboardLayout.subButtons(parent)` per centerAngleDeg. (3) Preallocate `_drawWedge` polygon buffer as view field, mutate in place — was ~4 KB/onUpdate. (4) DROP M6.1's `:words/:wordPx/:spacePx` per-sub-line storage — was ~6.5 KB resident on shalom; long-press now goes `onHold → requestLongPressHit → next onUpdate → _resolvePendingHit` measuring ONLY the tapped sub-line (~130 B transient). Plus `fm:NNNNNN` freeMemory overlay near keyboard bottom-center so user can SEE heap pressure live on the watch (no stdout). Net: ~10–15 KB resident reclaimed + ~25–50 KB/sec GC churn eliminated. | 176 |
 | M7 | `v0.M7` | `8726f04` | 2026-05-27 | 167 KB | Real-network corpus from `https://wikiwatch.tomhe.app/`. DELETED `Fixtures.mc` + `FixtureInstaller.mc` + their tests. NEW `source/net/Downloader.mc` (pure `parseManifestResponse` + side-effecting `fetchManifest` / `fetchArticle`). NEW `Manifest.wipeArticles()`. NEW views: `InstallView` (sequential per-article download with progress UI), `UpdatePromptView` (top half = Yes, bottom = No), `UpdateCheckView` (750ms race on every launch). `wikiwatchApp.getInitialView` branches on `Manifest.isEmpty()`: empty → InstallView; non-empty → UpdateCheckView. `manifest.xml` declares `<iq:uses-permission id="Communications"/>`. 174 tests (−10 fixture tests + 8 new). | 174 |
+| M7.1 | `v0.M7.1` | `e8de790` | 2026-05-28 | 169 KB | Hotfix M7 USB-sideload event-loop clog (BLE deprioritized when USB connected → `makeWebRequest` hangs ~30s → CIQ event loop clogged → M6.4-style stale-render symptom). Three changes: (1) new `Downloader.isNetworkAvailable()` wrapping pure `_anyConnected(connectionInfo, phoneConnected)` helper. (2) `wikiwatchApp.getInitialView` gains 2×2 branch — empty Storage + no network → NEW `NoConnectionView` ("Need connection to load initial offline articles"); has-corpus + no network → straight to functional KeyboardView. (3) `UpdateCheckView` timeout 750ms → 1000ms. **First end-to-end happy-path validation** against live server: sim's BLE proxy worked, all 36 articles downloaded from `wikiwatch.tomhe.app/`. 174 → 177 tests (+3 for `_anyConnected`). | 177 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1347,9 +1348,76 @@ Demonstrates the error-path flow: sim BLE proxy can't reach the real internet wi
 
 **User-visible change:** first launch with phone-paired internet shows "Loading wikiwatch: N / M articles" before the keyboard appears with the full corpus. Subsequent launches have a brief (≤750 ms) "checking for updates..." flash before becoming functional. If you (the server owner) bump `manifest.json`'s `version` field, all watches see the update prompt on next launch.
 
-**Artifact:** `wikiwatch-M7.prg` (166 300 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M7.prg` (166 300 bytes).
 
 **Server payload:** `docs/server/` (shipped in PR #48). 36 article body files + manifest.json. User uploads to `wikiwatch.tomhe.app/` matching the path structure.
+
+---
+
+## M7.1 — Connectivity-aware launch + 1s update-check timeout + NoConnectionView (tag `v0.M7.1`)
+
+M7 worked when network was available, but the user reported that the app **appeared frozen on the watch when USB cable was connected** for sideloading — same M6.4 stale-render symptom (taps register but UI doesn't repaint, blind-tap on results opens articles, scrolling broken).
+
+**Root cause:** when USB is plugged into a Venu 2, **BLE is deprioritized** because USB is the active transport. CIQ's `Communications.makeWebRequest` routes through the BLE proxy to the phone — with BLE deprioritized, requests **hang for ~30 seconds** waiting for the proxy timeout. A hanging request **clogs CIQ's single-threaded event loop**: other events (including `requestUpdate` from your taps) queue behind the pending network operation. Visually identical to GC pressure (the M6.4 / M6.5 issue) but different mechanism.
+
+**Three changes that eliminate the clog:**
+
+1. **`Downloader.isNetworkAvailable()`** — new wrapper around a pure helper `_anyConnected(connectionInfo, phoneConnected)`:
+   - CIQ 3.3+ devices have `System.DeviceSettings.connectionInfo` — a Dictionary keyed by connection type (`CONNECTION_PHONE` / `CONNECTION_WIFI` / `CONNECTION_LTE`). Each value has a `state` member. Returns true if ANY is `CONNECTION_STATE_CONNECTED`.
+   - Older watches fall back to the `phoneConnected` boolean.
+
+2. **`wikiwatchApp.getInitialView` gains a 2×2 branch:**
+
+   |                          | network available    | no network          |
+   |--------------------------|----------------------|---------------------|
+   | Storage empty            | `InstallView`        | `NoConnectionView`  |
+   | Storage has corpus       | `UpdateCheckView`    | `KeyboardView` (functional, stale corpus) |
+
+   When no network is up, **no request fires** → no event-loop clog → keyboard stays responsive.
+
+3. **New `NoConnectionView`** — shown when first launch has no network. Static "Need connection to load initial offline articles" message. User reconnects + relaunches. Doesn't auto-poll for reconnect (user has to manually relaunch anyway).
+
+**Also:** `UpdateCheckView._CHECK_TIMEOUT_MS` bumped 750 ms → 1000 ms per user request (real-watch testing showed 750 ms was too tight for cold BLE wake).
+
+**Test changes (+3 net, 174 → 177):**
+- `test_Downloader.mc` — 3 new tests for `_anyConnected` using a test-local `FakeConnInfo` helper class that mocks `ConnectionInfo.state` for the dict-keyed assertion.
+  - `downloader_anyConnectedFallsBackToPhoneOnly` — null connectionInfo + phoneConnected=true/false returns the boolean.
+  - `downloader_anyConnectedDetectsConnected` — dict with CONNECTION_STATE_CONNECTED returns true.
+  - `downloader_anyConnectedAllDisconnectedReturnsFalse` — dict with all entries NOT_CONNECTED / NOT_INITIALIZED returns false.
+
+**R1 evidence** ([docs/m7-1-fail.txt](docs/m7-1-fail.txt)) — stub returns false unconditionally:
+
+```
+downloader_anyConnectedFallsBackToPhoneOnly          FAIL
+downloader_anyConnectedDetectsConnected              FAIL
+downloader_anyConnectedAllDisconnectedReturnsFalse   PASS
+Ran 177 tests
+FAILED (passed=175, failed=2, errors=0)
+```
+
+After implementation ([docs/m7-1-pass.txt](docs/m7-1-pass.txt)):
+
+```
+Ran 177 tests
+PASSED (passed=177, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m7-1-r2-evidence.txt](docs/m7-1-r2-evidence.txt)) — the sim's BLE proxy worked this time, so the install **actually ran end-to-end against the real server**:
+
+```
+M7 install: fetching manifest from https://wikiwatch.tomhe.app
+M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+M7 net: GET https://wikiwatch.tomhe.app/article/shalom.txt
+... (36 articles fetched sequentially) ...
+M7 install: DONE installed=36 errors=0 of 36
+M5 rank: buf='' (empty — no results shown)
+```
+
+First **end-to-end happy-path** validation against the live `wikiwatch.tomhe.app/` server.
+
+**Operational note for development:** the USB sideload workflow is now safer — you can leave USB connected after sideload because the no-network branch dodges the hang. But for actual app testing, **disconnect USB** so the BLE-network code path gets exercised.
+
+**Artifact:** `wikiwatch-M7.1.prg` (168 252 bytes). Current head of `main`.
 
 ---
 
@@ -1366,7 +1434,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 174 tests pass at v0.M7
+& scripts\test.ps1     # 177 tests pass at v0.M7.1
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
