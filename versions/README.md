@@ -52,6 +52,7 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M6.5 | `v0.M6.5` | `99ea899` | 2026-05-27 | 165 KB | Memory optimizations to address M6.4 stale-render bug on real Venu 2 (sim worked, watch UI didn't refresh; GC pressure hypothesis). (1) Cache `KeyboardLayout.buttons()` at module level — was ~850 B/call × every onUpdate + every onTap. (2) Cache `KeyboardLayout.subButtons(parent)` per centerAngleDeg. (3) Preallocate `_drawWedge` polygon buffer as view field, mutate in place — was ~4 KB/onUpdate. (4) DROP M6.1's `:words/:wordPx/:spacePx` per-sub-line storage — was ~6.5 KB resident on shalom; long-press now goes `onHold → requestLongPressHit → next onUpdate → _resolvePendingHit` measuring ONLY the tapped sub-line (~130 B transient). Plus `fm:NNNNNN` freeMemory overlay near keyboard bottom-center so user can SEE heap pressure live on the watch (no stdout). Net: ~10–15 KB resident reclaimed + ~25–50 KB/sec GC churn eliminated. | 176 |
 | M7 | `v0.M7` | `8726f04` | 2026-05-27 | 167 KB | Real-network corpus from `https://wikiwatch.tomhe.app/`. DELETED `Fixtures.mc` + `FixtureInstaller.mc` + their tests. NEW `source/net/Downloader.mc` (pure `parseManifestResponse` + side-effecting `fetchManifest` / `fetchArticle`). NEW `Manifest.wipeArticles()`. NEW views: `InstallView` (sequential per-article download with progress UI), `UpdatePromptView` (top half = Yes, bottom = No), `UpdateCheckView` (750ms race on every launch). `wikiwatchApp.getInitialView` branches on `Manifest.isEmpty()`: empty → InstallView; non-empty → UpdateCheckView. `manifest.xml` declares `<iq:uses-permission id="Communications"/>`. 174 tests (−10 fixture tests + 8 new). | 174 |
 | M7.1 | `v0.M7.1` | `e8de790` | 2026-05-28 | 169 KB | Hotfix M7 USB-sideload event-loop clog (BLE deprioritized when USB connected → `makeWebRequest` hangs ~30s → CIQ event loop clogged → M6.4-style stale-render symptom). Three changes: (1) new `Downloader.isNetworkAvailable()` wrapping pure `_anyConnected(connectionInfo, phoneConnected)` helper. (2) `wikiwatchApp.getInitialView` gains 2×2 branch — empty Storage + no network → NEW `NoConnectionView` ("Need connection to load initial offline articles"); has-corpus + no network → straight to functional KeyboardView. (3) `UpdateCheckView` timeout 750ms → 1000ms. **First end-to-end happy-path validation** against live server: sim's BLE proxy worked, all 36 articles downloaded from `wikiwatch.tomhe.app/`. 174 → 177 tests (+3 for `_anyConnected`). | 177 |
+| M7.2 | `v0.M7.2` | `b8b2a9c` | 2026-05-28 | 169 KB | UX hotfix: `UpdateCheckView` post-check transition `SLIDE_LEFT` → `SLIDE_IMMEDIATE`. The slide animation made the resolved keyboard look like a duplicate sliding in on top, since UpdateCheckView already renders the same keyboard pixels underneath. Now transition is invisible — "checking for updates..." text just vanishes, keyboard becomes interactive in place. Lifted the transition value to a public instance method `transitionToKeyboard() as WatchUi.SlideType` so the new R1 test can pin it (MonkeyC won't expose class-level consts via `ClassName.CONST` syntax). Also fixed a stale `System.println` that said "starting 750ms race" — now derived from `_CHECK_TIMEOUT_MS`. 178 tests (+1). | 178 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1417,7 +1418,52 @@ First **end-to-end happy-path** validation against the live `wikiwatch.tomhe.app
 
 **Operational note for development:** the USB sideload workflow is now safer — you can leave USB connected after sideload because the no-network branch dodges the hang. But for actual app testing, **disconnect USB** so the BLE-network code path gets exercised.
 
-**Artifact:** `wikiwatch-M7.1.prg` (168 252 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M7.1.prg` (168 252 bytes).
+
+---
+
+## M7.2 — `SLIDE_IMMEDIATE` transition for UpdateCheckView → KeyboardView (tag `v0.M7.2`)
+
+UX bug from M7/M7.1: when the "checking for updates..." phase resolved, the `SLIDE_LEFT` transition animated the keyboard sliding in from the right. But `UpdateCheckView` already renders the same keyboard pixels underneath (for visual continuity during the check), so the slide looked like a **duplicate keyboard appearing on top of the existing one**. User reported it as "another keyboard-screen is added on top of the current one".
+
+**Fix:** switch to `WatchUi.SLIDE_IMMEDIATE`. The transition is instant + invisible — the "checking for updates..." text just vanishes and the keyboard becomes interactive in place. Exactly what the user asked for ("make the text disappear and the screen-buttons to be enabled").
+
+**Implementation note:** lifted the transition value to a public instance method `UpdateCheckView.transitionToKeyboard() as WatchUi.SlideType` so the new R1 test can pin its value. MonkeyC doesn't let tests access class-level consts via `ClassName.CONST` syntax — they're treated as Symbol references on the class — so a getter + new-instance access is the clean path.
+
+**Also fixed** a stale `System.println` log message that still said `"M7 update check: starting 750ms race"` even though the M7.1 timeout was bumped to 1000 ms. Now derived from `_CHECK_TIMEOUT_MS` so it stays in sync if the timeout changes again.
+
+**Test changes (+1 net, 177 → 178):**
+- `test_UpdateCheckView.mc` (new) — `updateCheck_usesImmediateTransition`: constructs a `UpdateCheckView` and asserts `transitionToKeyboard() == WatchUi.SLIDE_IMMEDIATE`.
+
+**R1 evidence** ([docs/m7-2-fail.txt](docs/m7-2-fail.txt)) — `transitionToKeyboard()` returning `SLIDE_LEFT`:
+
+```
+updateCheck_usesImmediateTransition                  FAIL
+Ran 178 tests
+FAILED (passed=177, failed=1, errors=0)
+```
+
+After flipping to `SLIDE_IMMEDIATE` ([docs/m7-2-pass.txt](docs/m7-2-pass.txt)):
+
+```
+Ran 178 tests
+PASSED (passed=178, failed=0, errors=0)
+```
+
+**R2 evidence** ([docs/m7-2-r2-evidence.txt](docs/m7-2-r2-evidence.txt)) — live `monkeydo` second launch (Storage has manifest), exercising the UpdateCheckView path against the live server:
+
+```
+M7 update check: starting 1000ms race
+M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+M7 update check: same/older version (local=4 remote=4) — using local
+M5 rank: buf='' (empty — no results shown)
+```
+
+Network resolved BEFORE the 1000 ms timer — happy path. Keyboard reached via `SLIDE_IMMEDIATE` (no animation visible in stdout, observable on watch as: "checking for updates..." text just vanishes + keyboard becomes interactive).
+
+**User-visible change:** when the update check resolves, the "checking for updates..." text disappears and the keyboard becomes interactive in the same instant — no slide animation, no apparent duplicate keyboard.
+
+**Artifact:** `wikiwatch-M7.2.prg` (168 364 bytes). Current head of `main`.
 
 ---
 
@@ -1434,7 +1480,7 @@ Every milestone tag points at the merge commit on `main`, and every milestone ad
 
 ```powershell
 git checkout v0.M<N>
-& scripts\test.ps1     # 177 tests pass at v0.M7.1
+& scripts\test.ps1     # 178 tests pass at v0.M7.2
 & scripts\build.ps1    # writes bin\wikiwatch.prg
 ```
 
