@@ -169,24 +169,45 @@ Test-Case "extractor::initial_h1_keeps_blank_line" {
 }
 
 Test-Case "extractor::table_emits_tavla_header_and_rows" {
-    $html = '<div id="mw-content-text"><table class="wikitable"><tr><td>א</td><td>ב</td></tr><tr><td>ג</td><td>ד</td></tr></table></div>'
+    $html = '<div id="mw-content-text"><table class="wikitable"><tr><th>כותרת1</th><th>כותרת2</th></tr><tr><td>א</td><td>ב</td></tr></table></div>'
     $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
-    # smallest header size (h4) + rows on their own lines, cells space-joined.
-    ($md -match '(?m)^#### טבלה:') -and ($md -match '(?m)^א ב\s*$') -and ($md -match '(?m)^ג ד\s*$')
+    # smallest header size (h4); cells (incl. header row) separated by " | ".
+    ($md -match '(?m)^#### טבלה:') -and ($md -match '(?m)^כותרת1 \| כותרת2\s*$') -and ($md -match '(?m)^א \| ב\s*$')
 }
 
 Test-Case "extractor::table_colspan_repeats_value" {
     $html = '<div id="mw-content-text"><table class="wikitable"><tr><td colspan="2">מוזג</td></tr><tr><td>א</td><td>ב</td></tr></table></div>'
     $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
-    # merged (colspan=2) cell value written for BOTH columns.
-    ($md -match '(?m)^מוזג מוזג\s*$')
+    # merged (colspan=2) cell value written for BOTH columns, " | " separated.
+    ($md -match '(?m)^מוזג \| מוזג\s*$')
 }
 
 Test-Case "extractor::table_rowspan_repeats_down" {
     $html = '<div id="mw-content-text"><table class="wikitable"><tr><td rowspan="2">מ</td><td>א</td></tr><tr><td>ב</td></tr></table></div>'
     $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
     # rowspan=2 value carried into the second row's first column.
-    ($md -match '(?m)^מ א\s*$') -and ($md -match '(?m)^מ ב\s*$')
+    ($md -match '(?m)^מ \| א\s*$') -and ($md -match '(?m)^מ \| ב\s*$')
+}
+
+Test-Case "extractor::removes_external_links_section" {
+    $html = '<div id="mw-content-text"><h2>תוכן</h2><p>גוף אמיתי</p><h2>קישורים חיצוניים</h2><ul><li>אתר רשמי</li></ul></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    ($md -match 'גוף אמיתי') -and (-not ($md -match 'קישורים חיצוניים')) -and (-not ($md -match 'אתר רשמי'))
+}
+
+Test-Case "extractor::removes_footnotes_section" {
+    $html = '<div id="mw-content-text"><p>גוף</p><h2>הערות שוליים</h2><p>הערה כלשהי</p></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    ($md -match 'גוף') -and (-not ($md -match 'הערות שוליים')) -and (-not ($md -match 'הערה כלשהי'))
+}
+
+Test-Case "extractor::bullets_no_blank_before_first" {
+    $html = '<div id="mw-content-text"><p>פסקה ראשונה</p><ul><li>פריט</li></ul></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    $lines = $md -split "`n"
+    $i = [array]::IndexOf($lines, '- פריט')
+    # the first bullet sits directly under the preceding paragraph (no blank line).
+    ($i -ge 1) -and ($lines[$i-1] -eq 'פסקה ראשונה')
 }
 
 # ---------------------------------------------------------------------------

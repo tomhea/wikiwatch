@@ -115,11 +115,12 @@ function Convert-OneTable {
                 }
             } else { break }
         }
-        if ($cols.Count -gt 0) { [void]$out.Add(($cols -join ' ')) }
+        if ($cols.Count -gt 0) { [void]$out.Add(($cols -join ' | ')) }
     }
     if ($out.Count -eq 0) { return ' ' }
     # h4 ("smallest header size") label + rows; padded with blank lines so it
-    # detaches from surrounding prose.
+    # detaches from surrounding prose. (Rows already join their cells with
+    # " | " — see the per-row join below.)
     return "`n`n#### טבלה:`n" + ($out -join "`n") + "`n`n"
 }
 
@@ -332,12 +333,21 @@ function Convert-WikiHtmlToMarkdown {
     $s = [regex]::Replace($s, "(`n){3,}", "`n`n")
     $s = $s.Trim()
 
+    # 7a. Drop end-matter sections the user doesn't want (heading + content up to
+    #     the next h2 or end): "קישורים חיצוניים" (external links) + "הערות שוליים"
+    #     (footnotes). Lazy match stops at the next "## " (h2), so any h3/h4
+    #     subsections under them go too.
+    $s = [regex]::Replace($s,
+        "(?ms)^##[ ]+(?:קישורים חיצוניים|הערות שוליים)[^`n]*`n.*?(?=^##[ ]|\z)", "")
+    $s = [regex]::Replace($s, "(`n){3,}", "`n`n").Trim()
+
     # 7b. Tighten block spacing (the reader gives every blank line vertical gap):
-    #     - consecutive bullets get a single newline, not a blank line between;
+    #     - a bullet never has a blank line before it — neither between
+    #       consecutive bullets NOR before the first bullet of a list;
     #     - sub-headers (## / ### / ####) sit directly above their first body
     #       line (single newline after), not separated by a blank line. The
     #       initial "# <title>" is added in step 8 and keeps its blank line.
-    $s = [regex]::Replace($s, "(?m)^(- .+)`n`n(?=- )", "`$1`n")
+    $s = [regex]::Replace($s, "`n`n(- )", "`n`$1")
     $s = [regex]::Replace($s, "(?m)^(#{2,4} .+)`n`n", "`$1`n")
 
     # 8. Prepend the H1 title.

@@ -1,0 +1,32 @@
+------------------------------------------------------------
+PASS  extractor::strips_infobox_table
+PASS  extractor::strips_navbox_table
+PASS  extractor::preserves_link_text
+PASS  extractor::converts_ul_to_dash_list
+PASS  extractor::decodes_nbsp_entity
+PASS  extractor::emits_h1_first_line
+PASS  extractor::truncates_at_paragraph_boundary
+PASS  extractor::math_collapses_to_latex_annotation
+PASS  extractor::math_strips_displaystyle_space_prefix
+PASS  extractor::math_drops_svg_fallback
+PASS  extractor::strips_bidi_marks
+PASS  extractor::strips_zero_width
+PASS  extractor::converts_subscript_superscript_digits
+PASS  extractor::strips_nikud
+PASS  extractor::bullets_single_newline_between
+PASS  extractor::header_single_newline_after
+PASS  extractor::initial_h1_keeps_blank_line
+FAIL  extractor::table_emits_tavla_header_and_rows
+FAIL  extractor::table_colspan_repeats_value
+FAIL  extractor::table_rowspan_repeats_down
+FAIL  extractor::removes_external_links_section
+FAIL  extractor::removes_footnotes_section
+FAIL  extractor::bullets_no_blank_before_first
+PASS  pack::groups_articles_into_chunks
+PASS  pack::chunk_index_matches_manifest
+PASS  manifest::sums_total_bytes_correctly
+PASS  manifest::popularity_in_0_100
+PASS  manifest::version_bumps_on_change
+------------------------------------------------------------
+Ran 28 corpus-tooling tests: passed=22 failed=6
+TOOLING TESTS FAILED
