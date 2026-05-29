@@ -38,10 +38,16 @@ class wikiwatchApp extends Application.AppBase {
         var hasCorpus = !Manifest.isEmpty();
         var hasNetwork = Downloader.isNetworkAvailable();
         var stats = System.getSystemStats();
+        // M8.3 self-heal: spot-check that the corpus the manifest claims is
+        // actually present in Storage (a few sampled article ids). A
+        // complete-but-empty corpus (e.g. a stale manifest from a failed
+        // install) then routes to a fresh install instead of a broken keyboard.
+        var corpusIntact = _corpusIntact();
         var route = LaunchRouter.route(
-            installState, hasCorpus, hasNetwork, stats.battery, stats.charging);
+            installState, hasCorpus, hasNetwork, stats.battery, stats.charging, corpusIntact);
         System.println("M8 launch: state=" + installState + " corpus=" + hasCorpus
-            + " net=" + hasNetwork + " batt=" + stats.battery + " -> " + route);
+            + " intact=" + corpusIntact + " net=" + hasNetwork
+            + " batt=" + stats.battery + " -> " + route);
 
         if (route == :install) {
             var iv = new InstallView(false);
@@ -67,6 +73,20 @@ class wikiwatchApp extends Application.AppBase {
         // :keyboard — functional offline keyboard with the cached corpus.
         var kb = new wikiwatchKeyboardView();
         return [ kb, new wikiwatchKeyboardDelegate(kb, "") ];
+    }
+
+    // True iff a spot-check sample of the manifest's article ids all have
+    // bodies in Storage. Empty manifest -> true (the hasCorpus=false path
+    // handles first install). O(1)-ish: at most ~5 Storage reads.
+    private function _corpusIntact() as Boolean {
+        var arts = Manifest.load()[:articles] as Array<Dictionary>?;
+        if (arts == null || arts.size() == 0) { return true; }
+        var idxs = InstallPlan.sampleIndices(arts.size(), 5);
+        var sampleIds = [] as Array<String>;
+        for (var i = 0; i < idxs.size(); i++) {
+            sampleIds.add((arts[idxs[i]] as Dictionary)[:id] as String);
+        }
+        return ArticleStore.allPresent(sampleIds);
     }
 
 }

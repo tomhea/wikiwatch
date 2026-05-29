@@ -112,3 +112,29 @@ function installPlan_maxInFlightOneUnderPressure(logger as Logger) as Boolean {
     logger.debug("maxInFlight(399KB) = " + r);
     return r == 1;
 }
+
+(:test)
+function installPlan_sampleIndicesEvenlySpaced(logger as Logger) as Boolean {
+    var r = InstallPlan.sampleIndices(180, 5);
+    logger.debug("sampleIndices(180,5) = " + r);
+    return r.size() == 5 && r[0] == 0 && r[4] == 179
+        && r[1] > 0 && r[1] < r[2] && r[2] < r[3] && r[3] < 179;
+}
+
+(:test)
+function installPlan_sampleIndicesFewerThanN(logger as Logger) as Boolean {
+    var r = InstallPlan.sampleIndices(3, 5);
+    logger.debug("sampleIndices(3,5) = " + r);
+    return r.size() == 3 && r[0] == 0 && r[1] == 1 && r[2] == 2;
+}
+
+(:test)
+function installPlan_sampleIndicesEmpty(logger as Logger) as Boolean {
+    return InstallPlan.sampleIndices(0, 5).size() == 0;
+}
+
+(:test)
+function installPlan_sampleIndicesOne(logger as Logger) as Boolean {
+    var r = InstallPlan.sampleIndices(1, 5);
+    return r.size() == 1 && r[0] == 0;
+}

@@ -31,17 +31,18 @@ module LaunchRouter {
         hasCorpus as Boolean,
         hasNetwork as Boolean,
         batteryPct as Float,
-        charging as Boolean
+        charging as Boolean,
+        corpusIntact as Boolean
     ) as Symbol {
         // A usable corpus already exists when the last install completed, OR
         // when an M7-era install left article bodies but no install-state key
         // (legacy upgrade — state defaults to "none" but Manifest isn't empty).
-        // Either way, don't re-install: go to the M7 update-check / keyboard
-        // path. The update check will find the v5 corpus and offer to update,
-        // at which point UpdatePromptView begins a fresh chunked install.
+        // M8.3: AND the bodies actually verify (corpusIntact). A
+        // complete-but-empty corpus (stale manifest, failed install) is NOT
+        // ready — it falls through to the (re)install path (self-heal).
         var corpusReady = installState.equals(STATE_COMPLETE)
             || (installState.equals(STATE_NONE) && hasCorpus);
-        if (corpusReady) {
+        if (corpusReady && corpusIntact) {
             // Battery never blocks USE of an existing corpus — only installs.
             return hasNetwork ? :updateCheck : :keyboard;
         }
@@ -52,7 +53,9 @@ module LaunchRouter {
             return :lowBattery;
         }
         if (!hasNetwork) {
-            return :noConnection;
+            // Can't fetch. If some corpus exists (even if broken/partial),
+            // degrade to the keyboard rather than a dead-end NoConnectionView.
+            return hasCorpus ? :keyboard : :noConnection;
         }
         return installState.equals(STATE_IN_PROGRESS) ? :resume : :install;
     }

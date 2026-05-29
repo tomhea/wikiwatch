@@ -85,6 +85,26 @@ module InstallPlan {
         return freeBytes < MEM_PRESSURE_BYTES ? 1 : 2;
     }
 
+    // M8.3 self-heal: up to `n` evenly-spaced indices in [0, count) for spot-
+    // checking that the installed corpus actually has bodies (cheap O(1)
+    // integrity probe at launch — full count would be too many getValue calls).
+    // Always includes 0 and count-1 when count > 1; deduped + ascending.
+    function sampleIndices(count as Number, n as Number) as Array<Number> {
+        var out = [] as Array<Number>;
+        if (count <= 0) { return out; }
+        if (count <= n) {
+            for (var i = 0; i < count; i++) { out.add(i); }
+            return out;
+        }
+        var last = -1;
+        for (var k = 0; k < n; k++) {
+            // round(k * (count-1) / (n-1)) — evenly spaced, includes 0 and count-1.
+            var idx = ((k * (count - 1).toFloat() / (n - 1)) + 0.5).toNumber();
+            if (idx != last) { out.add(idx); last = idx; }
+        }
+        return out;
+    }
+
     function _contains(arr as Array<Number>, n as Number) as Boolean {
         for (var i = 0; i < arr.size(); i++) {
             if (arr[i] == n) { return true; }
