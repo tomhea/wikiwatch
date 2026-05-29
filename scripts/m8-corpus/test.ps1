@@ -125,12 +125,17 @@ Test-Case "extractor::converts_subscript_superscript_digits" {
     ($md -match 'H2O') -and ($md -match 'x2')
 }
 
-Test-Case "extractor::preserves_nikud" {
-    # Nikud (vowel points) must survive untouched.
-    $nikud = "ש" + [char]0x05B8 + "ל" + [char]0x05B9 + "ם"   # שָלֹם-ish
-    $html = "<div id=`"mw-content-text`"><p>$nikud</p></div>"
+Test-Case "extractor::strips_nikud" {
+    # Nikud / cantillation (combining vowel points) are removed; the base
+    # consonants survive. שָׁלֹום -> שלום. The maqaf (U+05BE, a connector) is
+    # NOT nikud and must be kept.
+    $word = "ש" + [char]0x05B8 + [char]0x05C1 + "ל" + [char]0x05B9 + "ו" + "ם"
+    $html = "<div id=`"mw-content-text`"><p>$word ובן" + [char]0x05BE + "גוריון</p></div>"
     $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
-    ($md.Contains([char]0x05B8)) -and ($md.Contains([char]0x05B9))
+    # no combining marks left, base letters intact, maqaf kept
+    (-not ($md.Contains([char]0x05B8))) -and (-not ($md.Contains([char]0x05B9))) `
+        -and (-not ($md.Contains([char]0x05C1))) -and ($md -match 'שלום') `
+        -and ($md.Contains([char]0x05BE))
 }
 
 # ---------------------------------------------------------------------------
