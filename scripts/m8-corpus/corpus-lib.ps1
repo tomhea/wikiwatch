@@ -77,6 +77,72 @@ function Remove-BalancedTables {
     return $Html
 }
 
+# Replace each <math>...</math> with its cleaned LaTeX annotation, inline.
+# MediaWiki Parsoid renders math as a MathML presentation tree (<mi>/<mn>/<mo>
+# — which a naive tag-strip explodes into one line per token) PLUS a
+# <annotation encoding="application/x-tex"> with the source LaTeX (also mirrored
+# in the alttext attribute + an SVG <img alt>). We keep the LaTeX, drop the
+# tree. The \displaystyle directive (and its escaped space) is stripped; the
+# braces are kept. Runs BEFORE the generic tag-strip so the tree never leaks.
+function Convert-MathElements {
+    param([string]$Html)
+    return [regex]::Replace($Html, '(?is)<math\b([^>]*)>(.*?)</math>', {
+        param($m)
+        $attrs = $m.Groups[1].Value
+        $inner = $m.Groups[2].Value
+        $latex = $null
+        $am = [regex]::Match($inner, '(?is)<annotation\b[^>]*encoding="application/x-tex"[^>]*>(.*?)</annotation>')
+        if ($am.Success) {
+            $latex = $am.Groups[1].Value
+        } else {
+            $aa = [regex]::Match($attrs, '(?is)alttext="([^"]*)"')
+            if ($aa.Success) { $latex = $aa.Groups[1].Value }
+        }
+        if ($null -eq $latex) { return ' ' }
+        # Drop the \displaystyle directive + a following escaped-space/backslash.
+        $latex = [regex]::Replace($latex, '\\displaystyle\s*\\?\s*', '')
+        # Pad with spaces so it doesn't fuse with adjacent prose.
+        return ' ' + $latex.Trim() + ' '
+    })
+}
+
+# Sub/superscript digits (and a few operators) -> ASCII so they're printable on
+# the watch (e.g. H₂O -> H2O, x² -> x2).
+function Convert-SubSuperscripts {
+    param([string]$Text)
+    $map = @{
+        # subscripts 2080-2089
+        ([char]0x2080)='0';([char]0x2081)='1';([char]0x2082)='2';([char]0x2083)='3';([char]0x2084)='4'
+        ([char]0x2085)='5';([char]0x2086)='6';([char]0x2087)='7';([char]0x2088)='8';([char]0x2089)='9'
+        ([char]0x208A)='+';([char]0x208B)='-';([char]0x208C)='=';([char]0x208D)='(';([char]0x208E)=')'
+        # superscripts
+        ([char]0x2070)='0';([char]0x00B9)='1';([char]0x00B2)='2';([char]0x00B3)='3';([char]0x2074)='4'
+        ([char]0x2075)='5';([char]0x2076)='6';([char]0x2077)='7';([char]0x2078)='8';([char]0x2079)='9'
+        ([char]0x207A)='+';([char]0x207B)='-';([char]0x207C)='=';([char]0x207D)='(';([char]0x207E)=')'
+    }
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($ch in $Text.ToCharArray()) {
+        if ($map.ContainsKey($ch)) { [void]$sb.Append($map[$ch]) } else { [void]$sb.Append($ch) }
+    }
+    return $sb.ToString()
+}
+
+# Strip invisible control marks that the watch doesn't need and that perturb
+# word-wrap / search: bidi marks (RLM/LRM/embeds/isolates) + zero-width chars.
+# Nikud (U+0591-05C7) is deliberately NOT in this set — it's preserved.
+function Remove-InvisibleControls {
+    param([string]$Text)
+    # 200B-200F (ZWSP/ZWNJ/ZWJ + RLM/LRM), 202A-202E (embeds/overrides),
+    # 2066-2069 (isolates), FEFF (BOM). Pattern built from explicit codepoints
+    # so this source file stays ASCII-only. Nikud (0591-05C7) is NOT included.
+    $r = [char]0x200B + '-' + [char]0x200F +
+         [char]0x202A + '-' + [char]0x202E +
+         [char]0x2066 + '-' + [char]0x2069 +
+         [char]0xFEFF
+    $pattern = '[' + $r + ']'
+    return [regex]::Replace($Text, $pattern, '')
+}
+
 function Convert-HtmlEntities {
     param([string]$Text)
     $s = $Text
@@ -121,6 +187,12 @@ function Convert-WikiHtmlToMarkdown {
     # 3. Drop infobox + navbox tables (nested-aware).
     $s = Remove-BalancedTables -Html $s -ClassPattern 'class="[^"]*\b(infobox|navbox)\b[^"]*"'
 
+    # 3b. Collapse <math> elements to their LaTeX annotation BEFORE the generic
+    #     tag-strip (else the MathML <mi>/<mn>/<mo> tree explodes into one line
+    #     per token — the polynomial-article 1056-line blowup). The SVG <img>
+    #     fallback that follows each <math> is left for the tag-strip to remove.
+    $s = Convert-MathElements -Html $s
+
     # 4. Structural conversions BEFORE stripping the remaining tags.
     $s = [regex]::Replace($s, '(?is)<li\b[^>]*>(.*?)</li>', "`n- `$1`n")
     $s = [regex]::Replace($s, '(?is)</?(ul|ol)\b[^>]*>', "`n")
@@ -142,6 +214,11 @@ function Convert-WikiHtmlToMarkdown {
     # 6b. Drop Parsoid audio-button artefacts (Phonos ⓘ / Ⓘ glyphs) that have
     #     no value on the watch.
     $s = $s -replace '[ⓘⒾ]', ''
+
+    # 6c. Strip invisible bidi/zero-width controls (the watch does its own RTL),
+    #     and normalise sub/superscript digits to ASCII. Nikud is preserved.
+    $s = Remove-InvisibleControls $s
+    $s = Convert-SubSuperscripts $s
 
     # 7. Whitespace cleanup: collapse intra-line runs, trim each line, collapse
     #    blank-line runs to a single blank line.

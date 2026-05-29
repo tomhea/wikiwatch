@@ -77,6 +77,63 @@ Test-Case "extractor::truncates_at_paragraph_boundary" {
 }
 
 # ---------------------------------------------------------------------------
+# extractor.test — unprintable-category handling (math, bidi, zero-width,
+# sub/superscripts, nikud) — M8.1 corpus cleanup
+# ---------------------------------------------------------------------------
+
+Test-Case "extractor::math_collapses_to_latex_annotation" {
+    # MathML presentation tree (which used to explode into one line per token)
+    # is replaced by the cleaned LaTeX annotation, inline.
+    $html = '<div id="mw-content-text"><p>ביטוי מהצורה <math alttext="x"><semantics><mrow><mi>a</mi><mn>0</mn><mo>+</mo><mi>a</mi><mn>1</mn></mrow><annotation encoding="application/x-tex">{\displaystyle \a_{0}+a_{1}}</annotation></semantics></math> סוף</p></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    # Keeps the cleaned LaTeX, drops the presentation explosion + \displaystyle.
+    ($md -match '\{a_\{0\}\+a_\{1\}\}') -and (-not ($md -match 'displaystyle')) -and
+        # the lone 'a 0 + a 1' token soup must NOT each be on their own line
+        (-not ($md -match '(?m)^0\s*$'))
+}
+
+Test-Case "extractor::math_strips_displaystyle_space_prefix" {
+    $html = '<div id="mw-content-text"><p>x הוא <math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">{\displaystyle \ x}</annotation></semantics></math></p></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    ($md -match '\{x\}') -and (-not ($md -match 'displaystyle'))
+}
+
+Test-Case "extractor::math_drops_svg_fallback" {
+    # The SVG fallback <img alt="..."> after </math> must not leak its alt text.
+    $html = '<div id="mw-content-text"><p><math><semantics><annotation encoding="application/x-tex">{\displaystyle \ y}</annotation></semantics></math><img src="x.svg" class="mwe-math-fallback-image-inline" alt="{\displaystyle \ y}"> end</p></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    # exactly one {y}, not two (annotation + img alt)
+    (([regex]::Matches($md, '\{y\}')).Count -eq 1)
+}
+
+Test-Case "extractor::strips_bidi_marks" {
+    $html = "<div id=`"mw-content-text`"><p>$([char]0x200F)שלום$([char]0x200E) עולם</p></div>"
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    (-not ($md.Contains([char]0x200F))) -and (-not ($md.Contains([char]0x200E))) -and ($md -match 'שלום עולם')
+}
+
+Test-Case "extractor::strips_zero_width" {
+    $html = "<div id=`"mw-content-text`"><p>אב$([char]0x200B)גד$([char]0xFEFF)הו</p></div>"
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    (-not ($md.Contains([char]0x200B))) -and (-not ($md.Contains([char]0xFEFF)))
+}
+
+Test-Case "extractor::converts_subscript_superscript_digits" {
+    # H₂O -> H2O ; x² -> x2
+    $html = "<div id=`"mw-content-text`"><p>H$([char]0x2082)O ו-x$([char]0x00B2)</p></div>"
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    ($md -match 'H2O') -and ($md -match 'x2')
+}
+
+Test-Case "extractor::preserves_nikud" {
+    # Nikud (vowel points) must survive untouched.
+    $nikud = "ש" + [char]0x05B8 + "ל" + [char]0x05B9 + "ם"   # שָלֹם-ish
+    $html = "<div id=`"mw-content-text`"><p>$nikud</p></div>"
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    ($md.Contains([char]0x05B8)) -and ($md.Contains([char]0x05B9))
+}
+
+# ---------------------------------------------------------------------------
 # pack.test — Split-IntoChunks
 # ---------------------------------------------------------------------------
 
