@@ -134,6 +134,57 @@ Test-Case "extractor::preserves_nikud" {
 }
 
 # ---------------------------------------------------------------------------
+# extractor.test — block spacing + tables (M8.2 corpus formatting)
+# ---------------------------------------------------------------------------
+
+Test-Case "extractor::bullets_single_newline_between" {
+    $html = '<div id="mw-content-text"><ul><li>א</li><li>ב</li><li>ג</li></ul></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    $lines = $md -split "`n"
+    $i = [array]::IndexOf($lines, '- א')
+    # consecutive bullets are adjacent lines (no blank line between).
+    ($i -ge 0) -and ($lines[$i+1] -eq '- ב') -and ($lines[$i+2] -eq '- ג')
+}
+
+Test-Case "extractor::header_single_newline_after" {
+    $html = '<div id="mw-content-text"><h2>כותרת</h2><p>גוף הטקסט</p></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    $lines = $md -split "`n"
+    $i = [array]::IndexOf($lines, '## כותרת')
+    # body line directly follows the header (no blank line between).
+    ($i -ge 0) -and ($lines[$i+1] -eq 'גוף הטקסט')
+}
+
+Test-Case "extractor::initial_h1_keeps_blank_line" {
+    # The very first '# <title>' is exempt — it keeps its blank line.
+    $html = '<div id="mw-content-text"><p>גוף</p></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'ראשי'
+    $lines = $md -split "`n"
+    ($lines[0] -eq '# ראשי') -and ($lines[1] -eq '')
+}
+
+Test-Case "extractor::table_emits_tavla_header_and_rows" {
+    $html = '<div id="mw-content-text"><table class="wikitable"><tr><td>א</td><td>ב</td></tr><tr><td>ג</td><td>ד</td></tr></table></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    # smallest header size (h4) + rows on their own lines, cells space-joined.
+    ($md -match '(?m)^#### טבלה:') -and ($md -match '(?m)^א ב\s*$') -and ($md -match '(?m)^ג ד\s*$')
+}
+
+Test-Case "extractor::table_colspan_repeats_value" {
+    $html = '<div id="mw-content-text"><table class="wikitable"><tr><td colspan="2">מוזג</td></tr><tr><td>א</td><td>ב</td></tr></table></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    # merged (colspan=2) cell value written for BOTH columns.
+    ($md -match '(?m)^מוזג מוזג\s*$')
+}
+
+Test-Case "extractor::table_rowspan_repeats_down" {
+    $html = '<div id="mw-content-text"><table class="wikitable"><tr><td rowspan="2">מ</td><td>א</td></tr><tr><td>ב</td></tr></table></div>'
+    $md = Convert-WikiHtmlToMarkdown -Html $html -Title 'בדיקה'
+    # rowspan=2 value carried into the second row's first column.
+    ($md -match '(?m)^מ א\s*$') -and ($md -match '(?m)^מ ב\s*$')
+}
+
+# ---------------------------------------------------------------------------
 # pack.test — Split-IntoChunks
 # ---------------------------------------------------------------------------
 

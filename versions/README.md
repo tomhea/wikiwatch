@@ -53,6 +53,9 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M7 | `v0.M7` | `8726f04` | 2026-05-27 | 167 KB | Real-network corpus from `https://wikiwatch.tomhe.app/`. DELETED `Fixtures.mc` + `FixtureInstaller.mc` + their tests. NEW `source/net/Downloader.mc` (pure `parseManifestResponse` + side-effecting `fetchManifest` / `fetchArticle`). NEW `Manifest.wipeArticles()`. NEW views: `InstallView` (sequential per-article download with progress UI), `UpdatePromptView` (top half = Yes, bottom = No), `UpdateCheckView` (750ms race on every launch). `wikiwatchApp.getInitialView` branches on `Manifest.isEmpty()`: empty → InstallView; non-empty → UpdateCheckView. `manifest.xml` declares `<iq:uses-permission id="Communications"/>`. 174 tests (−10 fixture tests + 8 new). | 174 |
 | M7.1 | `v0.M7.1` | `e8de790` | 2026-05-28 | 169 KB | Hotfix M7 USB-sideload event-loop clog (BLE deprioritized when USB connected → `makeWebRequest` hangs ~30s → CIQ event loop clogged → M6.4-style stale-render symptom). Three changes: (1) new `Downloader.isNetworkAvailable()` wrapping pure `_anyConnected(connectionInfo, phoneConnected)` helper. (2) `wikiwatchApp.getInitialView` gains 2×2 branch — empty Storage + no network → NEW `NoConnectionView` ("Need connection to load initial offline articles"); has-corpus + no network → straight to functional KeyboardView. (3) `UpdateCheckView` timeout 750ms → 1000ms. **First end-to-end happy-path validation** against live server: sim's BLE proxy worked, all 36 articles downloaded from `wikiwatch.tomhe.app/`. 174 → 177 tests (+3 for `_anyConnected`). | 177 |
 | M7.2 | `v0.M7.2` | `b8b2a9c` | 2026-05-28 | 169 KB | UX hotfix: `UpdateCheckView` post-check transition `SLIDE_LEFT` → `SLIDE_IMMEDIATE`. The slide animation made the resolved keyboard look like a duplicate sliding in on top, since UpdateCheckView already renders the same keyboard pixels underneath. Now transition is invisible — "checking for updates..." text just vanishes, keyboard becomes interactive in place. Lifted the transition value to a public instance method `transitionToKeyboard() as WatchUi.SlideType` so the new R1 test can pin it (MonkeyC won't expose class-level consts via `ClassName.CONST` syntax). Also fixed a stale `System.println` that said "starting 750ms race" — now derived from `_CHECK_TIMEOUT_MS`. 178 tests (+1). | 178 |
+| M8 | `v0.M8` | `4ba3799` | 2026-05-29 | 178 KB | **Real Hebrew Wikipedia corpus from a Kiwix ZIM** (180 articles, was 36 synthetic). Chunked-download install (2-in-flight parallel, crash-resumable, battery-gated) unpacked into per-article Storage. New pure models `InstallPlan` / `InstallController` / `BatteryGate` / `LaunchRouter` + `InstallState`; `ArticleStore.putBatch`; `Downloader.fetchChunk` (fetchArticle removed). New corpus tooling `scripts/m8-corpus/`. Device finding: ~12–13 KB `makeWebRequest` response cap → compact numeric ids + ~180-article single-response manifest. | 241 |
+| M8.1 | `v0.M8.1` | `7547237` | 2026-05-29 | — (corpus only) | Corpus cleanup (no `.mc` change → reuses `wikiwatch-M8.prg`): `<math>` → inline LaTeX (פולינום 1056 → 119 lines), strip bidi/zero-width, sub/superscript → ASCII, nikud preserved. Manifest v6. | 241 + 19 tooling |
+| M8.2 | `v0.M8.2` | (this PR) | 2026-05-29 | — (corpus only) | Corpus formatting (no `.mc` change → reuses `wikiwatch-M8.prg`): bullets single-newline, sub-headers tight to body, `wikitable` → `#### טבלה:` rows with colspan/rowspan expansion (notice/diagram tables dropped). Manifest v7. | 241 + 25 tooling |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1463,20 +1466,52 @@ Network resolved BEFORE the 1000 ms timer — happy path. Keyboard reached via `
 
 **User-visible change:** when the update check resolves, the "checking for updates..." text disappears and the keyboard becomes interactive in the same instant — no slide animation, no apparent duplicate keyboard.
 
-**Artifact:** `wikiwatch-M7.2.prg` (168 364 bytes). Current head of `main`.
+**Artifact:** `wikiwatch-M7.2.prg` (168 364 bytes).
+
+---
+
+## M8 — Real Hebrew Wikipedia corpus from a Kiwix ZIM (tag `v0.M8`)
+
+Replaced the synthetic 36-article corpus with **180 real Hebrew Wikipedia articles** generated offline from a Kiwix ZIM, delivered via a new **chunked-download install** that's crash-resumable and battery-gated. Steady-state reads are unchanged from M7 (one `article:<id>` Storage key each).
+
+- **New pure models** (`source/models/`): `InstallPlan` (chunk-scheduling math), `InstallController` (in-flight cap / retry / completion state machine), `BatteryGate`, `LaunchRouter` (3-state launch matrix). **New** `source/storage/InstallState.mc` (resumable bitmap). `ArticleStore.putBatch` (unpack a chunk into per-article Storage). `Downloader.fetchChunk` + chunk-URL builder; `fetchArticle` removed. `InstallView` rewritten (parallel 2-in-flight, self-regulating on free memory, durable-write-then-bitmap ordering, progress UI); new `LowBatteryView`; `wikiwatchApp` 3-state launch.
+- **New corpus tooling** `scripts/m8-corpus/` (enumerate → select → extract → pack-chunks → gen-manifest + `corpus-lib` + a 12-test runner). Supersedes `gen-server-corpus.ps1`.
+- **Device finding:** the Venu 2 sim rejects `makeWebRequest` responses > ~12–13 KB (`rc=-402`). Forced compact **numeric ids** (not URL-encoded Hebrew) and a single-response manifest capping the corpus at ~180 articles; per-article body 10 KB, 180 chunks, gzip required server-side.
+- 174 → 241 watch tests (+ 12 PowerShell tooling). R2: install (180/180), resume (from 111/180), searchable corpus captured live.
+
+**Artifact:** `wikiwatch-M8.prg`.
+
+---
+
+## M8.1 — Corpus cleanup: math → LaTeX + strip invisibles (tag `v0.M8.1`)
+
+**Corpus/tooling only — no `.mc` change, so no new binary; this version runs on `wikiwatch-M8.prg`.** Fixed the "unprintable characters" + slow-layout reports by reworking the extractor:
+
+- `<math>` → its cleaned LaTeX annotation, inline (drop the MathML token tree + SVG fallback, strip `\displaystyle`, keep braces). **פולינום went 1056 → 119 lines**, fixing the garbled math and the slow layout at the source.
+- Strip invisible bidi (RLM/LRM) + zero-width controls; normalise sub/superscript digits to ASCII (H₂O → H2O); **nikud preserved** (test-pinned).
+- Corpus regenerated to **manifest v6**. Tooling tests 12 → 19.
+
+---
+
+## M8.2 — Corpus formatting: bullets / headers / tables (tag `v0.M8.2`)
+
+**Corpus/tooling only — no `.mc` change; runs on `wikiwatch-M8.prg`.** Block-spacing + table refinements:
+
+- Consecutive **bullets** get a single newline (tight list), not a blank line.
+- **Sub-headers** (`##` / `###` / `####`) sit directly above their first body line (the initial `# title` keeps its blank line).
+- Real `wikitable` **data tables** flatten to a `#### טבלה:` label + one line per row, cells space-joined, with **colspan/rowspan merged values written for every covered cell**. Notice / hatnote / diagram tables (no `wikitable` class) are dropped as noise.
+- Corpus regenerated to **manifest v7**. Tooling tests 19 → 25.
 
 ---
 
 ## What's missing (planned but not yet built)
 
-The bigger ladder beyond M5 is documented in the project memory (`memory/project_ladder.md`):
-
-- **M8** — Polish + measure corpus size + Hebrew Wikipedia data generation. Real-watch sideload of M7's `.prg`, record corpus size + free Storage. Sub-PRs (`fix/<slug>` → `v0.M8.<sub>`) for polish items. **New scope:** collaboratively pick + clean real Hebrew Wikipedia article data + build `manifest.json` + `article/<id>.txt`. (Note: ladder reshaped 2026-05-26 — old M8 "digits page" merged into M3.x circular keyboard + M6.2's expansion; old M9 → M8; old M10 → M9.)
-- **M9** (conditional) — Static-dictionary compression if M8 shows the corpus doesn't fit in 9 MB.
+- **M8.3 (next)** — watch-side: launch **self-heal** (auto re-install when `installState=complete` but the corpus bodies are missing/incomplete) + **laid-out article cache** (cache the pixel-wrapped layout of the last-opened article for instant re-open) + **lazy-load speedup** (bigger incremental batches so long articles fully render fast). This is the first post-M8 binary change → it will add `wikiwatch-M8.3.prg`.
+- **M9** (conditional) — static-dictionary compression, and/or **chunking the manifest** to scale the corpus past the ~180-article single-response cap.
 
 ## Reproducing any version
 
-Every milestone tag points at the merge commit on `main`, and every milestone added a co-located `.prg` archive in this folder. To rebuild from source:
+Every milestone tag points at the merge commit on `main`. Binary-changing milestones add a co-located `.prg` archive here; **corpus/tooling-only versions (M8.1, M8.2) change no `.mc` and intentionally reuse the previous binary** (`wikiwatch-M8.prg`) rather than archive an identical duplicate. To rebuild from source:
 
 ```powershell
 git checkout v0.M<N>
