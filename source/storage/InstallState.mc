@@ -1,5 +1,6 @@
 import Toybox.Application;
 import Toybox.Lang;
+import Toybox.System;
 
 // M8 install-lifecycle persistence. Three Storage keys track an install so it
 // survives app-close / power-off / crash mid-download and resumes on next
@@ -38,28 +39,39 @@ module InstallState {
         return c == null ? ([] as Array<Number>) : c;
     }
 
+    // R4: every setValue is preceded by a freeMemory check proving >= 3x the
+    // value size is free. These values are small, but R4 is unconditional —
+    // OOM in Monkey C is uncatchable, so we never write without the guard.
+    // Returns false (write skipped) if memory is too low; callers treat a
+    // skipped bitmap write as "chunk not marked" (safe — it re-downloads on
+    // resume, idempotent).
+    function _guardedSet(key as String, value as Application.PropertyValueType, estBytes as Number) as Boolean {
+        if (System.getSystemStats().freeMemory < estBytes * 3) {
+            System.println("M8 InstallState: setValue skipped (low memory) key=" + key);
+            return false;
+        }
+        Application.Storage.setValue(key, value);
+        return true;
+    }
+
     // Begin (or restart) an install for the given version: state=in_progress,
     // version recorded, received-set cleared. NOT called on resume.
-    //
-    // R4: the three values are tiny (a short String, a Number, an empty
-    // Array) — well under the freeMemory floor; the guard would be noise, so
-    // we set directly. (Subsequent chunk-index inserts grow the array to at
-    // most chunkCount Numbers ~ 100 × 4 B = 400 B; still trivial.)
     function begin(version as Number) as Void {
-        Application.Storage.setValue(KEY_STATE, STATE_IN_PROGRESS);
-        Application.Storage.setValue(KEY_VERSION, version);
-        Application.Storage.setValue(KEY_CHUNKS, [] as Array<Number>);
+        _guardedSet(KEY_STATE, STATE_IN_PROGRESS, 16);
+        _guardedSet(KEY_VERSION, version, 8);
+        _guardedSet(KEY_CHUNKS, [] as Array<Number>, 16);
     }
 
     // Record one chunk as durably written (sorted-insert, idempotent). The
     // sorted-insert math lives in the pure InstallPlan module.
     function markChunkReceived(n as Number) as Void {
         var updated = InstallPlan.sortedInsert(getChunksReceived(), n);
-        Application.Storage.setValue(KEY_CHUNKS, updated);
+        // Each chunk index is a Number (~4-8 B) + small Array overhead.
+        _guardedSet(KEY_CHUNKS, updated, updated.size() * 8 + 32);
     }
 
     function markComplete() as Void {
-        Application.Storage.setValue(KEY_STATE, STATE_COMPLETE);
+        _guardedSet(KEY_STATE, STATE_COMPLETE, 16);
     }
 
     // Wipe all install-state keys back to "none".

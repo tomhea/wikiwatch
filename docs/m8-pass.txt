@@ -1,1156 +1,1156 @@
 BUILD SUCCESSFUL
 WARNING: C:\Users\tomhe\Documents\Garmin\wikiwatch\manifest.xml: No supported languages are defined. Language-specific resources will be ignored unless language support is added to the manifest file.
 WARNING: venu2: The launcher icon (24x24) isn't compatible with the specified launcher icon size of the device 'venu2' (70x70). The image will be scaled to the target size.
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test articleStore_putGetRoundtrip...
-DEBUG (17:17): put=true back len=26
+DEBUG (17:31): put=true back len=26
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test articleStore_bodyOfMissingReturnsNull...
-DEBUG (17:17): bodyOf('does-not-exist') = null
+DEBUG (17:31): bodyOf('does-not-exist') = null
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test articleStore_putBodyOverwrites...
-DEBUG (17:17): after-overwrite = 'second'
+DEBUG (17:31): after-overwrite = 'second'
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test articleStore_putBatchWritesEach...
-DEBUG (17:17): putBatch n=2 a=body one b=body two
+DEBUG (17:31): putBatch n=2 a=body one b=body two
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test articleStore_putBatchEmptyReturnsZero...
-DEBUG (17:17): putBatch({}) = 0
+DEBUG (17:31): putBatch({}) = 0
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test articleStore_putBatchOverwrites...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test batteryGate_gatesBelow10NotCharging...
-DEBUG (17:17): shouldGate(9%,unplugged) = true
+DEBUG (17:31): shouldGate(9%,unplugged) = true
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test batteryGate_allowsAt10NotCharging...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test batteryGate_allowsLowWhenCharging...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test batteryGate_pausesBelow5NotCharging...
-DEBUG (17:17): shouldPause(4%,unplugged) = true
+DEBUG (17:31): shouldPause(4%,unplugged) = true
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test batteryGate_doesNotPauseAt5...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test batteryGate_doesNotPauseWhenCharging...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test doubleTap_noPreviousTapReturnsFalse...
-DEBUG (17:17): noPrev: isDoubleTap(0,0,100,50,300,80) = false
+DEBUG (17:31): noPrev: isDoubleTap(0,0,100,50,300,80) = false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test doubleTap_timeTooFarApartReturnsFalse...
-DEBUG (17:17): timeFar: isDoubleTap(100,50,600,50,300,80) = false
+DEBUG (17:31): timeFar: isDoubleTap(100,50,600,50,300,80) = false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test doubleTap_yTooFarApartReturnsFalse...
-DEBUG (17:17): yFar: isDoubleTap(100,50,200,250,300,80) = false
+DEBUG (17:31): yFar: isDoubleTap(100,50,200,250,300,80) = false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test doubleTap_withinBothWindowsReturnsTrue...
-DEBUG (17:17): inWindow: isDoubleTap(100,50,250,70,300,80) = true
+DEBUG (17:31): inWindow: isDoubleTap(100,50,250,70,300,80) = true
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test doubleTap_negativeTimeDeltaReturnsFalse...
-DEBUG (17:17): negDelta: isDoubleTap(500,50,100,50,300,80) = false
+DEBUG (17:31): negDelta: isDoubleTap(500,50,100,50,300,80) = false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test doubleTap_intervalBoundaryIsInclusive...
-DEBUG (17:17): boundary: at=400ms -> true, past=401ms -> false
+DEBUG (17:31): boundary: at=400ms -> true, past=401ms -> false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestSuccess...
-DEBUG (17:17): parse 200 + valid -> ok=true
+DEBUG (17:31): parse 200 + valid -> ok=true
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsBadRc...
-DEBUG (17:17): parse 404 -> ok=false error=http rc=404
+DEBUG (17:31): parse 404 -> ok=false error=http rc=404
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsNullData...
-DEBUG (17:17): parse 200 + null -> ok=false
+DEBUG (17:31): parse 200 + null -> ok=false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsMissingVersion...
-DEBUG (17:17): parse 200 + no-version -> ok=false
+DEBUG (17:31): parse 200 + no-version -> ok=false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestRejectsMissingArticles...
-DEBUG (17:17): parse 200 + no-articles -> ok=false
+DEBUG (17:31): parse 200 + no-articles -> ok=false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestNormalizesKeys...
-DEBUG (17:17): symbol id=x title=X string id=null
+DEBUG (17:31): symbol id=x title=X string id=null
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_anyConnectedFallsBackToPhoneOnly...
-DEBUG (17:17): null+true=true null+false=false
+DEBUG (17:31): null+true=true null+false=false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_anyConnectedDetectsConnected...
-DEBUG (17:17): phone-connected-only -> true
+DEBUG (17:31): phone-connected-only -> true
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_anyConnectedAllDisconnectedReturnsFalse...
-DEBUG (17:17): all-disconnected -> false
+DEBUG (17:31): all-disconnected -> false
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_chunkUrlSubstitutesIndex...
-DEBUG (17:17): chunkUrl(42) = https://wikiwatch.tomhe.app/chunk/42.json
+DEBUG (17:31): chunkUrl(42) = https://wikiwatch.tomhe.app/chunk/42.json
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_chunkUrlZero...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestReadsChunkFields...
-DEBUG (17:17): chunkCount=100 pattern=/chunk/{n}.json
+DEBUG (17:31): chunkCount=100 pattern=/chunk/{n}.json
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test downloader_parseManifestDefaultsChunkFields...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendToEmpty...
-DEBUG (17:17): append('', 'ש') = 'ש'
+DEBUG (17:31): append('', 'ש') = 'ש'
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendHebrew...
-DEBUG (17:17): append('ש', '�?') = 'ש�?'
+DEBUG (17:31): append('ש', '�?') = 'ש�?'
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test inputbuf_appendSpace...
-DEBUG (17:17): append('ש', ' ') = 'ש '
+DEBUG (17:31): append('ש', ' ') = 'ש '
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test inputbuf_popLastFromTwoChars...
-DEBUG (17:17): popLast('ש�?') = 'ש'
+DEBUG (17:31): popLast('ש�?') = 'ש'
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test inputbuf_popLastFromEmpty...
-DEBUG (17:17): popLast('') = ''
+DEBUG (17:31): popLast('') = ''
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test inputbuf_clearReturnsEmpty...
-DEBUG (17:17): clear('ש�?ו�?') = ''
+DEBUG (17:31): clear('ש�?ו�?') = ''
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_sortedInsertIntoEmpty...
-DEBUG (17:17): insert 5 into [] -> [5]
+DEBUG (17:31): insert 5 into [] -> [5]
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_sortedInsertKeepsOrder...
-DEBUG (17:17): insert 3 into [1,5] -> [1, 3, 5]
+DEBUG (17:31): insert 3 into [1,5] -> [1, 3, 5]
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_sortedInsertNoDuplicate...
-DEBUG (17:17): insert dup 3 -> [1, 3, 5]
+DEBUG (17:31): insert dup 3 -> [1, 3, 5]
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_sortedInsertAtEnd...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_firstMissingBasic...
-DEBUG (17:17): firstMissing([0,1,5],10) = 2
+DEBUG (17:31): firstMissing([0,1,5],10) = 2
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_firstMissingAllPresent...
-DEBUG (17:17): firstMissing all present -> -1
+DEBUG (17:31): firstMissing all present -> -1
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_firstMissingEmpty...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_missingChunksBasic...
-DEBUG (17:17): missingChunks([0,1,5],7) -> [2, 3, 4, 6]
+DEBUG (17:31): missingChunks([0,1,5],7) -> [2, 3, 4, 6]
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_missingChunksNoneLeft...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_slotsToFillClamps...
-DEBUG (17:17): slots a=1 b=1 c=0
+DEBUG (17:31): slots a=1 b=1 c=0
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_slotsToFillNeverNegative...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_isCompleteTrue...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_isCompleteFalse...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_shouldInvalidateOnVersionBump...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_shouldNotInvalidateSameVersion...
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_maxInFlightTwoWhenAmpleMemory...
-DEBUG (17:17): maxInFlight(500KB) = 2
+DEBUG (17:31): maxInFlight(500KB) = 2
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installPlan_maxInFlightOneUnderPressure...
-DEBUG (17:17): maxInFlight(399KB) = 1
+DEBUG (17:31): maxInFlight(399KB) = 1
 PASS
-M8 launch: state=complete corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resume_pickUpFromInstallChunksReceived...
-DEBUG (17:17): resume firstMissing = 2
+DEBUG (17:31): resume firstMissing = 2
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resume_skipsDownloadedChunks...
-DEBUG (17:17): missing after 50 = 50
+DEBUG (17:31): missing after 50 = 50
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resume_invalidatedByVersionBump...
-DEBUG (17:17): stale (local=4, remote=5) = true
+DEBUG (17:31): stale (local=4, remote=5) = true
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resume_preservesCompletedChunksOnSameVersion...
-DEBUG (17:17): same-version stale=false preserved=2
+DEBUG (17:31): same-version stale=false preserved=2
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test state_completeAfterAllChunksReceived...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test state_inProgressAfterFirstChunk...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test state_persistedAcrossReload...
-DEBUG (17:17): persisted state=in_progress ver=7 recv=[2, 4]
+DEBUG (17:31): persisted state=in_progress ver=7 recv=[2, 4]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_initialIsNone...
-DEBUG (17:17): initial state = none
+DEBUG (17:31): initial state = none
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_beginSetsInProgress...
-DEBUG (17:17): after begin(5): state=in_progress ver=5
+DEBUG (17:31): after begin(5): state=in_progress ver=5
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_markChunkReceivedPersists...
-DEBUG (17:17): received = [1, 3]
+DEBUG (17:31): received = [1, 3]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_markChunkIdempotent...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_markCompleteSetsState...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_resetClearsEverything...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test installState_beginClearsPriorReceived...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_capsInFlightAt2...
-DEBUG (17:17): fire1 = [0, 1] inFlight=2
-DEBUG (17:17): fire2 = []
+DEBUG (17:31): fire1 = [0, 1] inFlight=2
+DEBUG (17:31): fire2 = []
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_dropsToSerialUnderMemoryPressure...
-DEBUG (17:17): serial fire = [0]
+DEBUG (17:31): serial fire = [0]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_setMaxInFlightRaisesCap...
-DEBUG (17:17): after raise = [1]
+DEBUG (17:31): after raise = [1]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_completesAfterAllChunksReceived...
-DEBUG (17:17): complete? true received=3
+DEBUG (17:31): complete? true received=3
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_notCompleteWhileInFlight...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_retriesFailedChunkUpTo3Times...
-DEBUG (17:17): fired 3 times, attempts=3
+DEBUG (17:31): fired 3 times, attempts=3
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_continuesAfterChunkPermanentFailure...
-DEBUG (17:17): complete after perm-fail? true attempts=3
+DEBUG (17:31): complete after perm-fail? true attempts=3
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_handlesOutOfOrderResponses...
-DEBUG (17:17): OOO received=4 written=40
+DEBUG (17:31): OOO received=4 written=40
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_progressCountsArticlesNotChunks...
-DEBUG (17:17): articlesWritten = 77
+DEBUG (17:31): articlesWritten = 77
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test install_resumeSeedsReceivedChunks...
-DEBUG (17:17): resume fire = [2, 3] receivedCount=3
+DEBUG (17:31): resume fire = [2, 3] receivedCount=3
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonsReturns10Wedges...
-DEBUG (17:17): buttons.size=10
+DEBUG (17:31): buttons.size=10
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonZeroIsSpace...
-DEBUG (17:17): [0] label=_ type=symbol (554) angle=0
+DEBUG (17:31): [0] label=_ type=symbol (555) angle=0
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonOneIsBackspace...
-DEBUG (17:17): [1] label=X type=symbol (558) angle=36
+DEBUG (17:31): [1] label=X type=symbol (559) angle=36
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonTwoIsAlefGroup...
-DEBUG (17:17): [2] label=�?בג type=symbol (538) letters=[�?, ב, ג] angle=72
+DEBUG (17:31): [2] label=�?בג type=symbol (539) letters=[�?, ב, ג] angle=72
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonEightIsQuadLetter...
-DEBUG (17:17): [8] letters=[ק, ר, ש, ת] angle=288
+DEBUG (17:31): [8] letters=[ק, ר, ש, ת] angle=288
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonNineIsDigits...
-DEBUG (17:17): [9] label=0-9 type=symbol (549) letters.size=10
+DEBUG (17:31): [9] label=0-9 type=symbol (550) letters.size=10
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtInsideAlefGroupReturnsIt...
-DEBUG (17:17): buttonAt(386,150)=�?בג type=symbol (538)
+DEBUG (17:31): buttonAt(386,150)=�?בג type=symbol (539)
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtInsideHitHaloReturnsWedge...
-DEBUG (17:17): buttonAt(351,162)=�?בג angle=72
+DEBUG (17:31): buttonAt(351,162)=�?בג angle=72
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtJustOutsideHaloReturnsNull...
-DEBUG (17:17): buttonAt(327,169) = null
+DEBUG (17:31): buttonAt(327,169) = null
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtNewWiderHaloReturnsWedge...
-DEBUG (17:17): buttonAt(336,166)=�?בג
+DEBUG (17:31): buttonAt(336,166)=�?בג
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtCenterReturnsNull...
-DEBUG (17:17): buttonAt(208,208) = null
+DEBUG (17:31): buttonAt(208,208) = null
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonAtOffRingReturnsNull...
-DEBUG (17:17): buttonAt(0,0) = null
+DEBUG (17:31): buttonAt(0,0) = null
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsLetterGroupReturnsThree...
-DEBUG (17:17): subButtons(�?בג).size=3
+DEBUG (17:31): subButtons(�?בג).size=3
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsLetterGroupFourReturnsFour...
-DEBUG (17:17): subButtons(קרשת).size=4
+DEBUG (17:31): subButtons(קרשת).size=4
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsDigitsReturnsTenAroundRing...
-DEBUG (17:17): subButtons(digits).size=10
+DEBUG (17:31): subButtons(digits).size=10
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtInsideLetterExpansionReturnsLabel...
-DEBUG (17:17): subButtonAt(284,184) = ב
+DEBUG (17:31): subButtonAt(284,184) = ב
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtOutsideExpansionReturnsNull...
-DEBUG (17:17): subButtonAt(208,208) center = null
+DEBUG (17:31): subButtonAt(208,208) center = null
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsForYudKafLamedHasFinalKaf...
-DEBUG (17:17): subButtons(יכ�?).size=4
-DEBUG (17:17): �? angle=180 rInner=146 rOuter=205
+DEBUG (17:31): subButtons(יכ�?).size=4
+DEBUG (17:31): �? angle=180 rInner=146 rOuter=205
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsForMemNunSamekhHasTwoFinals...
-DEBUG (17:17): subButtons(�?נס).size=5
+DEBUG (17:31): subButtons(�?נס).size=5
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonAtInsideLevelTwoFinalReturnsLabel...
-DEBUG (17:17): subButtonAt(208,383) = �?
+DEBUG (17:31): subButtonAt(208,383) = �?
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_buttonsReturnsCachedReference...
-DEBUG (17:17): buttons()===buttons() ? true bLabel='M6_5_BTN_TEST_MARKER'
+DEBUG (17:31): buttons()===buttons() ? true bLabel='M6_5_BTN_TEST_MARKER'
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test kbd_subButtonsReturnsCachedReference...
-DEBUG (17:17): subButtons===subButtons ? true
+DEBUG (17:31): subButtons===subButtons ? true
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_firstLaunchInstalls...
-DEBUG (17:17): first-launch route -> symbol (553)
+DEBUG (17:31): first-launch route -> symbol (554)
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_firstLaunchNoNetwork...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_firstLaunchLowBattery...
-DEBUG (17:17): first-launch low-batt -> symbol (555)
+DEBUG (17:31): first-launch low-batt -> symbol (556)
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_inProgressResumes...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_inProgressLowBattery...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_inProgressNoNetwork...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_completeWithNetworkChecksUpdate...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_completeNoNetworkKeyboard...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test launchRouter_lowBatteryDoesNotBlockExistingCorpus...
-DEBUG (17:17): complete+low-batt -> symbol (556)
+DEBUG (17:31): complete+low-batt -> symbol (557)
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layout_middleWidthM27Baseline...
-DEBUG (17:17): Layout.middleWidth(416, 25, 100) = 291
+DEBUG (17:31): Layout.middleWidth(416, 25, 100) = 291
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layout_middleWidthDifferentScreen...
-DEBUG (17:17): Layout.middleWidth(400, 20, 80) = 300
+DEBUG (17:31): Layout.middleWidth(400, 20, 80) = 300
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndAdvancesByBatchSize...
-DEBUG (17:17): nextBatchEnd(0,50,12) = 12
+DEBUG (17:31): nextBatchEnd(0,50,12) = 12
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndClampsAtTotal...
-DEBUG (17:17): nextBatchEnd(48,50,12) = 50
+DEBUG (17:31): nextBatchEnd(48,50,12) = 50
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_nextBatchEndIdempotentAtTotal...
-DEBUG (17:17): nextBatchEnd(50,50,12) = 50
+DEBUG (17:31): nextBatchEnd(50,50,12) = 50
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isCompleteWhenCursorAtTotal...
-DEBUG (17:17): isComplete(50,50) = true
+DEBUG (17:31): isComplete(50,50) = true
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isNotCompleteWhenCursorBelowTotal...
-DEBUG (17:17): isComplete(40,50) = false
+DEBUG (17:31): isComplete(40,50) = false
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isScrollNearEndWithinLookahead...
-DEBUG (17:17): isScrollNearEnd(500,800,200,150) = true
+DEBUG (17:31): isScrollNearEnd(500,800,200,150) = true
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_isScrollNotNearEndWhenFar...
-DEBUG (17:17): isScrollNearEnd(100,2000,200,150) = false
+DEBUG (17:31): isScrollNearEnd(100,2000,200,150) = false
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_scrollEndedBeforeLoadStarted...
-DEBUG (17:17): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
+DEBUG (17:31): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_scrollEndedWhileLoadInProgress...
-DEBUG (17:17): scrollEndedWhileLoadInProgress before=200 after=200
+DEBUG (17:31): scrollEndedWhileLoadInProgress before=200 after=200
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_clampedScrollNegativeBecomesZero...
-DEBUG (17:17): clampedScroll(-50,500,200) = 0
+DEBUG (17:31): clampedScroll(-50,500,200) = 0
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_clampedScrollContentSmallerThanScreen...
-DEBUG (17:17): clampedScroll(50,100,200) = 0
+DEBUG (17:31): clampedScroll(50,100,200) = 0
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test layoutProgress_initialBatchIsBoundedForAnyBodyLength...
-DEBUG (17:17): INITIAL=2 shortBatch=2 longBatch=2
+DEBUG (17:31): INITIAL=2 shortBatch=2 longBatch=2
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_emptyInput...
-DEBUG (17:17): wrap('', 10) = []
+DEBUG (17:31): wrap('', 10) = []
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_singleWordFits...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_twoWordsFitOnOneLine...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_twoWordsSecondOverflows...
-DEBUG (17:17): wrap('hello world', 7) = [hello, world]
+DEBUG (17:31): wrap('hello world', 7) = [hello, world]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_greedyFill...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_singleLongWordOverflowsAlone...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_longWordThenShort...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_hebrewWords...
-DEBUG (17:17): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
+DEBUG (17:31): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wrap_extraSpacesCollapse...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wtw_emptyText...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wtw_uniformWidthsWrapsOnOverflow...
-DEBUG (17:17): wtw_uniform = [hello, world]
+DEBUG (17:31): wtw_uniform = [hello, world]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wtw_variableWidthsNarrowsFirst...
-DEBUG (17:17): wtw_variable = [a, b c, d e]
+DEBUG (17:31): wtw_variable = [a, b c, d e]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wtw_startIndexOffsetSkipsEarlyEntries...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wtw_defaultBeyondArray...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wtw_hebrewWithVariableWidths...
-DEBUG (17:17): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
+DEBUG (17:31): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_emptyText...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_singleShortWord...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_twoWords...
-DEBUG (17:17): twoWords = [hello, world]
+DEBUG (17:31): twoWords = [hello, world]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_middlePlusTailPattern...
-DEBUG (17:17): middlePlusTail = [a b c d e, f g h, i j]
+DEBUG (17:31): middlePlusTail = [a b c d e, f g h, i j]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_longTextMultipleMiddleLines...
-DEBUG (17:17): longText size=5
+DEBUG (17:31): longText size=5
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_oversizedSingleWord...
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wnt_hebrewLongLastRaw...
-DEBUG (17:17): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
+DEBUG (17:31): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test splitWords_empty...
-DEBUG (17:17): splitWords('') size=0
+DEBUG (17:31): splitWords('') size=0
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test splitWords_collapsesMultiSpace...
-DEBUG (17:17): splitWords spaces = [hello, world]
+DEBUG (17:31): splitWords spaces = [hello, world]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test splitWords_hebrew...
-DEBUG (17:17): splitWords hebrew size=2
+DEBUG (17:31): splitWords hebrew size=2
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wptw_empty...
-DEBUG (17:17): wptw empty size=1
+DEBUG (17:31): wptw empty size=1
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wptw_singleWordFits...
-DEBUG (17:17): wptw single = [hello]
+DEBUG (17:31): wptw single = [hello]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wptw_twoWordsFitOnOneLine...
-DEBUG (17:17): wptw twoFit = [a b]
+DEBUG (17:31): wptw twoFit = [a b]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wptw_perLineWidthCascade...
-DEBUG (17:17): wptw cascade = [a, b c]
+DEBUG (17:31): wptw cascade = [a, b c]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wptw_oversizedWordOverflowsAlone...
-DEBUG (17:17): wptw oversized = [x, huge, y]
+DEBUG (17:31): wptw oversized = [x, huge, y]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wpnt_empty...
-DEBUG (17:17): wpnt empty size=1
+DEBUG (17:31): wpnt empty size=1
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wpnt_middlePlusTail...
-DEBUG (17:17): wpnt middlePlusTail = [a b, c d, e]
+DEBUG (17:31): wpnt middlePlusTail = [a b, c d, e]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wpnt_oversizedLastWordOnly...
-DEBUG (17:17): wpnt oversized = [x, verylongword]
+DEBUG (17:31): wpnt oversized = [x, verylongword]
 PASS
-M8 launch: state=none corpus=true net=true batt=50.000000 -> symbol (556)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_emptyDefaultWhenStorageEmpty...
-DEBUG (17:17): load() empty default = version=1 articles.size=0
+DEBUG (17:31): load() empty default = version=1 articles.size=0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_isEmptyTrueOnFresh...
-DEBUG (17:17): isEmpty() on fresh = true
+DEBUG (17:31): isEmpty() on fresh = true
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_saveLoadRoundtrip...
-DEBUG (17:17): roundtrip saved=true loaded.articles.size=2
+DEBUG (17:31): roundtrip saved=true loaded.articles.size=2
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_articleIdsOrder...
-DEBUG (17:17): articleIds = [alpha, bravo, charlie]
+DEBUG (17:31): articleIds = [alpha, bravo, charlie]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_titleOfHit...
-DEBUG (17:17): titleOf('shalom') = 'ש�?ו�?'
+DEBUG (17:31): titleOf('shalom') = 'ש�?ו�?'
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_titleOfMiss...
-DEBUG (17:17): titleOf('nonexistent') = null
+DEBUG (17:31): titleOf('nonexistent') = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_wipeArticlesDeletesAllArticleBodies...
-DEBUG (17:17): wipeArticles deleted=3 manifestStillPresent=true b1=null b2=null b3=null
+DEBUG (17:31): wipeArticles deleted=3 manifestStillPresent=true b1=null b2=null b3=null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test manifest_wipeArticlesOnEmpty...
-DEBUG (17:17): wipeArticles on empty = 0
+DEBUG (17:31): wipeArticles on empty = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_h1...
-DEBUG (17:17): parse('# Title') = {symbol (8389346)=>Title, symbol (552)=>1}
+DEBUG (17:31): parse('# Title') = {symbol (8389346)=>Title, symbol (553)=>1}
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_h2...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_h3...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_h4...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_fiveHashesIsBody...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_emptyHeader...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_plainBody...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_hashWithoutSpaceIsBody...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_emptyString...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_hebrewHeader...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test md_hashAlone...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtInsideTopRowReturnsZero...
-DEBUG (17:17): rowIndexAt(30,0,60,5) = 0
+DEBUG (17:31): rowIndexAt(30,0,60,5) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtOutsideListReturnsNull...
-DEBUG (17:17): rowIndexAt(9999,0,60,5) = null
+DEBUG (17:31): rowIndexAt(9999,0,60,5) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_rowIndexAtRespectsScroll...
-DEBUG (17:17): rowIndexAt(30,120,60,5) = 2
+DEBUG (17:31): rowIndexAt(30,120,60,5) = 2
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextZeroReturnsNull...
-DEBUG (17:17): moreArticlesText(10, 10) = null
+DEBUG (17:31): moreArticlesText(10, 10) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextOneReturnsSingular...
-DEBUG (17:17): moreArticlesText(11, 10) = 1 more article fits
+DEBUG (17:31): moreArticlesText(11, 10) = 1 more article fits
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextMultipleReturnsPlural...
-DEBUG (17:17): moreArticlesText(15, 10) = 5 more articles fit
+DEBUG (17:31): moreArticlesText(15, 10) = 5 more articles fit
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_moreArticlesTextNegativeReturnsNull...
-DEBUG (17:17): moreArticlesText(5, 10) = null
+DEBUG (17:31): moreArticlesText(5, 10) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInsideFirstReturnsZero...
-DEBUG (17:17): blockAt(30, ...) = 0
+DEBUG (17:31): blockAt(30, ...) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInsideSecondReturnsOne...
-DEBUG (17:17): blockAt(80, ...) = 1
+DEBUG (17:31): blockAt(80, ...) = 1
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtInGapReturnsNull...
-DEBUG (17:17): blockAt(60 in gap) = null
+DEBUG (17:31): blockAt(60 in gap) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtPastEndReturnsNull...
-DEBUG (17:17): blockAt(9999 past end) = null
+DEBUG (17:31): blockAt(9999 past end) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtNegativeReturnsNull...
-DEBUG (17:17): blockAt(-5) = null
+DEBUG (17:31): blockAt(-5) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test resultsLayout_blockAtEmptyArrayReturnsNull...
-DEBUG (17:17): blockAt(0, []) = null
+DEBUG (17:31): blockAt(0, []) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordAtCenterEqualsDiameter...
-DEBUG (17:17): safeChordWidth(195, 0) = 390
+DEBUG (17:31): safeChordWidth(195, 0) = 390
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordShrinksOffCenter...
-DEBUG (17:17): safeChordWidth(195, 100) = 334
+DEBUG (17:31): safeChordWidth(195, 100) = 334
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordAtRadiusIsZero...
-DEBUG (17:17): safeChordWidth(195, 195) = 0
+DEBUG (17:31): safeChordWidth(195, 195) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordPastRadiusIsZero...
-DEBUG (17:17): safeChordWidth(195, 200) = 0
+DEBUG (17:31): safeChordWidth(195, 200) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_chordNegativeDyMirrorsPositive...
-DEBUG (17:17): safeChordWidth(195, -100) = 334
+DEBUG (17:31): safeChordWidth(195, -100) = 334
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_minSafeYForKnownWidth...
-DEBUG (17:17): minSafeY(195, 280) = 60
+DEBUG (17:31): minSafeY(195, 280) = 60
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test safeArea_minSafeYWiderThanDiameter...
-DEBUG (17:17): minSafeY(195, 500) = 195
+DEBUG (17:31): minSafeY(195, 500) = 195
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test lpw_centerEqualsFullDiameterMinusPadding...
-DEBUG (17:17): linePaddedWidth(208, 208, 25) = 366
+DEBUG (17:31): linePaddedWidth(208, 208, 25) = 366
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test lpw_offCenterReducesByChord...
-DEBUG (17:17): linePaddedWidth(208, 108, 25) = 314
+DEBUG (17:31): linePaddedWidth(208, 108, 25) = 314
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test lpw_clampsToZeroAtEdge...
-DEBUG (17:17): linePaddedWidth(208, 0, 25) = 0
+DEBUG (17:31): linePaddedWidth(208, 0, 25) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test lpw_clampsToZeroWhenPaddingExceedsChord...
-DEBUG (17:17): linePaddedWidth(208, 1, 25) = 0
+DEBUG (17:31): linePaddedWidth(208, 1, 25) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test lpw_symmetricAboveBelowCenter...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test lpw_realWatchRadius...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_emptyQueryReturnsTopByPopularity...
-DEBUG (17:17): empty-query size=3 ids=[b,c,a]
+DEBUG (17:31): empty-query size=3 ids=[b,c,a]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_emptyQueryCapsAtTopK...
-DEBUG (17:17): 60-articles empty-query size=50
+DEBUG (17:31): 60-articles empty-query size=50
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_emptyArticlesReturnsEmpty...
-DEBUG (17:17): empty-articles size=0
+DEBUG (17:31): empty-articles size=0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_prefixMatchOnly...
-DEBUG (17:17): prefix-ש size=2 ids=[sh,sb]
+DEBUG (17:31): prefix-ש size=2 ids=[sh,sb]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_substringNonPrefixIsTier2...
-DEBUG (17:17): substring-�?ו size=1
+DEBUG (17:31): substring-�?ו size=1
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_prefixBeforeSubstring...
-DEBUG (17:17): prefix-vs-sub size=3 ids=[lover,love,alove]
+DEBUG (17:31): prefix-vs-sub size=3 ids=[lover,love,alove]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_popularityWithinTier...
-DEBUG (17:17): popularity ids=[high,low]
+DEBUG (17:31): popularity ids=[high,low]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_titleStableTiebreakOnPopularityTie...
-DEBUG (17:17): tiebreak ids=[a,z]
+DEBUG (17:31): tiebreak ids=[a,z]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_noMatchesReturnsEmpty...
-DEBUG (17:17): no-match size=0
+DEBUG (17:31): no-match size=0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_hebrewSubstringMatch...
-DEBUG (17:17): hebrew-prefix size=1 ids=[torah]
+DEBUG (17:31): hebrew-prefix size=1 ids=[torah]
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesEmptyQueryReturnsArraySize...
-DEBUG (17:17): totalMatches('', size=7) = 7
+DEBUG (17:31): totalMatches('', size=7) = 7
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesCountsExactly...
-DEBUG (17:17): totalMatches('ש', 4 mixed) = 3
+DEBUG (17:31): totalMatches('ש', 4 mixed) = 3
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesEmptyArticlesReturnsZero...
-DEBUG (17:17): totalMatches('foo', []) = 0
+DEBUG (17:31): totalMatches('foo', []) = 0
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeStripsAsciiDoubleQuote...
-DEBUG (17:17): normalize('שב\"ק')='שבק' (want 'שבק')
+DEBUG (17:31): normalize('שב\"ק')='שבק' (want 'שבק')
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeStripsAsciiSingleQuote...
-DEBUG (17:17): normalize(\"ש'�?\")='ש�?' (want 'ש�?')
+DEBUG (17:31): normalize(\"ש'�?\")='ש�?' (want 'ש�?')
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeReplacesAsciiHyphenWithSpace...
-DEBUG (17:17): normalize('שיר-השירי�?')='שיר השירי�?' (want 'שיר השירי�?')
+DEBUG (17:31): normalize('שיר-השירי�?')='שיר השירי�?' (want 'שיר השירי�?')
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeAllThreeChars...
-DEBUG (17:17): normalize('ש\"י-עגנו�?')='שי עגנו�?' (want 'שי עגנו�?')
+DEBUG (17:31): normalize('ש\"י-עגנו�?')='שי עגנו�?' (want 'שי עגנו�?')
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeEmptyReturnsEmpty...
-DEBUG (17:17): normalize('')=''
+DEBUG (17:31): normalize('')=''
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeIdempotent...
-DEBUG (17:17): once='שי עגנו�?' twice='שי עגנו�?'
+DEBUG (17:31): once='שי עגנו�?' twice='שי עגנו�?'
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_rankMatchesTitleIgnoringQuotes...
-DEBUG (17:17): rank('שבק', שב\"ק) size=1
+DEBUG (17:31): rank('שבק', שב\"ק) size=1
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_rankMatchesHyphenAsSpace...
-DEBUG (17:17): rank('שיר השירי�?', שיר-השירי�?-ה�?�?�?) size=1
+DEBUG (17:31): rank('שיר השירי�?', שיר-השירי�?-ה�?�?�?) size=1
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_rankPreservesDisplayedTitleWithPunctuation...
-DEBUG (17:17): preserved-title='שב\"ק'
+DEBUG (17:31): preserved-title='שב\"ק'
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_rankIgnoresBodyKey...
-DEBUG (17:17): rank('�?ברה�?', body-only article) size=0 (want 0)
+DEBUG (17:31): rank('�?ברה�?', body-only article) size=0 (want 0)
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_totalMatchesIgnoresBodyKey...
-DEBUG (17:17): totalMatches('�?ברה�?', mixed with :body) = 1 (want 1)
+DEBUG (17:31): totalMatches('�?ברה�?', mixed with :body) = 1 (want 1)
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test search_normalizeFastPathReturnsIdenticalString...
-DEBUG (17:17): normalize('ש�?ו�? ע�?יכ�?')='ש�?ו�? ע�?יכ�?' equals=true
+DEBUG (17:31): normalize('ש�?ו�? ע�?יכ�?')='ש�?ו�? ע�?יכ�?' equals=true
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_helloIsHebrew...
-DEBUG (17:17): Strings.hello() = 'ש�?ו�?'
+DEBUG (17:31): Strings.hello() = 'ש�?ו�?'
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_helloCharCount...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_hebrewLiteralRoundtripsThroughStorage...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleStartsWithH1...
-DEBUG (17:17): sampleArticle prefix: '# ש�?ו�? הי�?...'
+DEBUG (17:31): sampleArticle prefix: '# ש�?ו�? הי�?...'
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleHasH4...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleIsMultiline...
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test strings_sampleArticleHasManyLines...
-DEBUG (17:17): newline count = 48
+DEBUG (17:31): newline count = 48
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test updateCheck_usesImmediateTransition...
-DEBUG (17:17): transitionToKeyboard() = 0 (SLIDE_IMMEDIATE = 0)
+DEBUG (17:31): transitionToKeyboard() = 0 (SLIDE_IMMEDIATE = 0)
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_insideFirstWord...
-DEBUG (17:17): findWordPx(285) = abc
+DEBUG (17:31): findWordPx(285) = abc
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_insideMiddleWord...
-DEBUG (17:17): findWordPx(245) = def
+DEBUG (17:31): findWordPx(245) = def
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_insideLastWord...
-DEBUG (17:17): findWordPx(205, last word) = ghi
+DEBUG (17:31): findWordPx(205, last word) = ghi
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_onSpaceSnapsToPreviousWord...
-DEBUG (17:17): findWordPx(265 on space) = abc
+DEBUG (17:31): findWordPx(265 on space) = abc
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_pastRightEdge...
-DEBUG (17:17): findWordPx(305 past right) = null
+DEBUG (17:31): findWordPx(305 past right) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_pastLeftEdge...
-DEBUG (17:17): findWordPx(185 past left) = null
+DEBUG (17:31): findWordPx(185 past left) = null
 PASS
-M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (553)
+M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (554)
 ------------------------------------------------------------------------------
 Executing test wordHitTest_emptyWords...
-DEBUG (17:17): findWordPx(empty words) = null
+DEBUG (17:31): findWordPx(empty words) = null
 PASS
 
 ==============================================================================
