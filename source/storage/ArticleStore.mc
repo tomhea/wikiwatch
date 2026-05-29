@@ -24,4 +24,38 @@ module ArticleStore {
         Application.Storage.setValue(KEY_PREFIX + id, body);
         return true;
     }
+
+    // M8: write a whole chunk's worth of articles to Storage in one call —
+    // one Storage key per article (article:<id>), preserving M7's fast direct
+    // read path. Each setValue is wrapped in try/catch so a single storage-
+    // full error doesn't abort the rest of the batch. Returns the count
+    // successfully written.
+    //
+    // `articles` is a String-keyed Dictionary { "<id>" => "<body>", ... } as
+    // it arrives from the parsed chunk JSON. (OOM is uncatchable in Monkey C,
+    // so the try/catch here guards Storage exceptions, not heap exhaustion —
+    // the bodies are already resident, so writing them allocates only the key
+    // string.)
+    function putBatch(articles as Dictionary) as Number {
+        var written = 0;
+        var ids = articles.keys();
+        for (var i = 0; i < ids.size(); i++) {
+            var id = ids[i] as String;
+            var body = articles[id] as String;
+            try {
+                // R4: putBody applies the freeMemory guard per article. The
+                // bodies are already resident (they arrived in the parsed
+                // chunk dict), so the only fresh allocation is the key String.
+                if (putBody(id, body)) {
+                    written++;
+                }
+            } catch (e) {
+                // A single Storage-full / serialization error must not abort
+                // the rest of the batch. OOM itself is uncatchable, but
+                // Storage exceptions (quota) are catchable here.
+                System.println("M8 putBatch: setValue failed for " + id);
+            }
+        }
+        return written;
+    }
 }

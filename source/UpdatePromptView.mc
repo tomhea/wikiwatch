@@ -77,9 +77,11 @@ class UpdatePromptDelegate extends WatchUi.BehaviorDelegate {
         var settings = System.getDeviceSettings();
         var h = settings.screenHeight;
         if (y < h / 2) {
-            System.println("M7 update prompt: YES — wiping + reinstalling");
-            Manifest.wipeArticles();
-            var iv = new InstallView();
+            // M8: don't wipe here. InstallView(false) re-fetches the manifest
+            // and only wipes + begins (InstallState) AFTER a successful parse,
+            // so a failed update fetch leaves the old corpus intact.
+            System.println("M8 update prompt: YES — starting chunked reinstall");
+            var iv = new InstallView(false);
             WatchUi.switchToView(iv, new InstallDelegate(), WatchUi.SLIDE_LEFT);
         } else {
             System.println("M7 update prompt: NO — continuing with stale corpus");

@@ -33,3 +33,37 @@ function articleStore_putBodyOverwrites(logger as Logger) as Boolean {
     logger.debug("after-overwrite = '" + back + "'");
     return back != null && back.equals("second");
 }
+
+// --- M8: putBatch (chunk unpacking into per-article keys) ---
+
+(:test)
+function articleStore_putBatchWritesEach(logger as Logger) as Boolean {
+    Application.Storage.deleteValue("article:b1");
+    Application.Storage.deleteValue("article:b2");
+    var n = ArticleStore.putBatch({ "b1" => "body one", "b2" => "body two" });
+    var a = ArticleStore.bodyOf("b1");
+    var b = ArticleStore.bodyOf("b2");
+    Application.Storage.deleteValue("article:b1");
+    Application.Storage.deleteValue("article:b2");
+    logger.debug("putBatch n=" + n + " a=" + a + " b=" + b);
+    return n == 2
+        && a != null && a.equals("body one")
+        && b != null && b.equals("body two");
+}
+
+(:test)
+function articleStore_putBatchEmptyReturnsZero(logger as Logger) as Boolean {
+    var n = ArticleStore.putBatch({});
+    logger.debug("putBatch({}) = " + n);
+    return n == 0;
+}
+
+(:test)
+function articleStore_putBatchOverwrites(logger as Logger) as Boolean {
+    Application.Storage.deleteValue("article:ow");
+    ArticleStore.putBody("ow", "old");
+    ArticleStore.putBatch({ "ow" => "new" });
+    var back = ArticleStore.bodyOf("ow");
+    Application.Storage.deleteValue("article:ow");
+    return back != null && back.equals("new");
+}

@@ -1,0 +1,16 @@
+------------------------------------------------------------
+PASS  extractor::strips_infobox_table
+PASS  extractor::strips_navbox_table
+PASS  extractor::preserves_link_text
+PASS  extractor::converts_ul_to_dash_list
+PASS  extractor::decodes_nbsp_entity
+PASS  extractor::emits_h1_first_line
+PASS  extractor::truncates_at_paragraph_boundary
+PASS  pack::groups_articles_into_chunks
+PASS  pack::chunk_index_matches_manifest
+PASS  manifest::sums_total_bytes_correctly
+PASS  manifest::popularity_in_0_100
+PASS  manifest::version_bumps_on_change
+------------------------------------------------------------
+Ran 12 corpus-tooling tests: passed=12 failed=0
+TOOLING TESTS OK
