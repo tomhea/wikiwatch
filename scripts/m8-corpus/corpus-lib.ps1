@@ -77,6 +77,88 @@ function Remove-BalancedTables {
     return $Html
 }
 
+# Flatten one data table's inner HTML into "#### טבלה:" + one line per row,
+# cells space-joined. Merged cells are written for EVERY grid position they
+# cover: colspan repeats the value across columns, rowspan carries it down into
+# the following rows' matching column (standard HTML table-grid reconstruction).
+function Convert-OneTable {
+    param([string]$Inner)
+    $rows = [regex]::Matches($Inner, '(?is)<tr\b[^>]*>(.*?)</tr>')
+    $carry = @{}   # absolute column index -> @{ text=...; left=... }
+    $out = New-Object System.Collections.ArrayList
+    foreach ($rm in $rows) {
+        $cells = [regex]::Matches($rm.Groups[1].Value, '(?is)<t[dh]\b([^>]*)>(.*?)</t[dh]>')
+        $cols = New-Object System.Collections.ArrayList
+        $col = 0
+        $ci = 0
+        while ($true) {
+            $carryAhead = @($carry.Keys | Where-Object { $_ -ge $col -and $carry[$_].left -gt 0 }).Count -gt 0
+            if (-not ($ci -lt $cells.Count -or $carryAhead)) { break }
+            if ($carry.ContainsKey($col) -and $carry[$col].left -gt 0) {
+                [void]$cols.Add($carry[$col].text)
+                $carry[$col].left--
+                if ($carry[$col].left -le 0) { [void]$carry.Remove($col) }
+                $col++
+            } elseif ($ci -lt $cells.Count) {
+                $attrs = $cells[$ci].Groups[1].Value
+                $text = [regex]::Replace($cells[$ci].Groups[2].Value, '(?s)<[^>]+>', ' ')
+                $text = ($text -replace '\s+', ' ').Trim()
+                $ci++
+                $cs = 1; $rs = 1
+                $m1 = [regex]::Match($attrs, '(?i)colspan="?(\d+)'); if ($m1.Success) { $cs = [int]$m1.Groups[1].Value }
+                $m2 = [regex]::Match($attrs, '(?i)rowspan="?(\d+)'); if ($m2.Success) { $rs = [int]$m2.Groups[1].Value }
+                if ($cs -lt 1) { $cs = 1 }; if ($rs -lt 1) { $rs = 1 }
+                for ($k = 0; $k -lt $cs; $k++) {
+                    [void]$cols.Add($text)
+                    if ($rs -gt 1) { $carry[$col] = @{ text = $text; left = ($rs - 1) } }
+                    $col++
+                }
+            } else { break }
+        }
+        if ($cols.Count -gt 0) { [void]$out.Add(($cols -join ' ')) }
+    }
+    if ($out.Count -eq 0) { return ' ' }
+    # h4 ("smallest header size") label + rows; padded with blank lines so it
+    # detaches from surrounding prose.
+    return "`n`n#### טבלה:`n" + ($out -join "`n") + "`n`n"
+}
+
+# Process every remaining <table> (infobox/navbox already removed): flatten the
+# real DATA tables (Wikipedia marks them class="wikitable") to "#### טבלה:" +
+# rows, and DROP everything else — class-less styled hatnote/notice boxes,
+# DiagramTable, etc. — which are layout noise, not content. Depth-counts
+# <table>/</table> so a top-level table is handled as a whole.
+function Convert-Tables {
+    param([string]$Html)
+    $open = [regex]'(?is)<table\b[^>]*>'
+    $tag  = [regex]'(?is)<(/?)table\b[^>]*>'
+    $from = 0
+    while ($true) {
+        $m = $open.Match($Html, $from)
+        if (-not $m.Success) { break }
+        $start = $m.Index
+        $depth = 0; $end = -1; $innerStart = $m.Index + $m.Length; $innerEnd = -1
+        $t = $tag.Match($Html, $start)
+        while ($t.Success) {
+            if ($t.Groups[1].Value -eq '/') {
+                $depth--
+                if ($depth -le 0) { $end = $t.Index + $t.Length; $innerEnd = $t.Index; break }
+            } else { $depth++ }
+            $t = $t.NextMatch()
+        }
+        if ($end -lt 0) { break }   # unbalanced — leave as-is to avoid a loop
+        if ($m.Value -match '(?i)\bwikitable\b') {
+            $inner = $Html.Substring($innerStart, $innerEnd - $innerStart)
+            $flat = Convert-OneTable -Inner $inner
+        } else {
+            $flat = ' '   # notice / layout / diagram table — drop
+        }
+        $Html = $Html.Substring(0, $start) + $flat + $Html.Substring($end)
+        $from = $start + $flat.Length
+    }
+    return $Html
+}
+
 # Replace each <math>...</math> with its cleaned LaTeX annotation, inline.
 # MediaWiki Parsoid renders math as a MathML presentation tree (<mi>/<mn>/<mo>
 # — which a naive tag-strip explodes into one line per token) PLUS a
@@ -193,6 +275,10 @@ function Convert-WikiHtmlToMarkdown {
     #     fallback that follows each <math> is left for the tag-strip to remove.
     $s = Convert-MathElements -Html $s
 
+    # 3c. Flatten remaining (data) tables to "#### טבלה:" + rows, BEFORE the
+    #     generic tag-strip (which would otherwise jumble <tr>/<td> together).
+    $s = Convert-Tables -Html $s
+
     # 4. Structural conversions BEFORE stripping the remaining tags.
     $s = [regex]::Replace($s, '(?is)<li\b[^>]*>(.*?)</li>', "`n- `$1`n")
     $s = [regex]::Replace($s, '(?is)</?(ul|ol)\b[^>]*>', "`n")
@@ -229,6 +315,14 @@ function Convert-WikiHtmlToMarkdown {
     $s = ($trimmed -join "`n")
     $s = [regex]::Replace($s, "(`n){3,}", "`n`n")
     $s = $s.Trim()
+
+    # 7b. Tighten block spacing (the reader gives every blank line vertical gap):
+    #     - consecutive bullets get a single newline, not a blank line between;
+    #     - sub-headers (## / ### / ####) sit directly above their first body
+    #       line (single newline after), not separated by a blank line. The
+    #       initial "# <title>" is added in step 8 and keeps its blank line.
+    $s = [regex]::Replace($s, "(?m)^(- .+)`n`n(?=- )", "`$1`n")
+    $s = [regex]::Replace($s, "(?m)^(#{2,4} .+)`n`n", "`$1`n")
 
     # 8. Prepend the H1 title.
     $body = "# $Title`n`n$s"
