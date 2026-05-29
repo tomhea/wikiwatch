@@ -225,6 +225,20 @@ function Remove-InvisibleControls {
     return [regex]::Replace($Text, $pattern, '')
 }
 
+# Strip Hebrew nikud + cantillation (the combining vowel/te'amim marks), leaving
+# the base consonants — Hebrew Wikipedia prose is normally read unpointed, and
+# the marks bloat the text + don't all render on the watch. Combining marks
+# only (Unicode category Mn in the Hebrew block): 0591-05BD, 05BF, 05C1, 05C2,
+# 05C4, 05C5, 05C7. Punctuation/connectors are KEPT: 05BE maqaf (־), 05C0 paseq,
+# 05C3 sof pasuq, 05C6 nun hafukha, and geresh/gershayim (05F3/05F4).
+function Remove-Nikud {
+    param([string]$Text)
+    $r = [char]0x0591 + '-' + [char]0x05BD +
+         [char]0x05BF + [char]0x05C1 + [char]0x05C2 +
+         [char]0x05C4 + [char]0x05C5 + [char]0x05C7
+    return [regex]::Replace($Text, '[' + $r + ']', '')
+}
+
 function Convert-HtmlEntities {
     param([string]$Text)
     $s = $Text
@@ -302,9 +316,11 @@ function Convert-WikiHtmlToMarkdown {
     $s = $s -replace '[ⓘⒾ]', ''
 
     # 6c. Strip invisible bidi/zero-width controls (the watch does its own RTL),
-    #     and normalise sub/superscript digits to ASCII. Nikud is preserved.
+    #     normalise sub/superscript digits to ASCII, and strip Hebrew nikud /
+    #     cantillation (keep the base consonants + maqaf).
     $s = Remove-InvisibleControls $s
     $s = Convert-SubSuperscripts $s
+    $s = Remove-Nikud $s
 
     # 7. Whitespace cleanup: collapse intra-line runs, trim each line, collapse
     #    blank-line runs to a single blank line.
