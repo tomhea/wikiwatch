@@ -5,3 +5,6 @@ bin/
 ruvector.db
 .vscode/
 *.log
+
+# M8 corpus-pipeline intermediates (regenerated from the ZIM on the dev host).
+scripts/m8-corpus/cached/

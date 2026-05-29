@@ -1,0 +1,16 @@
+------------------------------------------------------------
+FAIL  extractor::strips_infobox_table
+FAIL  extractor::strips_navbox_table
+FAIL  extractor::preserves_link_text
+FAIL  extractor::converts_ul_to_dash_list
+FAIL  extractor::decodes_nbsp_entity
+FAIL  extractor::emits_h1_first_line
+FAIL  extractor::truncates_at_paragraph_boundary
+FAIL  pack::groups_articles_into_chunks  (The property 'Count' cannot be found on this object. Verify that the property exists.)
+FAIL  pack::chunk_index_matches_manifest  (Cannot index into a null array.)
+FAIL  manifest::sums_total_bytes_correctly
+FAIL  manifest::popularity_in_0_100
+FAIL  manifest::version_bumps_on_change
+------------------------------------------------------------
+Ran 12 corpus-tooling tests: passed=0 failed=12
+TOOLING TESTS FAILED

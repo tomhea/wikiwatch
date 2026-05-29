@@ -2,10 +2,10 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.Test;
 
-// M7 tests for Downloader.parseManifestResponse.
+// M7/M8 tests for Downloader's pure seams: parseManifestResponse (incl. the
+// M8 chunk fields) + chunkUrl / _substituteChunkIndex.
 //
-// This is the only pure-testable seam in the network module. The actual
-// HTTP calls (fetchManifest / fetchArticle / installAll) aren't unit-
+// The side-effecting HTTP calls (fetchManifest / fetchChunk) aren't unit-
 // testable — they're verified via R2 sim launch + real-watch sideload.
 
 (:test)
@@ -123,4 +123,46 @@ function downloader_anyConnectedAllDisconnectedReturnsFalse(logger as Logger) as
     var r = Downloader._anyConnected(ci, false);
     logger.debug("all-disconnected -> " + r);
     return r == false;
+}
+
+
+// --- M8: chunk URL building + extended manifest parse ---
+
+(:test)
+function downloader_chunkUrlSubstitutesIndex(logger as Logger) as Boolean {
+    var u = Downloader.chunkUrl("/chunk/{n}.json", 42);
+    logger.debug("chunkUrl(42) = " + u);
+    return u.equals(Downloader.BASE_URL + "/chunk/42.json");
+}
+
+(:test)
+function downloader_chunkUrlZero(logger as Logger) as Boolean {
+    var u = Downloader.chunkUrl("/chunk/{n}.json", 0);
+    return u.equals(Downloader.BASE_URL + "/chunk/0.json");
+}
+
+(:test)
+function downloader_parseManifestReadsChunkFields(logger as Logger) as Boolean {
+    var data = {
+        "version" => 5, "totalBytes" => 100,
+        "chunkCount" => 100, "chunkUriPattern" => "/chunk/{n}.json",
+        "articles" => []
+    };
+    var r = Downloader.parseManifestResponse(200, data);
+    if (r[:ok] != true) { return false; }
+    var m = r[:manifest] as Dictionary;
+    logger.debug("chunkCount=" + m[:chunkCount] + " pattern=" + m[:chunkUriPattern]);
+    return (m[:chunkCount] as Number) == 100
+        && (m[:chunkUriPattern] as String).equals("/chunk/{n}.json");
+}
+
+(:test)
+function downloader_parseManifestDefaultsChunkFields(logger as Logger) as Boolean {
+    // An M7-era manifest (no chunk fields) must still parse, with defaults.
+    var data = { "version" => 4, "articles" => [] };
+    var r = Downloader.parseManifestResponse(200, data);
+    if (r[:ok] != true) { return false; }
+    var m = r[:manifest] as Dictionary;
+    return (m[:chunkCount] as Number) == 0
+        && (m[:chunkUriPattern] as String).equals("/chunk/{n}.json");
 }

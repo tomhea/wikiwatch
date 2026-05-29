@@ -2,7 +2,7 @@ import Toybox.Communications;
 import Toybox.Lang;
 import Toybox.System;
 
-// M7 network layer — fetches the manifest + per-article bodies from
+// M7/M8 network layer — fetches the manifest + corpus chunks from
 // wikiwatch.tomhe.app/ on first launch and on user-confirmed updates.
 //
 // Lives in source/net/ (not source/models/) because it imports
@@ -10,14 +10,20 @@ import Toybox.System;
 //
 // API surface:
 //   parseManifestResponse(rc, data) -> {ok, manifest|error}     PURE, tested
+//   _substituteChunkIndex / chunkUrl                             PURE, tested
 //   fetchManifest(callback)                                      side-effecting
-//   fetchArticle(id, callback)                                   side-effecting
+//   fetchChunk(pattern, n, callback)                             side-effecting
 //
-// Server contract (see docs/m7-plan.md):
-//   GET /manifest.json -> { version, totalBytes, articles: [{id,title,popularity}] }
+// Server contract (M8, see docs/m8-plan.md):
+//   GET /manifest.json -> { version, totalBytes, chunkCount, chunkUriPattern,
+//                           articles: [{id,title,popularity}] }
 //                        Content-Type: application/json
-//   GET /article/<id>.txt -> UTF-8 Hebrew Markdown body
-//                            Content-Type: text/plain; charset=utf-8
+//   GET /chunk/<N>.json -> { chunk: N, articles: { "<id>": "<body>", ... } }
+//                          Content-Type: application/json  (install-time only)
+//
+// M8 removed the M7 per-article GET /article/<id>.txt endpoint — all body
+// data now arrives packed in chunks during install + is unpacked into the
+// same per-article Storage layout.
 //
 // Sim caveat: BLE proxy returns RC=-300/-400 for most endpoints when no
 // phone is paired. Real-watch sideload is the truth source for R2.
@@ -83,6 +89,11 @@ module Downloader {
         }
         var totalBytes = data["totalBytes"];
         if (totalBytes == null) { totalBytes = 0; }
+        // M8: chunked-install fields, extracted via a helper so the defaulting
+        // logic is exercised by the parse tests.
+        var chunkFields = _chunkFieldsFrom(data);
+        var chunkCount = chunkFields[:chunkCount];
+        var chunkUriPattern = chunkFields[:chunkUriPattern];
         // Convert each article entry from String-keyed to Symbol-keyed.
         var arts = rawArts as Array<Dictionary>;
         var symArts = [];
@@ -97,9 +108,11 @@ module Downloader {
         return {
             :ok => true,
             :manifest => {
-                :version    => version,
-                :totalBytes => totalBytes,
-                :articles   => symArts
+                :version         => version,
+                :totalBytes      => totalBytes,
+                :chunkCount      => chunkCount,
+                :chunkUriPattern => chunkUriPattern,
+                :articles        => symArts
             }
         };
     }
@@ -121,17 +134,49 @@ module Downloader {
         );
     }
 
-    // Fire-and-forget per-article fetch. Callback signature:
-    //   callback.invoke(responseCode as Number, body as String?)
-    function fetchArticle(id as String, callback as Lang.Method) as Void {
-        var url = BASE_URL + "/article/" + id + ".txt";
-        System.println("M7 net: GET " + url);
+    // M8: extract the chunked-install fields from a manifest JSON dict,
+    // defaulting for M7-era manifests that lack them (chunkCount=0 means "no
+    // chunks"; the conventional pattern keeps the field a usable String).
+    function _chunkFieldsFrom(data as Dictionary) as Dictionary {
+        var chunkCount = data["chunkCount"];
+        if (chunkCount == null) { chunkCount = 0; }
+        var chunkUriPattern = data["chunkUriPattern"];
+        if (chunkUriPattern == null) { chunkUriPattern = "/chunk/{n}.json"; }
+        return { :chunkCount => chunkCount, :chunkUriPattern => chunkUriPattern };
+    }
+
+    // M8: pure URL builder. The manifest carries a `chunkUriPattern` like
+    // "/chunk/{n}.json"; substitute {n} with the chunk index. Pure +
+    // testable (no network). If the pattern lacks the {n} marker (malformed
+    // manifest), fall back to appending the index.
+    function _substituteChunkIndex(pattern as String, n as Number) as String {
+        var marker = "{n}";
+        var idx = pattern.find(marker);
+        if (idx == null) {
+            // Malformed pattern (no {n}) — fall back to appending the index.
+            return pattern + n.toString();
+        }
+        var before = pattern.substring(0, idx) as String;
+        var after = pattern.substring(idx + marker.length(), pattern.length()) as String;
+        return before + n.toString() + after;
+    }
+
+    function chunkUrl(pattern as String, n as Number) as String {
+        return BASE_URL + _substituteChunkIndex(pattern, n);
+    }
+
+    // M8: fire-and-forget chunk fetch (install-time only). Callback signature:
+    //   callback.invoke(responseCode as Number, data as Dictionary?)
+    // where data is the parsed chunk JSON { "chunk": N, "articles": {...} }.
+    function fetchChunk(pattern as String, n as Number, callback as Lang.Method) as Void {
+        var url = chunkUrl(pattern, n);
+        System.println("M8 net: GET " + url);
         Communications.makeWebRequest(
             url,
             {},
             {
                 :method => Communications.HTTP_REQUEST_METHOD_GET,
-                :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_TEXT_PLAIN
+                :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
             },
             callback
         );

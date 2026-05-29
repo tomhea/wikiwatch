@@ -1,0 +1,1171 @@
+BUILD SUCCESSFUL
+WARNING: C:\Users\tomhe\Documents\Garmin\wikiwatch\manifest.xml: No supported languages are defined. Language-specific resources will be ignored unless language support is added to the manifest file.
+WARNING: venu2: The launcher icon (24x24) isn't compatible with the specified launcher icon size of the device 'venu2' (70x70). The image will be scaled to the target size.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:26: Member variable '_chunkCount' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:27: Member variable '_maxInFlight' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:28: Member variable '_received' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:29: Member variable '_inFlight' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:30: Member variable '_failed' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:31: Member variable '_attempts' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\InstallController.mc:32: Member variable '_articlesWritten' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\tests\test_InstallView_state.mc:43,4: Local variable 'f' is not used.
+WARNING: venu2: C:\Users\tomhe\Documents\Garmin\wikiwatch\source\tests\test_InstallView_state.mc:46,4: Local variable 'f2' is not used.
+------------------------------------------------------------------------------
+Executing test articleStore_putGetRoundtrip...
+DEBUG (11:40): put=true back len=26
+PASS
+------------------------------------------------------------------------------
+Executing test articleStore_bodyOfMissingReturnsNull...
+DEBUG (11:40): bodyOf('does-not-exist') = null
+PASS
+------------------------------------------------------------------------------
+Executing test articleStore_putBodyOverwrites...
+DEBUG (11:40): after-overwrite = 'second'
+PASS
+------------------------------------------------------------------------------
+Executing test articleStore_putBatchWritesEach...
+DEBUG (11:40): putBatch n=0 a=null b=null
+FAIL
+------------------------------------------------------------------------------
+Executing test articleStore_putBatchEmptyReturnsZero...
+DEBUG (11:40): putBatch({}) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test articleStore_putBatchOverwrites...
+FAIL
+------------------------------------------------------------------------------
+Executing test batteryGate_gatesBelow10NotCharging...
+DEBUG (11:40): shouldGate(9%,unplugged) = false
+FAIL
+------------------------------------------------------------------------------
+Executing test batteryGate_allowsAt10NotCharging...
+PASS
+------------------------------------------------------------------------------
+Executing test batteryGate_allowsLowWhenCharging...
+PASS
+------------------------------------------------------------------------------
+Executing test batteryGate_pausesBelow5NotCharging...
+DEBUG (11:40): shouldPause(4%,unplugged) = false
+FAIL
+------------------------------------------------------------------------------
+Executing test batteryGate_doesNotPauseAt5...
+PASS
+------------------------------------------------------------------------------
+Executing test batteryGate_doesNotPauseWhenCharging...
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_noPreviousTapReturnsFalse...
+DEBUG (11:40): noPrev: isDoubleTap(0,0,100,50,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_timeTooFarApartReturnsFalse...
+DEBUG (11:40): timeFar: isDoubleTap(100,50,600,50,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_yTooFarApartReturnsFalse...
+DEBUG (11:40): yFar: isDoubleTap(100,50,200,250,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_withinBothWindowsReturnsTrue...
+DEBUG (11:40): inWindow: isDoubleTap(100,50,250,70,300,80) = true
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_negativeTimeDeltaReturnsFalse...
+DEBUG (11:40): negDelta: isDoubleTap(500,50,100,50,300,80) = false
+PASS
+------------------------------------------------------------------------------
+Executing test doubleTap_intervalBoundaryIsInclusive...
+DEBUG (11:40): boundary: at=400ms -> true, past=401ms -> false
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestSuccess...
+DEBUG (11:40): parse 200 + valid -> ok=true
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestRejectsBadRc...
+DEBUG (11:40): parse 404 -> ok=false error=http rc=404
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestRejectsNullData...
+DEBUG (11:40): parse 200 + null -> ok=false
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestRejectsMissingVersion...
+DEBUG (11:40): parse 200 + no-version -> ok=false
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestRejectsMissingArticles...
+DEBUG (11:40): parse 200 + no-articles -> ok=false
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestNormalizesKeys...
+DEBUG (11:40): symbol id=x title=X string id=null
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_anyConnectedFallsBackToPhoneOnly...
+DEBUG (11:40): null+true=true null+false=false
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_anyConnectedDetectsConnected...
+DEBUG (11:40): phone-connected-only -> true
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_anyConnectedAllDisconnectedReturnsFalse...
+DEBUG (11:40): all-disconnected -> false
+PASS
+------------------------------------------------------------------------------
+Executing test downloader_chunkUrlSubstitutesIndex...
+DEBUG (11:40): chunkUrl(42) = https://wikiwatch.tomhe.app/chunk/{n}.json
+FAIL
+------------------------------------------------------------------------------
+Executing test downloader_chunkUrlZero...
+FAIL
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestReadsChunkFields...
+DEBUG (11:40): chunkCount=-1 pattern=STUB
+FAIL
+------------------------------------------------------------------------------
+Executing test downloader_parseManifestDefaultsChunkFields...
+FAIL
+------------------------------------------------------------------------------
+Executing test inputbuf_appendToEmpty...
+DEBUG (11:40): append('', 'ש') = 'ש'
+PASS
+------------------------------------------------------------------------------
+Executing test inputbuf_appendHebrew...
+DEBUG (11:40): append('ש', '�?') = 'ש�?'
+PASS
+------------------------------------------------------------------------------
+Executing test inputbuf_appendSpace...
+DEBUG (11:40): append('ש', ' ') = 'ש '
+PASS
+------------------------------------------------------------------------------
+Executing test inputbuf_popLastFromTwoChars...
+DEBUG (11:40): popLast('ש�?') = 'ש'
+PASS
+------------------------------------------------------------------------------
+Executing test inputbuf_popLastFromEmpty...
+DEBUG (11:40): popLast('') = ''
+PASS
+------------------------------------------------------------------------------
+Executing test inputbuf_clearReturnsEmpty...
+DEBUG (11:40): clear('ש�?ו�?') = ''
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_sortedInsertIntoEmpty...
+DEBUG (11:40): insert 5 into [] -> []
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_sortedInsertKeepsOrder...
+DEBUG (11:40): insert 3 into [1,5] -> [1, 5]
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_sortedInsertNoDuplicate...
+DEBUG (11:40): insert dup 3 -> [1, 3, 5]
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_sortedInsertAtEnd...
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_firstMissingBasic...
+DEBUG (11:40): firstMissing([0,1,5],10) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_firstMissingAllPresent...
+DEBUG (11:40): firstMissing all present -> -1
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_firstMissingEmpty...
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_missingChunksBasic...
+DEBUG (11:40): missingChunks([0,1,5],7) -> []
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_missingChunksNoneLeft...
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_slotsToFillClamps...
+DEBUG (11:40): slots a=0 b=0 c=0
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_slotsToFillNeverNegative...
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_isCompleteTrue...
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_isCompleteFalse...
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_shouldInvalidateOnVersionBump...
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_shouldNotInvalidateSameVersion...
+PASS
+------------------------------------------------------------------------------
+Executing test installPlan_maxInFlightTwoWhenAmpleMemory...
+DEBUG (11:40): maxInFlight(500KB) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test installPlan_maxInFlightOneUnderPressure...
+DEBUG (11:40): maxInFlight(399KB) = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test resume_pickUpFromInstallChunksReceived...
+DEBUG (11:40): resume firstMissing = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test resume_skipsDownloadedChunks...
+DEBUG (11:40): missing after 50 = 0
+FAIL
+------------------------------------------------------------------------------
+Executing test resume_invalidatedByVersionBump...
+DEBUG (11:40): stale (local=0, remote=5) = false
+FAIL
+------------------------------------------------------------------------------
+Executing test resume_preservesCompletedChunksOnSameVersion...
+DEBUG (11:40): same-version stale=false preserved=0
+FAIL
+------------------------------------------------------------------------------
+Executing test state_completeAfterAllChunksReceived...
+FAIL
+------------------------------------------------------------------------------
+Executing test state_inProgressAfterFirstChunk...
+FAIL
+------------------------------------------------------------------------------
+Executing test state_persistedAcrossReload...
+DEBUG (11:40): persisted state=none ver=0 recv=[]
+FAIL
+------------------------------------------------------------------------------
+Executing test installState_initialIsNone...
+DEBUG (11:40): initial state = none
+PASS
+------------------------------------------------------------------------------
+Executing test installState_beginSetsInProgress...
+DEBUG (11:40): after begin(5): state=none ver=0
+FAIL
+------------------------------------------------------------------------------
+Executing test installState_markChunkReceivedPersists...
+DEBUG (11:40): received = []
+FAIL
+------------------------------------------------------------------------------
+Executing test installState_markChunkIdempotent...
+FAIL
+------------------------------------------------------------------------------
+Executing test installState_markCompleteSetsState...
+FAIL
+------------------------------------------------------------------------------
+Executing test installState_resetClearsEverything...
+PASS
+------------------------------------------------------------------------------
+Executing test installState_beginClearsPriorReceived...
+FAIL
+------------------------------------------------------------------------------
+Executing test install_capsInFlightAt2...
+DEBUG (11:40): fire1 = [] inFlight=-1
+FAIL
+------------------------------------------------------------------------------
+Executing test install_dropsToSerialUnderMemoryPressure...
+DEBUG (11:40): serial fire = []
+FAIL
+------------------------------------------------------------------------------
+Executing test install_setMaxInFlightRaisesCap...
+DEBUG (11:40): after raise = []
+FAIL
+------------------------------------------------------------------------------
+Executing test install_completesAfterAllChunksReceived...
+DEBUG (11:40): complete? false received=-1
+FAIL
+------------------------------------------------------------------------------
+Executing test install_notCompleteWhileInFlight...
+PASS
+------------------------------------------------------------------------------
+Executing test install_retriesFailedChunkUpTo3Times...
+DEBUG (11:40): fired 0 times, attempts=-1
+FAIL
+------------------------------------------------------------------------------
+Executing test install_continuesAfterChunkPermanentFailure...
+DEBUG (11:40): complete after perm-fail? false
+FAIL
+------------------------------------------------------------------------------
+Executing test install_handlesOutOfOrderResponses...
+DEBUG (11:40): OOO received=-1 written=-1
+FAIL
+------------------------------------------------------------------------------
+Executing test install_progressCountsArticlesNotChunks...
+DEBUG (11:40): articlesWritten = -1
+FAIL
+------------------------------------------------------------------------------
+Executing test install_resumeSeedsReceivedChunks...
+DEBUG (11:40): resume fire = [] receivedCount=-1
+FAIL
+------------------------------------------------------------------------------
+Executing test kbd_buttonsReturns10Wedges...
+DEBUG (11:40): buttons.size=10
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonZeroIsSpace...
+DEBUG (11:40): [0] label=_ type=symbol (533) angle=0
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonOneIsBackspace...
+DEBUG (11:40): [1] label=X type=symbol (537) angle=36
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonTwoIsAlefGroup...
+DEBUG (11:40): [2] label=�?בג type=symbol (519) letters=[�?, ב, ג] angle=72
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonEightIsQuadLetter...
+DEBUG (11:40): [8] letters=[ק, ר, ש, ת] angle=288
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonNineIsDigits...
+DEBUG (11:40): [9] label=0-9 type=symbol (530) letters.size=10
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonAtInsideAlefGroupReturnsIt...
+DEBUG (11:40): buttonAt(386,150)=�?בג type=symbol (519)
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonAtInsideHitHaloReturnsWedge...
+DEBUG (11:40): buttonAt(351,162)=�?בג angle=72
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonAtJustOutsideHaloReturnsNull...
+DEBUG (11:40): buttonAt(327,169) = null
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonAtNewWiderHaloReturnsWedge...
+DEBUG (11:40): buttonAt(336,166)=�?בג
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonAtCenterReturnsNull...
+DEBUG (11:40): buttonAt(208,208) = null
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonAtOffRingReturnsNull...
+DEBUG (11:40): buttonAt(0,0) = null
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonsLetterGroupReturnsThree...
+DEBUG (11:40): subButtons(�?בג).size=3
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonsLetterGroupFourReturnsFour...
+DEBUG (11:40): subButtons(קרשת).size=4
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonsDigitsReturnsTenAroundRing...
+DEBUG (11:40): subButtons(digits).size=10
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonAtInsideLetterExpansionReturnsLabel...
+DEBUG (11:40): subButtonAt(284,184) = ב
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonAtOutsideExpansionReturnsNull...
+DEBUG (11:40): subButtonAt(208,208) center = null
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonsForYudKafLamedHasFinalKaf...
+DEBUG (11:40): subButtons(יכ�?).size=4
+DEBUG (11:40): �? angle=180 rInner=146 rOuter=205
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonsForMemNunSamekhHasTwoFinals...
+DEBUG (11:40): subButtons(�?נס).size=5
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonAtInsideLevelTwoFinalReturnsLabel...
+DEBUG (11:40): subButtonAt(208,383) = �?
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_buttonsReturnsCachedReference...
+DEBUG (11:40): buttons()===buttons() ? true bLabel='M6_5_BTN_TEST_MARKER'
+PASS
+------------------------------------------------------------------------------
+Executing test kbd_subButtonsReturnsCachedReference...
+DEBUG (11:40): subButtons===subButtons ? true
+PASS
+------------------------------------------------------------------------------
+Executing test launchRouter_firstLaunchInstalls...
+DEBUG (11:40): first-launch route -> symbol (540)
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_firstLaunchNoNetwork...
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_firstLaunchLowBattery...
+DEBUG (11:40): first-launch low-batt -> symbol (540)
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_inProgressResumes...
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_inProgressLowBattery...
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_inProgressNoNetwork...
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_completeWithNetworkChecksUpdate...
+FAIL
+------------------------------------------------------------------------------
+Executing test launchRouter_completeNoNetworkKeyboard...
+PASS
+------------------------------------------------------------------------------
+Executing test launchRouter_lowBatteryDoesNotBlockExistingCorpus...
+DEBUG (11:40): complete+low-batt -> symbol (540)
+FAIL
+------------------------------------------------------------------------------
+Executing test layout_middleWidthM27Baseline...
+DEBUG (11:40): Layout.middleWidth(416, 25, 100) = 291
+PASS
+------------------------------------------------------------------------------
+Executing test layout_middleWidthDifferentScreen...
+DEBUG (11:40): Layout.middleWidth(400, 20, 80) = 300
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_nextBatchEndAdvancesByBatchSize...
+DEBUG (11:40): nextBatchEnd(0,50,12) = 12
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_nextBatchEndClampsAtTotal...
+DEBUG (11:40): nextBatchEnd(48,50,12) = 50
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_nextBatchEndIdempotentAtTotal...
+DEBUG (11:40): nextBatchEnd(50,50,12) = 50
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_isCompleteWhenCursorAtTotal...
+DEBUG (11:40): isComplete(50,50) = true
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_isNotCompleteWhenCursorBelowTotal...
+DEBUG (11:40): isComplete(40,50) = false
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_isScrollNearEndWithinLookahead...
+DEBUG (11:40): isScrollNearEnd(500,800,200,150) = true
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_isScrollNotNearEndWhenFar...
+DEBUG (11:40): isScrollNearEnd(100,2000,200,150) = false
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_scrollEndedBeforeLoadStarted...
+DEBUG (11:40): scrollEndedBeforeLoadStarted clampedScroll(9999,400,200) = 200
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_scrollEndedWhileLoadInProgress...
+DEBUG (11:40): scrollEndedWhileLoadInProgress before=200 after=200
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_clampedScrollNegativeBecomesZero...
+DEBUG (11:40): clampedScroll(-50,500,200) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_clampedScrollContentSmallerThanScreen...
+DEBUG (11:40): clampedScroll(50,100,200) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test layoutProgress_initialBatchIsBoundedForAnyBodyLength...
+DEBUG (11:40): INITIAL=2 shortBatch=2 longBatch=2
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_emptyInput...
+DEBUG (11:40): wrap('', 10) = []
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_singleWordFits...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_twoWordsFitOnOneLine...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_twoWordsSecondOverflows...
+DEBUG (11:40): wrap('hello world', 7) = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_greedyFill...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_singleLongWordOverflowsAlone...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_longWordThenShort...
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_hebrewWords...
+DEBUG (11:40): wrap hebrew result size=2 [0]=ש�?ו�? [1]=ש�?ו�?
+PASS
+------------------------------------------------------------------------------
+Executing test wrap_extraSpacesCollapse...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_emptyText...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_uniformWidthsWrapsOnOverflow...
+DEBUG (11:40): wtw_uniform = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_variableWidthsNarrowsFirst...
+DEBUG (11:40): wtw_variable = [a, b c, d e]
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_startIndexOffsetSkipsEarlyEntries...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_defaultBeyondArray...
+PASS
+------------------------------------------------------------------------------
+Executing test wtw_hebrewWithVariableWidths...
+DEBUG (11:40): wtw_hebrew = [ש�?ו�?, ש�?ו�? ש�?ו�?]
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_emptyText...
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_singleShortWord...
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_twoWords...
+DEBUG (11:40): twoWords = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_middlePlusTailPattern...
+DEBUG (11:40): middlePlusTail = [a b c d e, f g h, i j]
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_longTextMultipleMiddleLines...
+DEBUG (11:40): longText size=5
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_oversizedSingleWord...
+PASS
+------------------------------------------------------------------------------
+Executing test wnt_hebrewLongLastRaw...
+DEBUG (11:40): hebrewLongLastRaw size=2 lines=[ש�?ו�? הי�? ברכה ופרידה, בעברית עתיקה ובברית קדו�?ה]
+PASS
+------------------------------------------------------------------------------
+Executing test splitWords_empty...
+DEBUG (11:40): splitWords('') size=0
+PASS
+------------------------------------------------------------------------------
+Executing test splitWords_collapsesMultiSpace...
+DEBUG (11:40): splitWords spaces = [hello, world]
+PASS
+------------------------------------------------------------------------------
+Executing test splitWords_hebrew...
+DEBUG (11:40): splitWords hebrew size=2
+PASS
+------------------------------------------------------------------------------
+Executing test wptw_empty...
+DEBUG (11:40): wptw empty size=1
+PASS
+------------------------------------------------------------------------------
+Executing test wptw_singleWordFits...
+DEBUG (11:40): wptw single = [hello]
+PASS
+------------------------------------------------------------------------------
+Executing test wptw_twoWordsFitOnOneLine...
+DEBUG (11:40): wptw twoFit = [a b]
+PASS
+------------------------------------------------------------------------------
+Executing test wptw_perLineWidthCascade...
+DEBUG (11:40): wptw cascade = [a, b c]
+PASS
+------------------------------------------------------------------------------
+Executing test wptw_oversizedWordOverflowsAlone...
+DEBUG (11:40): wptw oversized = [x, huge, y]
+PASS
+------------------------------------------------------------------------------
+Executing test wpnt_empty...
+DEBUG (11:40): wpnt empty size=1
+PASS
+------------------------------------------------------------------------------
+Executing test wpnt_middlePlusTail...
+DEBUG (11:40): wpnt middlePlusTail = [a b, c d, e]
+PASS
+------------------------------------------------------------------------------
+Executing test wpnt_oversizedLastWordOnly...
+DEBUG (11:40): wpnt oversized = [x, verylongword]
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_emptyDefaultWhenStorageEmpty...
+DEBUG (11:40): load() empty default = version=1 articles.size=0
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_isEmptyTrueOnFresh...
+DEBUG (11:40): isEmpty() on fresh = true
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_saveLoadRoundtrip...
+DEBUG (11:40): roundtrip saved=true loaded.articles.size=2
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_articleIdsOrder...
+DEBUG (11:40): articleIds = [alpha, bravo, charlie]
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_titleOfHit...
+DEBUG (11:40): titleOf('shalom') = 'ש�?ו�?'
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_titleOfMiss...
+DEBUG (11:40): titleOf('nonexistent') = null
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_wipeArticlesDeletesAllArticleBodies...
+DEBUG (11:40): wipeArticles deleted=3 manifestStillPresent=true b1=null b2=null b3=null
+PASS
+------------------------------------------------------------------------------
+Executing test manifest_wipeArticlesOnEmpty...
+DEBUG (11:40): wipeArticles on empty = 0
+PASS
+------------------------------------------------------------------------------
+Executing test md_h1...
+DEBUG (11:40): parse('# Title') = {symbol (531)=>1, symbol (8389346)=>Title}
+PASS
+------------------------------------------------------------------------------
+Executing test md_h2...
+PASS
+------------------------------------------------------------------------------
+Executing test md_h3...
+PASS
+------------------------------------------------------------------------------
+Executing test md_h4...
+PASS
+------------------------------------------------------------------------------
+Executing test md_fiveHashesIsBody...
+PASS
+------------------------------------------------------------------------------
+Executing test md_emptyHeader...
+PASS
+------------------------------------------------------------------------------
+Executing test md_plainBody...
+PASS
+------------------------------------------------------------------------------
+Executing test md_hashWithoutSpaceIsBody...
+PASS
+------------------------------------------------------------------------------
+Executing test md_emptyString...
+PASS
+------------------------------------------------------------------------------
+Executing test md_hebrewHeader...
+PASS
+------------------------------------------------------------------------------
+Executing test md_hashAlone...
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_rowIndexAtInsideTopRowReturnsZero...
+DEBUG (11:40): rowIndexAt(30,0,60,5) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_rowIndexAtOutsideListReturnsNull...
+DEBUG (11:40): rowIndexAt(9999,0,60,5) = null
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_rowIndexAtRespectsScroll...
+DEBUG (11:40): rowIndexAt(30,120,60,5) = 2
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_moreArticlesTextZeroReturnsNull...
+DEBUG (11:40): moreArticlesText(10, 10) = null
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_moreArticlesTextOneReturnsSingular...
+DEBUG (11:40): moreArticlesText(11, 10) = 1 more article fits
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_moreArticlesTextMultipleReturnsPlural...
+DEBUG (11:40): moreArticlesText(15, 10) = 5 more articles fit
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_moreArticlesTextNegativeReturnsNull...
+DEBUG (11:40): moreArticlesText(5, 10) = null
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_blockAtInsideFirstReturnsZero...
+DEBUG (11:40): blockAt(30, ...) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_blockAtInsideSecondReturnsOne...
+DEBUG (11:40): blockAt(80, ...) = 1
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_blockAtInGapReturnsNull...
+DEBUG (11:40): blockAt(60 in gap) = null
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_blockAtPastEndReturnsNull...
+DEBUG (11:40): blockAt(9999 past end) = null
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_blockAtNegativeReturnsNull...
+DEBUG (11:40): blockAt(-5) = null
+PASS
+------------------------------------------------------------------------------
+Executing test resultsLayout_blockAtEmptyArrayReturnsNull...
+DEBUG (11:40): blockAt(0, []) = null
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtCenterEqualsDiameter...
+DEBUG (11:40): safeChordWidth(195, 0) = 390
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordShrinksOffCenter...
+DEBUG (11:40): safeChordWidth(195, 100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordAtRadiusIsZero...
+DEBUG (11:40): safeChordWidth(195, 195) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordPastRadiusIsZero...
+DEBUG (11:40): safeChordWidth(195, 200) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_chordNegativeDyMirrorsPositive...
+DEBUG (11:40): safeChordWidth(195, -100) = 334
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYForKnownWidth...
+DEBUG (11:40): minSafeY(195, 280) = 60
+PASS
+------------------------------------------------------------------------------
+Executing test safeArea_minSafeYWiderThanDiameter...
+DEBUG (11:40): minSafeY(195, 500) = 195
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_centerEqualsFullDiameterMinusPadding...
+DEBUG (11:40): linePaddedWidth(208, 208, 25) = 366
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_offCenterReducesByChord...
+DEBUG (11:40): linePaddedWidth(208, 108, 25) = 314
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_clampsToZeroAtEdge...
+DEBUG (11:40): linePaddedWidth(208, 0, 25) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_clampsToZeroWhenPaddingExceedsChord...
+DEBUG (11:40): linePaddedWidth(208, 1, 25) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_symmetricAboveBelowCenter...
+PASS
+------------------------------------------------------------------------------
+Executing test lpw_realWatchRadius...
+PASS
+------------------------------------------------------------------------------
+Executing test search_emptyQueryReturnsTopByPopularity...
+DEBUG (11:40): empty-query size=3 ids=[b,c,a]
+PASS
+------------------------------------------------------------------------------
+Executing test search_emptyQueryCapsAtTopK...
+DEBUG (11:40): 60-articles empty-query size=50
+PASS
+------------------------------------------------------------------------------
+Executing test search_emptyArticlesReturnsEmpty...
+DEBUG (11:40): empty-articles size=0
+PASS
+------------------------------------------------------------------------------
+Executing test search_prefixMatchOnly...
+DEBUG (11:40): prefix-ש size=2 ids=[sh,sb]
+PASS
+------------------------------------------------------------------------------
+Executing test search_substringNonPrefixIsTier2...
+DEBUG (11:40): substring-�?ו size=1
+PASS
+------------------------------------------------------------------------------
+Executing test search_prefixBeforeSubstring...
+DEBUG (11:40): prefix-vs-sub size=3 ids=[lover,love,alove]
+PASS
+------------------------------------------------------------------------------
+Executing test search_popularityWithinTier...
+DEBUG (11:40): popularity ids=[high,low]
+PASS
+------------------------------------------------------------------------------
+Executing test search_titleStableTiebreakOnPopularityTie...
+DEBUG (11:40): tiebreak ids=[a,z]
+PASS
+------------------------------------------------------------------------------
+Executing test search_noMatchesReturnsEmpty...
+DEBUG (11:40): no-match size=0
+PASS
+------------------------------------------------------------------------------
+Executing test search_hebrewSubstringMatch...
+DEBUG (11:40): hebrew-prefix size=1 ids=[torah]
+PASS
+------------------------------------------------------------------------------
+Executing test search_totalMatchesEmptyQueryReturnsArraySize...
+DEBUG (11:40): totalMatches('', size=7) = 7
+PASS
+------------------------------------------------------------------------------
+Executing test search_totalMatchesCountsExactly...
+DEBUG (11:40): totalMatches('ש', 4 mixed) = 3
+PASS
+------------------------------------------------------------------------------
+Executing test search_totalMatchesEmptyArticlesReturnsZero...
+DEBUG (11:40): totalMatches('foo', []) = 0
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeStripsAsciiDoubleQuote...
+DEBUG (11:40): normalize('שב\"ק')='שבק' (want 'שבק')
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeStripsAsciiSingleQuote...
+DEBUG (11:40): normalize(\"ש'�?\")='ש�?' (want 'ש�?')
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeReplacesAsciiHyphenWithSpace...
+DEBUG (11:40): normalize('שיר-השירי�?')='שיר השירי�?' (want 'שיר השירי�?')
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeAllThreeChars...
+DEBUG (11:40): normalize('ש\"י-עגנו�?')='שי עגנו�?' (want 'שי עגנו�?')
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeEmptyReturnsEmpty...
+DEBUG (11:40): normalize('')=''
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeIdempotent...
+DEBUG (11:40): once='שי עגנו�?' twice='שי עגנו�?'
+PASS
+------------------------------------------------------------------------------
+Executing test search_rankMatchesTitleIgnoringQuotes...
+DEBUG (11:40): rank('שבק', שב\"ק) size=1
+PASS
+------------------------------------------------------------------------------
+Executing test search_rankMatchesHyphenAsSpace...
+DEBUG (11:40): rank('שיר השירי�?', שיר-השירי�?-ה�?�?�?) size=1
+PASS
+------------------------------------------------------------------------------
+Executing test search_rankPreservesDisplayedTitleWithPunctuation...
+DEBUG (11:40): preserved-title='שב\"ק'
+PASS
+------------------------------------------------------------------------------
+Executing test search_rankIgnoresBodyKey...
+DEBUG (11:40): rank('�?ברה�?', body-only article) size=0 (want 0)
+PASS
+------------------------------------------------------------------------------
+Executing test search_totalMatchesIgnoresBodyKey...
+DEBUG (11:40): totalMatches('�?ברה�?', mixed with :body) = 1 (want 1)
+PASS
+------------------------------------------------------------------------------
+Executing test search_normalizeFastPathReturnsIdenticalString...
+DEBUG (11:40): normalize('ש�?ו�? ע�?יכ�?')='ש�?ו�? ע�?יכ�?' equals=true
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloIsHebrew...
+DEBUG (11:40): Strings.hello() = 'ש�?ו�?'
+PASS
+------------------------------------------------------------------------------
+Executing test strings_helloCharCount...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_hebrewLiteralRoundtripsThroughStorage...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleStartsWithH1...
+DEBUG (11:40): sampleArticle prefix: '# ש�?ו�? הי�?...'
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleHasH4...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleIsMultiline...
+PASS
+------------------------------------------------------------------------------
+Executing test strings_sampleArticleHasManyLines...
+DEBUG (11:40): newline count = 48
+PASS
+------------------------------------------------------------------------------
+Executing test updateCheck_usesImmediateTransition...
+DEBUG (11:40): transitionToKeyboard() = 0 (SLIDE_IMMEDIATE = 0)
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_insideFirstWord...
+DEBUG (11:40): findWordPx(285) = abc
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_insideMiddleWord...
+DEBUG (11:40): findWordPx(245) = def
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_insideLastWord...
+DEBUG (11:40): findWordPx(205, last word) = ghi
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_onSpaceSnapsToPreviousWord...
+DEBUG (11:40): findWordPx(265 on space) = abc
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_pastRightEdge...
+DEBUG (11:40): findWordPx(305 past right) = null
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_pastLeftEdge...
+DEBUG (11:40): findWordPx(185 past left) = null
+PASS
+------------------------------------------------------------------------------
+Executing test wordHitTest_emptyWords...
+DEBUG (11:40): findWordPx(empty words) = null
+PASS
+
+==============================================================================
+RESULTS
+Test:                                                Status:
+articleStore_putGetRoundtrip                         PASS
+articleStore_bodyOfMissingReturnsNull                PASS
+articleStore_putBodyOverwrites                       PASS
+articleStore_putBatchWritesEach                      FAIL
+articleStore_putBatchEmptyReturnsZero                PASS
+articleStore_putBatchOverwrites                      FAIL
+batteryGate_gatesBelow10NotCharging                  FAIL
+batteryGate_allowsAt10NotCharging                    PASS
+batteryGate_allowsLowWhenCharging                    PASS
+batteryGate_pausesBelow5NotCharging                  FAIL
+batteryGate_doesNotPauseAt5                          PASS
+batteryGate_doesNotPauseWhenCharging                 PASS
+doubleTap_noPreviousTapReturnsFalse                  PASS
+doubleTap_timeTooFarApartReturnsFalse                PASS
+doubleTap_yTooFarApartReturnsFalse                   PASS
+doubleTap_withinBothWindowsReturnsTrue               PASS
+doubleTap_negativeTimeDeltaReturnsFalse              PASS
+doubleTap_intervalBoundaryIsInclusive                PASS
+downloader_parseManifestSuccess                      PASS
+downloader_parseManifestRejectsBadRc                 PASS
+downloader_parseManifestRejectsNullData              PASS
+downloader_parseManifestRejectsMissingVersion        PASS
+downloader_parseManifestRejectsMissingArticles       PASS
+downloader_parseManifestNormalizesKeys               PASS
+downloader_anyConnectedFallsBackToPhoneOnly          PASS
+downloader_anyConnectedDetectsConnected              PASS
+downloader_anyConnectedAllDisconnectedReturnsFalse   PASS
+downloader_chunkUrlSubstitutesIndex                  FAIL
+downloader_chunkUrlZero                              FAIL
+downloader_parseManifestReadsChunkFields             FAIL
+downloader_parseManifestDefaultsChunkFields          FAIL
+inputbuf_appendToEmpty                               PASS
+inputbuf_appendHebrew                                PASS
+inputbuf_appendSpace                                 PASS
+inputbuf_popLastFromTwoChars                         PASS
+inputbuf_popLastFromEmpty                            PASS
+inputbuf_clearReturnsEmpty                           PASS
+installPlan_sortedInsertIntoEmpty                    FAIL
+installPlan_sortedInsertKeepsOrder                   FAIL
+installPlan_sortedInsertNoDuplicate                  PASS
+installPlan_sortedInsertAtEnd                        FAIL
+installPlan_firstMissingBasic                        FAIL
+installPlan_firstMissingAllPresent                   PASS
+installPlan_firstMissingEmpty                        FAIL
+installPlan_missingChunksBasic                       FAIL
+installPlan_missingChunksNoneLeft                    PASS
+installPlan_slotsToFillClamps                        FAIL
+installPlan_slotsToFillNeverNegative                 PASS
+installPlan_isCompleteTrue                           FAIL
+installPlan_isCompleteFalse                          PASS
+installPlan_shouldInvalidateOnVersionBump            FAIL
+installPlan_shouldNotInvalidateSameVersion           PASS
+installPlan_maxInFlightTwoWhenAmpleMemory            FAIL
+installPlan_maxInFlightOneUnderPressure              FAIL
+resume_pickUpFromInstallChunksReceived               FAIL
+resume_skipsDownloadedChunks                         FAIL
+resume_invalidatedByVersionBump                      FAIL
+resume_preservesCompletedChunksOnSameVersion         FAIL
+state_completeAfterAllChunksReceived                 FAIL
+state_inProgressAfterFirstChunk                      FAIL
+state_persistedAcrossReload                          FAIL
+installState_initialIsNone                           PASS
+installState_beginSetsInProgress                     FAIL
+installState_markChunkReceivedPersists               FAIL
+installState_markChunkIdempotent                     FAIL
+installState_markCompleteSetsState                   FAIL
+installState_resetClearsEverything                   PASS
+installState_beginClearsPriorReceived                FAIL
+install_capsInFlightAt2                              FAIL
+install_dropsToSerialUnderMemoryPressure             FAIL
+install_setMaxInFlightRaisesCap                      FAIL
+install_completesAfterAllChunksReceived              FAIL
+install_notCompleteWhileInFlight                     PASS
+install_retriesFailedChunkUpTo3Times                 FAIL
+install_continuesAfterChunkPermanentFailure          FAIL
+install_handlesOutOfOrderResponses                   FAIL
+install_progressCountsArticlesNotChunks              FAIL
+install_resumeSeedsReceivedChunks                    FAIL
+kbd_buttonsReturns10Wedges                           PASS
+kbd_buttonZeroIsSpace                                PASS
+kbd_buttonOneIsBackspace                             PASS
+kbd_buttonTwoIsAlefGroup                             PASS
+kbd_buttonEightIsQuadLetter                          PASS
+kbd_buttonNineIsDigits                               PASS
+kbd_buttonAtInsideAlefGroupReturnsIt                 PASS
+kbd_buttonAtInsideHitHaloReturnsWedge                PASS
+kbd_buttonAtJustOutsideHaloReturnsNull               PASS
+kbd_buttonAtNewWiderHaloReturnsWedge                 PASS
+kbd_buttonAtCenterReturnsNull                        PASS
+kbd_buttonAtOffRingReturnsNull                       PASS
+kbd_subButtonsLetterGroupReturnsThree                PASS
+kbd_subButtonsLetterGroupFourReturnsFour             PASS
+kbd_subButtonsDigitsReturnsTenAroundRing             PASS
+kbd_subButtonAtInsideLetterExpansionReturnsLabel     PASS
+kbd_subButtonAtOutsideExpansionReturnsNull           PASS
+kbd_subButtonsForYudKafLamedHasFinalKaf              PASS
+kbd_subButtonsForMemNunSamekhHasTwoFinals            PASS
+kbd_subButtonAtInsideLevelTwoFinalReturnsLabel       PASS
+kbd_buttonsReturnsCachedReference                    PASS
+kbd_subButtonsReturnsCachedReference                 PASS
+launchRouter_firstLaunchInstalls                     FAIL
+launchRouter_firstLaunchNoNetwork                    FAIL
+launchRouter_firstLaunchLowBattery                   FAIL
+launchRouter_inProgressResumes                       FAIL
+launchRouter_inProgressLowBattery                    FAIL
+launchRouter_inProgressNoNetwork                     FAIL
+launchRouter_completeWithNetworkChecksUpdate         FAIL
+launchRouter_completeNoNetworkKeyboard               PASS
+launchRouter_lowBatteryDoesNotBlockExistingCorpus    FAIL
+layout_middleWidthM27Baseline                        PASS
+layout_middleWidthDifferentScreen                    PASS
+layoutProgress_nextBatchEndAdvancesByBatchSize       PASS
+layoutProgress_nextBatchEndClampsAtTotal             PASS
+layoutProgress_nextBatchEndIdempotentAtTotal         PASS
+layoutProgress_isCompleteWhenCursorAtTotal           PASS
+layoutProgress_isNotCompleteWhenCursorBelowTotal     PASS
+layoutProgress_isScrollNearEndWithinLookahead        PASS
+layoutProgress_isScrollNotNearEndWhenFar             PASS
+layoutProgress_scrollEndedBeforeLoadStarted          PASS
+layoutProgress_scrollEndedWhileLoadInProgress        PASS
+layoutProgress_clampedScrollNegativeBecomesZero      PASS
+layoutProgress_clampedScrollContentSmallerThanScreen PASS
+layoutProgress_initialBatchIsBoundedForAnyBodyLength PASS
+wrap_emptyInput                                      PASS
+wrap_singleWordFits                                  PASS
+wrap_twoWordsFitOnOneLine                            PASS
+wrap_twoWordsSecondOverflows                         PASS
+wrap_greedyFill                                      PASS
+wrap_singleLongWordOverflowsAlone                    PASS
+wrap_longWordThenShort                               PASS
+wrap_hebrewWords                                     PASS
+wrap_extraSpacesCollapse                             PASS
+wtw_emptyText                                        PASS
+wtw_uniformWidthsWrapsOnOverflow                     PASS
+wtw_variableWidthsNarrowsFirst                       PASS
+wtw_startIndexOffsetSkipsEarlyEntries                PASS
+wtw_defaultBeyondArray                               PASS
+wtw_hebrewWithVariableWidths                         PASS
+wnt_emptyText                                        PASS
+wnt_singleShortWord                                  PASS
+wnt_twoWords                                         PASS
+wnt_middlePlusTailPattern                            PASS
+wnt_longTextMultipleMiddleLines                      PASS
+wnt_oversizedSingleWord                              PASS
+wnt_hebrewLongLastRaw                                PASS
+splitWords_empty                                     PASS
+splitWords_collapsesMultiSpace                       PASS
+splitWords_hebrew                                    PASS
+wptw_empty                                           PASS
+wptw_singleWordFits                                  PASS
+wptw_twoWordsFitOnOneLine                            PASS
+wptw_perLineWidthCascade                             PASS
+wptw_oversizedWordOverflowsAlone                     PASS
+wpnt_empty                                           PASS
+wpnt_middlePlusTail                                  PASS
+wpnt_oversizedLastWordOnly                           PASS
+manifest_emptyDefaultWhenStorageEmpty                PASS
+manifest_isEmptyTrueOnFresh                          PASS
+manifest_saveLoadRoundtrip                           PASS
+manifest_articleIdsOrder                             PASS
+manifest_titleOfHit                                  PASS
+manifest_titleOfMiss                                 PASS
+manifest_wipeArticlesDeletesAllArticleBodies         PASS
+manifest_wipeArticlesOnEmpty                         PASS
+md_h1                                                PASS
+md_h2                                                PASS
+md_h3                                                PASS
+md_h4                                                PASS
+md_fiveHashesIsBody                                  PASS
+md_emptyHeader                                       PASS
+md_plainBody                                         PASS
+md_hashWithoutSpaceIsBody                            PASS
+md_emptyString                                       PASS
+md_hebrewHeader                                      PASS
+md_hashAlone                                         PASS
+resultsLayout_rowIndexAtInsideTopRowReturnsZero      PASS
+resultsLayout_rowIndexAtOutsideListReturnsNull       PASS
+resultsLayout_rowIndexAtRespectsScroll               PASS
+resultsLayout_moreArticlesTextZeroReturnsNull        PASS
+resultsLayout_moreArticlesTextOneReturnsSingular     PASS
+resultsLayout_moreArticlesTextMultipleReturnsPlural  PASS
+resultsLayout_moreArticlesTextNegativeReturnsNull    PASS
+resultsLayout_blockAtInsideFirstReturnsZero          PASS
+resultsLayout_blockAtInsideSecondReturnsOne          PASS
+resultsLayout_blockAtInGapReturnsNull                PASS
+resultsLayout_blockAtPastEndReturnsNull              PASS
+resultsLayout_blockAtNegativeReturnsNull             PASS
+resultsLayout_blockAtEmptyArrayReturnsNull           PASS
+safeArea_chordAtCenterEqualsDiameter                 PASS
+safeArea_chordShrinksOffCenter                       PASS
+safeArea_chordAtRadiusIsZero                         PASS
+safeArea_chordPastRadiusIsZero                       PASS
+safeArea_chordNegativeDyMirrorsPositive              PASS
+safeArea_minSafeYForKnownWidth                       PASS
+safeArea_minSafeYWiderThanDiameter                   PASS
+lpw_centerEqualsFullDiameterMinusPadding             PASS
+lpw_offCenterReducesByChord                          PASS
+lpw_clampsToZeroAtEdge                               PASS
+lpw_clampsToZeroWhenPaddingExceedsChord              PASS
+lpw_symmetricAboveBelowCenter                        PASS
+lpw_realWatchRadius                                  PASS
+search_emptyQueryReturnsTopByPopularity              PASS
+search_emptyQueryCapsAtTopK                          PASS
+search_emptyArticlesReturnsEmpty                     PASS
+search_prefixMatchOnly                               PASS
+search_substringNonPrefixIsTier2                     PASS
+search_prefixBeforeSubstring                         PASS
+search_popularityWithinTier                          PASS
+search_titleStableTiebreakOnPopularityTie            PASS
+search_noMatchesReturnsEmpty                         PASS
+search_hebrewSubstringMatch                          PASS
+search_totalMatchesEmptyQueryReturnsArraySize        PASS
+search_totalMatchesCountsExactly                     PASS
+search_totalMatchesEmptyArticlesReturnsZero          PASS
+search_normalizeStripsAsciiDoubleQuote               PASS
+search_normalizeStripsAsciiSingleQuote               PASS
+search_normalizeReplacesAsciiHyphenWithSpace         PASS
+search_normalizeAllThreeChars                        PASS
+search_normalizeEmptyReturnsEmpty                    PASS
+search_normalizeIdempotent                           PASS
+search_rankMatchesTitleIgnoringQuotes                PASS
+search_rankMatchesHyphenAsSpace                      PASS
+search_rankPreservesDisplayedTitleWithPunctuation    PASS
+search_rankIgnoresBodyKey                            PASS
+search_totalMatchesIgnoresBodyKey                    PASS
+search_normalizeFastPathReturnsIdenticalString       PASS
+strings_helloIsHebrew                                PASS
+strings_helloCharCount                               PASS
+strings_hebrewLiteralRoundtripsThroughStorage        PASS
+strings_sampleArticleStartsWithH1                    PASS
+strings_sampleArticleHasH4                           PASS
+strings_sampleArticleIsMultiline                     PASS
+strings_sampleArticleHasManyLines                    PASS
+updateCheck_usesImmediateTransition                  PASS
+wordHitTest_insideFirstWord                          PASS
+wordHitTest_insideMiddleWord                         PASS
+wordHitTest_insideLastWord                           PASS
+wordHitTest_onSpaceSnapsToPreviousWord               PASS
+wordHitTest_pastRightEdge                            PASS
+wordHitTest_pastLeftEdge                             PASS
+wordHitTest_emptyWords                               PASS
+Ran 241 tests
+
+FAILED (passed=193, failed=48, errors=0)
+
+Write-Error: tests FAILED (see C:\Users\tomhe\Documents\Garmin\wikiwatch\bin\test-output.log)

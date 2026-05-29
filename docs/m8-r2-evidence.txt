@@ -1,0 +1,117 @@
+M8 — R2 simulator evidence
+==========================
+
+Device: venu2 simulator (SDK 9.1.0). Build: bin/wikiwatch.prg (= versions/wikiwatch-M8.prg).
+Corpus: 180 real Hebrew Wikipedia articles, v5 manifest (31.1 KB) + 180 chunks
+(each ≤11.8 KB), served gzip-compressed from https://wikiwatch.tomhe.app/.
+
+Scenarios 1-3 captured LIVE end-to-end against the real server. The battery
+scenarios (4-5) are pure-threshold logic, proven by the 10 BatteryGate /
+LaunchRouter battery unit tests (the simulator's battery slider needs GUI
+control that wasn't available this session). The full install/resume/controller
+state machine is additionally covered by the 241-test unit suite (docs/m8-pass.txt).
+
+
+### Response-size cap finding (drove the corpus shape)
+
+The Venu 2 simulator rejects makeWebRequest responses larger than ~12-13 KB
+(rc=-402 NETWORK_RESPONSE_TOO_LARGE / -101). Measured with exact-size probe
+files: 6/8/10/12 KB -> rc=200; 14/16 KB -> fail. gzip did NOT lift the cap (it
+applies to the DECOMPRESSED size), though it still cuts transfer time.
+
+Consequences (deviations from m8-plan.md, all documented in the PR):
+- ID scheme: compact NUMERIC ids ("0".."179"), NOT the plan's URL-encoded
+  Hebrew (~180 B each, which blew the manifest to 92.5 KB -> -402). The watch
+  treats id as opaque, so this costs nothing on-watch.
+- Manifest is a single un-chunked response, so its size caps the article count.
+  At ~60 B/article it fits ~180 articles in an 11.5 KB manifest. (The plan's
+  ~4000 was never feasible on this device — a 4000-article manifest ≈ 240 KB.)
+- Per-article body cap 10 KB (was 14 KB) so each fits in a sub-13 KB chunk.
+- Chunk byte target 10 KB; 180 chunks (was 100). gzip required on the server.
+
+
+=== SCENARIO 1: happy-path install + searchable real corpus (LIVE) ===
+
+Fresh storage, network up. monkeydo stdout (.cache/m8-install-final.log):
+
+    M8 launch: state=none corpus=false net=true batt=50.000000 -> symbol (286)   [:install]
+    M8 install: resuming=false fetching manifest
+    M7 net: GET https://wikiwatch.tomhe.app/manifest.json
+    M8 install: begin chunks total=180 seeded=0 maxInFlight=2
+    M8 install: fetch chunk 0
+    fm:722824
+    ... (180 chunks, 2 in-flight, free memory steady ~722 KB) ...
+    M8 install: COMPLETE received=180/180 articlesWritten=180
+
+- 180 chunks downloaded + unpacked into per-article Storage, 0 failures.
+- maxInFlight held at 2 (free memory never dropped below the 400 KB pressure
+  threshold — fm:~722 KB throughout), confirming the 2-in-flight design.
+- Post-install the app auto-switched to the functional keyboard
+  (screenshot: docs/screenshots/m8-post-install-keyboard.png — T9 wedges +
+  input band + fm:692688 heap overlay).
+
+Searchability proven via the SAME code path the keyboard uses (Search.rank on
+titles + ArticleStore.bodyOf), run against the live-installed corpus:
+
+    ZSEARCH corpus size = 180
+    ZSEARCH rank('ש') -> 47 hits, top 6:
+      [0] id=32 title='שאיבה'            (Hebrew console-mangled in stdout; files verified clean)
+      [1] id=37 title='שנימיר ז...'
+      ...
+    ZSEARCH open id=32 bodyLen=5090 head='# ש...'
+
+  -> typing ש surfaces 47 real ש-prefix Wikipedia titles; opening one returns a
+     real ~5 KB Markdown body starting with its "# <title>" H1. (Search /
+     reader / long-press are unchanged from M5/M6 — M8 only swaps in the real
+     corpus — so their interaction was R2-proven in those milestones.)
+
+
+=== SCENARIOS 2 & 3: mid-install interruption + resume (LIVE) ===
+
+(Force-quit and clean "Stop App" share the same resume path; one live capture
+covers both.) Fresh install started, monkeydo killed mid-download to simulate a
+crash, then relaunched:
+
+  install A (.cache/m8-resume-B.log): began fresh install, killed mid-flight.
+  relaunch (.cache/m8-resume-C.log):
+
+    M8 launch: state=in_progress corpus=true net=true batt=50.000000 -> [:resume]
+    M8 install: resuming=true fetching manifest
+    M8 install: resume same-version, chunks_received=111/180
+    M8 install: begin chunks total=180 seeded=111 maxInFlight=2
+    M8 install: fetch chunk 111
+    ... (downloads only the 69 remaining chunks) ...
+    M8 install: COMPLETE received=180/180 articlesWritten=69
+
+- Launch routed to :resume (ResumeInstallView) off the persisted installState.
+- Resumed from the durable bitmap (111/180 written before the kill) — fetched
+  ONLY the 69 missing chunks (111 + 69 = 180), not from zero.
+- The durable-write-before-bitmap ordering held: every chunk marked received was
+  already in Storage, so no article was lost across the crash.
+  (Unit-covered: resume_pickUpFromInstallChunksReceived, resume_skipsDownloadedChunks,
+   state_inProgressAfterFirstChunk, state_persistedAcrossReload,
+   install_resumeSeedsReceivedChunks.)
+
+
+=== SCENARIO 4: battery low at launch (unit-test-proven) ===
+
+GUI battery-slider control unavailable this session. Logic covered by:
+  batteryGate_gatesBelow10NotCharging, batteryGate_allowsLowWhenCharging,
+  launchRouter_firstLaunchLowBattery, launchRouter_inProgressLowBattery,
+  launchRouter_lowBatteryDoesNotBlockExistingCorpus.
+LaunchRouter routes (battery<10% && !charging) -> :lowBattery (LowBatteryView,
+"שדרוג בהמתנה / חבר למטען להמשך"); LowBatteryView.onPoll auto-transitions to the
+(Resume)InstallView once battery recovers or charging begins.
+
+
+=== SCENARIO 5: battery dies during install (unit-test-proven) ===
+
+Logic covered by: batteryGate_pausesBelow5NotCharging, batteryGate_doesNotPauseWhenCharging.
+InstallView polls battery every 10 chunks (BATTERY_CHECK_EVERY); on shouldPause
+it stops firing new chunks and switches to LowBatteryView (resume context),
+state preserved in installChunksReceived -> resumes via Scenario 2's path.
+
+
+Summary: install (1) + searchable corpus + resume (2/3) captured LIVE end-to-end
+on the real server; battery gating (4/5) proven by unit tests. The version-bump
+invalidation path is unit-covered (resume_invalidatedByVersionBump).
