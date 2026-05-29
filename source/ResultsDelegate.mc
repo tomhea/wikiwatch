@@ -22,7 +22,7 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
             var s = hit as Dictionary;
             var body = ArticleStore.bodyOf(s[:id] as String);
             if (body != null) {
-                var reader = new wikiwatchView(body);
+                var reader = new wikiwatchView(body, s[:id] as String);
                 WatchUi.pushView(reader, new wikiwatchDelegate(reader), WatchUi.SLIDE_LEFT);
             }
         }

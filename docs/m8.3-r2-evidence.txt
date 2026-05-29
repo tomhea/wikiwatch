@@ -1,0 +1,65 @@
+M8.3 — R2 simulator evidence (self-heal + laid-out cache + lazy-load speedup)
+============================================================================
+
+Device: venu2 simulator (SDK 9.1.0). Build: versions/wikiwatch-M8.3.prg.
+The pure logic (LaunchRouter corpusIntact routing, InstallPlan.sampleIndices,
+ArticleStore.allPresent, ArticleLayoutCache) is covered by 14 new unit tests
+(255 total, docs/m8.3-pass.txt). The sim captures below cover the view/launch
+wiring those tests can't reach.
+
+
+=== Self-heal: complete-but-empty corpus auto-re-installs (LIVE) ===
+
+A throwaway diagnostic forged a "complete-but-empty" corpus (a saved manifest
+with 3 article ids, installState=complete, but NO article bodies in Storage),
+then the real M8.3 binary was launched:
+
+    ZHEAL: forged complete-but-empty corpus (manifest 3 ids, 0 bodies)
+    M8 launch: state=complete corpus=true intact=false net=true batt=50.0 -> :install
+    M8 install: resuming=false fetching manifest
+
+- wikiwatchApp._corpusIntact() spot-checked the manifest's sampled ids, found
+  no bodies -> intact=false.
+- LaunchRouter routed (state=complete, corpus present, but NOT intact) -> :install
+  instead of :updateCheck — i.e. it auto-re-installs rather than showing a
+  broken keyboard. This is exactly the recovery for the "stuck watch" case
+  (a v5 manifest saved by a failed install, bodies missing).
+
+Earlier run (same setup but with numeric ids 0/1/2) showed intact=TRUE — because
+real v5 bodies (article:0..) were still in sim Storage, so the spot-check
+correctly found them present. That confirms allPresent() detects real bodies and
+only self-heals when they're genuinely gone (no false re-installs).
+
+Unit-covered: launchRouter_completeBrokenCorpusReinstalls / ...NoNetworkDegrades
+/ ...LowBatteryGates / noneWithCorpusButBrokenReinstalls; articleStore_allPresent*;
+installPlan_sampleIndices*.
+
+
+=== Laid-out article cache + lazy-load speedup (LIVE) ===
+
+A throwaway perf diagnostic opened the article reader on a heavy (~267 sub-line)
+body twice with the same cache key:
+
+  First open (cache miss, full lazy layout):
+    M5.3 first-paint: ms=63
+    M8.3 full-layout: ms=344 lines=267 key=perfkey
+  Re-open (cache hit):
+    M8.3 cache HIT key=perfkey lines=267
+    M5.3 first-paint: ms=16
+
+- Re-open restores the pixel-wrapped layout from ArticleLayoutCache — no
+  re-wrap, no lazy-load ticks. First paint 16 ms and the whole article is
+  immediately laid out (vs 344 ms to fully lay out on first open).
+- Lazy-load speedup: full layout of the 267-line body dropped from **984 ms**
+  (INCREMENTAL_LINES=16) to **344 ms** (INCREMENTAL_LINES=48), while first-paint
+  stayed ~63 ms (parity preserved — first paint still uses INITIAL_LINES=2).
+  For the cleaned ~91-line polynomial article this is ~3-4 ticks (~200 ms) on
+  first open and instant on re-open.
+
+Unit-covered: layoutCache_putGetRoundtrip / missReturnsNull / putReplacesPrevious
+/ clearEmpties.
+
+
+Note: this addresses the user-reported slow polynomial-article load together
+with the v0.M8.1 math→LaTeX corpus fix (1056 -> ~91 lines). The corpus fix cuts
+the line count; this PR cuts per-line layout time + makes re-open instant.

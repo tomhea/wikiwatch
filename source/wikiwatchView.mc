@@ -31,7 +31,13 @@ class wikiwatchView extends WatchUi.View {
     // _LAYOUT_TICK_MS 80->50 (CIQ minimum) so subsequent batches arrive as
     // fast as the platform allows.
     private const _INITIAL_LINES = 2;
-    private const _INCREMENTAL_LINES = 2;
+    // M8.3: incremental batch 2 -> 48. M5.4 kept this tiny for first-paint
+    // parity, but that made FULL layout of long articles slow (the 50 ms/tick
+    // floor dominates: 16 lines/tick was still ~17 ticks ≈ 1 s for a heavy
+    // article). First paint still uses _INITIAL_LINES=2 so parity is
+    // unchanged; the background fill now finishes in ~3-4 ticks. 48 lines of
+    // per-word px measurement is well under one frame, so no UI hitch.
+    private const _INCREMENTAL_LINES = 48;
     private const _LAYOUT_TICK_MS = 50;      // CIQ minimum
 
     private var _body as String;
@@ -54,10 +60,18 @@ class wikiwatchView extends WatchUi.View {
     // storage. -1 sentinel = no pending hit.
     private var _pendingHitX as Number;
     private var _pendingHitY as Number;
+    // M8.3: laid-out-article cache. _cacheKey identifies the article (its id);
+    // if ArticleLayoutCache has a matching entry, re-open restores the
+    // pixel-wrapped lines instantly instead of re-laying-out. _storedToCache
+    // guards a one-time write when this view's own layout completes.
+    private var _cacheKey as String;
+    private var _storedToCache as Boolean;
 
-    function initialize(body as String) {
+    function initialize(body as String, cacheKey as String) {
         View.initialize();
         _body = body;
+        _cacheKey = cacheKey;
+        _storedToCache = false;
         _rawLines = null;
         _lines = null;
         _layoutCursor = 0;
@@ -87,25 +101,49 @@ class wikiwatchView extends WatchUi.View {
     }
 
     function onUpdate(dc as Dc) as Void {
-        // Lazy init on first onUpdate (we need dc to compute middleWidth).
-        if (_rawLines == null) {
-            _rawLines = _splitLines(_body);
-            _lines = [];
-            _middleWidth = Layout.middleWidth(dc.getWidth(), _leftMargin, _RIGHT_MARGIN);
-        }
         _screenHeight = dc.getHeight();
         _screenWidth = dc.getWidth();
 
-        // Lay out the next batch (firstPass gets the bigger initial budget).
-        var totalRaw = (_rawLines as Array<String>).size();
-        var firstPass = (_layoutCursor == 0);
-        var batch = firstPass ? _INITIAL_LINES : _INCREMENTAL_LINES;
-        var newCursor = LayoutProgress.nextBatchEnd(_layoutCursor, totalRaw, batch);
-        if (newCursor > _layoutCursor) {
-            _layoutBatchRange(dc, _layoutCursor, newCursor);
-            _layoutCursor = newCursor;
+        // Lazy init on first onUpdate (we need dc to compute middleWidth).
+        if (_lines == null) {
+            _middleWidth = Layout.middleWidth(dc.getWidth(), _leftMargin, _RIGHT_MARGIN);
+            // M8.3: instant re-open — if this article's layout is cached, adopt
+            // it whole and skip the lazy-load entirely.
+            var cached = (_cacheKey.length() > 0) ? ArticleLayoutCache.get(_cacheKey) : null;
+            if (cached != null) {
+                _lines = cached[:lines] as Array<Dictionary>;
+                _contentHeight = cached[:contentHeight] as Number;
+                _layoutComplete = true;
+                _storedToCache = true;   // already in cache
+                System.println("M8.3 cache HIT key=" + _cacheKey + " lines="
+                    + (_lines as Array).size());
+            } else {
+                _rawLines = _splitLines(_body);
+                _lines = [];
+            }
         }
-        _layoutComplete = LayoutProgress.isComplete(_layoutCursor, totalRaw);
+
+        // Lay out the next batch (firstPass gets the bigger initial budget).
+        // Skipped when the layout came from cache (_rawLines stays null).
+        if (_rawLines != null && !_layoutComplete) {
+            var totalRaw = (_rawLines as Array<String>).size();
+            var firstPass = (_layoutCursor == 0);
+            var batch = firstPass ? _INITIAL_LINES : _INCREMENTAL_LINES;
+            var newCursor = LayoutProgress.nextBatchEnd(_layoutCursor, totalRaw, batch);
+            if (newCursor > _layoutCursor) {
+                _layoutBatchRange(dc, _layoutCursor, newCursor);
+                _layoutCursor = newCursor;
+            }
+            _layoutComplete = LayoutProgress.isComplete(_layoutCursor, totalRaw);
+        }
+
+        // M8.3: cache the finished layout for instant re-open next time.
+        if (_layoutComplete && !_storedToCache && _cacheKey.length() > 0) {
+            ArticleLayoutCache.put(_cacheKey, _lines as Array, _contentHeight);
+            _storedToCache = true;
+            System.println("M8.3 full-layout: ms=" + (System.getTimer() - _ctorTimeMs)
+                + " lines=" + (_lines as Array).size() + " key=" + _cacheKey);
+        }
 
         _renderVisibleLines(dc);
 

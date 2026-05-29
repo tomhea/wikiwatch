@@ -36,6 +36,16 @@ module ArticleStore {
     // so the try/catch here guards Storage exceptions, not heap exhaustion —
     // the bodies are already resident, so writing them allocates only the key
     // string.)
+    // M8.3 self-heal: true iff every id has a body in Storage. Used at launch
+    // to spot-check corpus integrity (a sampled subset of ids) so a
+    // complete-but-empty corpus triggers an auto re-install.
+    function allPresent(ids as Array<String>) as Boolean {
+        for (var i = 0; i < ids.size(); i++) {
+            if (bodyOf(ids[i]) == null) { return false; }
+        }
+        return true;
+    }
+
     function putBatch(articles as Dictionary) as Number {
         var written = 0;
         var ids = articles.keys();

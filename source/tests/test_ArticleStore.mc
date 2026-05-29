@@ -67,3 +67,26 @@ function articleStore_putBatchOverwrites(logger as Logger) as Boolean {
     Application.Storage.deleteValue("article:ow");
     return back != null && back.equals("new");
 }
+
+// --- M8.3: allPresent (corpus integrity spot-check) ---
+
+(:test)
+function articleStore_allPresentTrueWhenAllExist(logger as Logger) as Boolean {
+    ArticleStore.putBody("ap1", "x");
+    ArticleStore.putBody("ap2", "y");
+    var r = ArticleStore.allPresent(["ap1", "ap2"] as Array<String>);
+    Application.Storage.deleteValue("article:ap1");
+    Application.Storage.deleteValue("article:ap2");
+    logger.debug("allPresent(all exist) = " + r);
+    return r == true;
+}
+
+(:test)
+function articleStore_allPresentFalseWhenOneMissing(logger as Logger) as Boolean {
+    ArticleStore.putBody("ap1", "x");
+    Application.Storage.deleteValue("article:apMissing");
+    var r = ArticleStore.allPresent(["ap1", "apMissing"] as Array<String>);
+    Application.Storage.deleteValue("article:ap1");
+    logger.debug("allPresent(one missing) = " + r);
+    return r == false;
+}

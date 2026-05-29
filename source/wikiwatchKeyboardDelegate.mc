@@ -95,7 +95,7 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
             var s = suggestion as Dictionary;
             var body = ArticleStore.bodyOf(s[:id] as String);
             if (body != null) {
-                var reader = new wikiwatchView(body);
+                var reader = new wikiwatchView(body, s[:id] as String);
                 var readerDelegate = new wikiwatchDelegate(reader);
                 WatchUi.pushView(reader, readerDelegate, WatchUi.SLIDE_LEFT);
             }
