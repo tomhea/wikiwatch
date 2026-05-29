@@ -55,7 +55,8 @@ Or sideload the pre-built artifact directly: copy `versions\wikiwatch-M<N>.prg` 
 | M7.2 | `v0.M7.2` | `b8b2a9c` | 2026-05-28 | 169 KB | UX hotfix: `UpdateCheckView` post-check transition `SLIDE_LEFT` → `SLIDE_IMMEDIATE`. The slide animation made the resolved keyboard look like a duplicate sliding in on top, since UpdateCheckView already renders the same keyboard pixels underneath. Now transition is invisible — "checking for updates..." text just vanishes, keyboard becomes interactive in place. Lifted the transition value to a public instance method `transitionToKeyboard() as WatchUi.SlideType` so the new R1 test can pin it (MonkeyC won't expose class-level consts via `ClassName.CONST` syntax). Also fixed a stale `System.println` that said "starting 750ms race" — now derived from `_CHECK_TIMEOUT_MS`. 178 tests (+1). | 178 |
 | M8 | `v0.M8` | `4ba3799` | 2026-05-29 | 178 KB | **Real Hebrew Wikipedia corpus from a Kiwix ZIM** (180 articles, was 36 synthetic). Chunked-download install (2-in-flight parallel, crash-resumable, battery-gated) unpacked into per-article Storage. New pure models `InstallPlan` / `InstallController` / `BatteryGate` / `LaunchRouter` + `InstallState`; `ArticleStore.putBatch`; `Downloader.fetchChunk` (fetchArticle removed). New corpus tooling `scripts/m8-corpus/`. Device finding: ~12–13 KB `makeWebRequest` response cap → compact numeric ids + ~180-article single-response manifest. | 241 |
 | M8.1 | `v0.M8.1` | `7547237` | 2026-05-29 | — (corpus only) | Corpus cleanup (no `.mc` change → reuses `wikiwatch-M8.prg`): `<math>` → inline LaTeX (פולינום 1056 → 119 lines), strip bidi/zero-width, sub/superscript → ASCII, nikud preserved. Manifest v6. | 241 + 19 tooling |
-| M8.2 | `v0.M8.2` | (this PR) | 2026-05-29 | — (corpus only) | Corpus formatting (no `.mc` change → reuses `wikiwatch-M8.prg`): bullets single-newline, sub-headers tight to body, `wikitable` → `#### טבלה:` rows with colspan/rowspan expansion (notice/diagram tables dropped). Manifest v7. | 241 + 25 tooling |
+| M8.2 | `v0.M8.2` | `7d09824` | 2026-05-29 | — (corpus only) | Corpus formatting (no `.mc` change → reuses `wikiwatch-M8.prg`): bullets single-newline, sub-headers tight to body, `wikitable` → `#### טבלה:` rows with colspan/rowspan expansion (notice/diagram tables dropped). Manifest v7. | 241 + 25 tooling |
+| M8.3 | `v0.M8.3` | `0dbe94f` | 2026-05-29 | 181 KB | **Launch self-heal** (auto re-install when a corpus is marked complete but its bodies are missing — `LaunchRouter` `corpusIntact` arg + `InstallPlan.sampleIndices` + `ArticleStore.allPresent`) + **laid-out article cache** (`ArticleLayoutCache`, instant re-open) + **lazy-load speedup** (`_INCREMENTAL_LINES` 2 → 48; full layout 984 ms → 344 ms, first-paint parity kept). | 255 |
 
 Test count = total `(:test)` functions passing in `scripts/test.ps1` at that tag.
 
@@ -1504,10 +1505,22 @@ Replaced the synthetic 36-article corpus with **180 real Hebrew Wikipedia articl
 
 ---
 
+## M8.3 — Launch self-heal + laid-out article cache + lazy-load speedup (tag `v0.M8.3`)
+
+First post-M8 binary change (→ `wikiwatch-M8.3.prg`, 181 KB).
+
+- **Self-heal:** `LaunchRouter.route` gains a `corpusIntact` arg — a corpus counts as "ready" only if its bodies actually verify. `wikiwatchApp._corpusIntact()` spot-checks ~5 sampled manifest ids at launch (`InstallPlan.sampleIndices` + `ArticleStore.allPresent`, ~5 Storage reads). A complete-but-empty corpus (failed install / stale manifest) now auto-re-installs instead of showing a broken keyboard; offline it degrades to the keyboard.
+- **Laid-out cache:** new `ArticleLayoutCache` (single-entry: id → pixel-wrapped lines + contentHeight). `wikiwatchView` takes a `cacheKey`; re-opening the same article restores the layout and skips the lazy load entirely — instant.
+- **Lazy-load speedup:** `_INCREMENTAL_LINES` 2 → 48. The 50 ms/tick floor dominated full-load; first paint still uses `_INITIAL_LINES=2` (parity kept). Sim-measured full layout of a heavy 267-line body: 984 ms → 344 ms; re-open is a cache hit (~16 ms).
+- 255 tests (+14). Self-heal trigger + cache hit + perf captured live (`docs/m8.3-r2-evidence.txt`).
+
+**Artifact:** `wikiwatch-M8.3.prg`. Current head of `main`.
+
+---
+
 ## What's missing (planned but not yet built)
 
-- **M8.3 (next)** — watch-side: launch **self-heal** (auto re-install when `installState=complete` but the corpus bodies are missing/incomplete) + **laid-out article cache** (cache the pixel-wrapped layout of the last-opened article for instant re-open) + **lazy-load speedup** (bigger incremental batches so long articles fully render fast). This is the first post-M8 binary change → it will add `wikiwatch-M8.3.prg`.
-- **M9** (conditional) — static-dictionary compression, and/or **chunking the manifest** to scale the corpus past the ~180-article single-response cap.
+- **M9** (conditional) — static-dictionary compression, and/or **chunking the manifest** to scale the corpus past the ~180-article single-response cap (the ~12–13 KB `makeWebRequest` response limit found in M8).
 
 ## Reproducing any version
 
