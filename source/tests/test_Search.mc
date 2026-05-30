@@ -322,6 +322,26 @@ function search_normalizeFastPathReturnsIdenticalString(logger as Logger) as Boo
 // --- M9 perf: merge sort + tier1-fills-TOP_K short-circuit ---
 
 (:test)
+function search_ranksHugeSubstringTierWithoutWatchdog(logger as Logger) as Boolean {
+    // M9.1 regression for the real-watch "Watchdog Tripped" crash: a query that
+    // matches ~1500 articles as a SUBSTRING (tier2, tier1 empty) forced the old
+    // O(K^2) insertion sort to ~2.25M comparisons — each allocating two char
+    // arrays in _compareStrings — which exceeds the CIQ per-execution time
+    // limit and CRASHES this test harness (not a clean fail). The O(n log n)
+    // merge sort completes. If this returns at all, the sort scaled.
+    var arts = [] as Array<Dictionary>;
+    for (var i = 0; i < 1500; i++) {
+        // 'ש' at position 1 (not 0) -> tier2; tier1 stays empty so the whole
+        // 1500-element tier2 must be sorted.
+        arts.add({ :id => i.toString(), :title => "א" + "ש" + i.toString(), :popularity => (i % 100) });
+    }
+    var r = Search.rank("ש", arts);
+    logger.debug("huge tier2 rank returned " + r.size() + " (no watchdog)");
+    return r.size() == 50;
+}
+
+
+(:test)
 function search_mergeSortLargeTierSortedDesc(logger as Logger) as Boolean {
     // 120 prefix-matching articles -> capped at TOP_K=50, popularity DESC.
     var arts = [] as Array<Dictionary>;

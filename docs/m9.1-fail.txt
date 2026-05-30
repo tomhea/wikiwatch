@@ -1,0 +1,30 @@
+M9.1 — FAIL evidence (live crash reproductions on the M9 binary vs the v10 server)
+================================================================================
+
+These are RUNTIME crashes (stack overflow + watchdog), not unit-test failures:
+the CIQ test harness cannot assert 'does not stack-overflow' / 'does not trip the
+watchdog', and the watchdog is memory-pressure-dependent (only reproduces with the
+resident 1462-article index leaving little GC headroom — i.e. live, not in tests).
+So the failing evidence is the live crash trace; the passing evidence is the fixed
+live run (docs/m9.1-r2-evidence.txt) + the regression-guard unit tests below.
+
+=== BUG 1 FAIL: install stack overflow (.cache/m9-repro.log) ===
+M9 install: fetch index 0
+M9 install: fetch index 1
+M9 install: fetch index 2
+M9 install: fetch index 3
+M9 install: fetch index 4
+M9 install: index 4 FAILED rc=-101
+M9 install: index 4 FAILED rc=-101
+M9 install: index 4 FAILED rc=-101
+M9 install: index 4 FAILED rc=-101
+Error: Stack Overflow Error
+  - onIndexResult() at C:\Users\tomhe\Documents\Garmin\wikiwatch\source\InstallView.mc:186 0x1000589e 
+  - onIndexResult() at C:\Users\tomhe\Documents\Garmin\wikiwatch\source\InstallView.mc:190 0x100058e6 
+  - onIndexResult() at C:\Users\tomhe\Documents\Garmin\wikiwatch\source\InstallView.mc:190 0x100058e6 
+  - onIndexResult() at C:\Users\tomhe\Documents\Garmin\wikiwatch\source\InstallView.mc:190 0x100058e6 
+
+=== BUG 2 FAIL: search watchdog (.cache/zs9b.log) ===
+ZSEARCH9 load: 1462 arts in 125 ms, fm=421528
+Error: Watchdog Tripped Error - Code Executed Too Long
+  - rank() at C:\Users\tomhe\Documents\Garmin\wikiwatch\source\models\Search.mc:97 0x1000176d 
