@@ -1,0 +1,73 @@
+M9.4 — R2 evidence: anti-crash-loop safe mode + free-memory HUD + corpus size cap
+=================================================================================
+
+CONTEXT
+-------
+M9.3 made the real watch hang HARD: after the 1462-article corpus installed, the
+device went black and stayed unresponsive ~2 hours; a forced reboot triggered the
+watch firmware's recovery reset (apps cleared, re-choose language). Root class:
+the install->keyboard transition tipped the Venu 2 into an uncatchable OOM / GC
+death-spiral; the firmware relaunched the app, which re-hit the same wall — a
+crash loop presenting as a permanent black screen.
+
+A Connect IQ app CANNOT factory-reset the watch or delete other apps (sandbox);
+the reset was firmware self-recovery, not damage. But the app must never be able
+to wedge the device again. M9.4 is the survivability harness for bisecting the
+real hardware corpus-size ceiling SAFELY.
+
+NOTE: the simulator's GC does NOT reproduce this real-watch freeze (the M6.5
+lesson). So M9.4 deliberately does NOT claim to "fix" the freeze in sim — it makes
+the watch fail SAFE and gives us an on-hardware instrument (the screen HUD).
+
+
+(1) ANTI-CRASH-LOOP SAFE MODE (BootGuard)
+-----------------------------------------
+getInitialView drops a persisted boot breadcrumb (BootGuard.noteBootStart) BEFORE
+any heavy index/corpus work, and the shown view's onShow clears it
+(BootGuard.noteReady) once an interactive screen is actually up. A hang/OOM in the
+heavy path never reaches noteReady, so the count survives to the next boot. Two
+consecutive unfinished boots -> SafeModeView (zero heavy work).
+
+Live simulator stdout (monkeydo app run; the sim Storage had ~270 accumulated
+unfinished headless launches from the test runs, so it tripped immediately):
+
+    M9.4 boot: attempts=270 free=732032
+    M9.4 boot: SAFE MODE (>=2 unfinished boots) — skipping heavy load
+
+Then, because SafeModeView.onShow called noteReady(), the NEXT boot came up
+normally (attempts=1) into the install screen — i.e. the watch self-recovers out
+of safe mode; it is NOT stuck there. Screenshot: docs/screenshots/m9.4-install-hud.png
+(install screen, note the new "free 709k" HUD at the bottom).
+
+SafeModeView rendering (forced via a temporary getInitialView diagnostic, since
+removed): docs/screenshots/m9.4-safe-mode.png —
+    Safe mode
+    Search disabled to protect the watch.
+    free 712k
+    Tap: wipe + restart
+Tapping wipes the corpus + install state (deletions only — safe under memory
+pressure) so the next launch is a clean first-install.
+
+Unit-pinned: bootGuard_shouldEnterSafeModeAtThreshold, _noteBootStartIncrements,
+_noteReadyResets, _safeModeRecoversAfterReady (test_BootGuard.mc);
+articleStore_wipeAllDeletesContiguousBodies, _wipeAllEmptyIsZero.
+
+
+(2) ON-SCREEN FREE-MEMORY HUD (MemHud)
+--------------------------------------
+The sim can't give hardware memory numbers, so the watch screen is the
+size-sweep instrument. Free memory is drawn on: the install screen ("free 709k",
+see m9.4-install-hud.png), the safe screen ("free 712k"), and the keyboard
+(pre-existing M6.5 "fm:" readout). MemHud formatting is pure + unit-pinned
+(memHud_kbFloorsToKilobytes, _lineFormat, _taggedFormat).
+
+
+(3) CORPUS SIZE-CAP KNOB (Get-SelectionCount + build-corpus.ps1)
+----------------------------------------------------------------
+select.ps1 now delegates the count+byte decision to the pure Get-SelectionCount
+(corpus-lib), unit-pinned by 4 corpus-tooling tests (count cap binds, byte budget
+binds, 200 B floor, empty input). New build-corpus.ps1 -MaxArticles N -Version V
+regenerates docs/server/ at N articles, reusing the cached extracted bodies.
+Smoke-tested live: select.ps1 -MaxArticles 5 -> chose exactly 5 articles.
+
+Watch binary: 283 -> see m9.4-pass.txt for the test count.

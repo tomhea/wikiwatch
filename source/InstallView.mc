@@ -77,6 +77,12 @@ class InstallView extends WatchUi.View {
 
     function onShow() as Void {
         View.onShow();
+        // M9.4: the install screen is interactive + yields to the event loop
+        // (the download is incremental), so reaching it means this boot is alive
+        // — clear the crash-loop breadcrumb. Without this, a multi-session
+        // install (close + reopen mid-download) would accrue boot attempts and
+        // wrongly trip safe mode before the corpus ever finishes.
+        BootGuard.noteReady();
         if (_started || _switching) { return; }
         System.println("M8 install: resuming=" + _resuming + " fetching manifest");
         Downloader.fetchManifest(method(:onManifestReceived));
@@ -328,6 +334,7 @@ class InstallView extends WatchUi.View {
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
             dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY, lines[2],
                         Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            _drawMemHud(dc, w, h);
             return;
         }
 
@@ -365,6 +372,20 @@ class InstallView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY,
                     _articlesDisplay() + " / " + _total + " articles",
+                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
+        // M9.4: free-memory HUD (size-sweep instrument). The install->keyboard
+        // transition is the M9.3 danger zone; watching this value fall during
+        // the download tells us how close a given corpus size runs to the edge.
+        _drawMemHud(dc, w, h);
+    }
+
+    // M9.4: small free-memory readout at the bottom of the screen. Shared by the
+    // index-phase + chunk-phase progress paints.
+    private function _drawMemHud(dc as Dc, w as Number, h as Number) as Void {
+        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(w / 2, h - 18, Graphics.FONT_XTINY,
+                    MemHud.line(System.getSystemStats().freeMemory),
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 

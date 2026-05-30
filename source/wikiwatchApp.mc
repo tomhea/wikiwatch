@@ -34,6 +34,22 @@ class wikiwatchApp extends Application.AppBase {
     // (a hung makeWebRequest on a deprioritised BLE channel), because the
     // router never routes to a network-dependent view when hasNetwork is false.
     function getInitialView() as [Views] or [Views, InputDelegates] {
+        // M9.4: anti-crash-loop guard. Drop a boot breadcrumb BEFORE any heavy
+        // corpus/index work. A hang or uncatchable OOM in the heavy path below
+        // (loadCompact during _corpusIntact or the keyboard delegate) never
+        // reaches the matching noteReady() in the shown view's onShow, so the
+        // count survives to the next boot. Two consecutive unfinished boots ->
+        // enter SafeModeView, which does ZERO heavy work, so the watch always
+        // recovers to an interactive screen instead of crash-looping (the M9.3
+        // black-screen failure).
+        var bootAttempts = BootGuard.noteBootStart();
+        System.println("M9.4 boot: attempts=" + bootAttempts
+            + " free=" + System.getSystemStats().freeMemory);
+        if (BootGuard.shouldEnterSafeMode(bootAttempts)) {
+            System.println("M9.4 boot: SAFE MODE (>=2 unfinished boots) — skipping heavy load");
+            return [ new SafeModeView(), new SafeModeDelegate() ];
+        }
+
         var installState = InstallState.getState();
         var hasCorpus = !Manifest.isEmpty();
         var hasNetwork = Downloader.isNetworkAvailable();
