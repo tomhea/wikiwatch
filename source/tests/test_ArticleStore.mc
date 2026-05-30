@@ -90,3 +90,24 @@ function articleStore_allPresentFalseWhenOneMissing(logger as Logger) as Boolean
     logger.debug("allPresent(one missing) = " + r);
     return r == false;
 }
+
+(:test)
+function articleStore_wipeAllDeletesContiguousBodies(logger as Logger) as Boolean {
+    // M9.4: seed a contiguous block of bodies (ids "0".."4") + a gap, then wipe.
+    for (var i = 0; i < 5; i++) { ArticleStore.putBody(i.toString(), "b" + i); }
+    // The sim Storage may hold residual bodies from a prior install, so assert
+    // >= the 5 we seeded (not == 5) and that the seeded ids are actually gone.
+    var deleted = ArticleStore.wipeAll();
+    var anyLeft = ArticleStore.bodyOf("0") != null || ArticleStore.bodyOf("4") != null;
+    logger.debug("wipeAll deleted=" + deleted + " anyLeft=" + anyLeft);
+    return deleted >= 5 && anyLeft == false;
+}
+
+(:test)
+function articleStore_wipeAllEmptyIsZero(logger as Logger) as Boolean {
+    // No bodies present -> deletes nothing, terminates via the miss tolerance.
+    ArticleStore.wipeAll();                 // ensure clean
+    var deleted = ArticleStore.wipeAll();
+    logger.debug("wipeAll(empty) = " + deleted);
+    return deleted == 0;
+}

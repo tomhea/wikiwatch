@@ -300,6 +300,33 @@ Test-Case "manifest::version_bumps_on_change" {
 }
 
 # ---------------------------------------------------------------------------
+# select::Get-SelectionCount — the M9.4 corpus size-sweep cap
+# ---------------------------------------------------------------------------
+
+Test-Case "select::count_cap_binds_under_large_budget" {
+    # 1000 candidates of 2 KB each; cap at 300 -> exactly 300 (budget is huge).
+    $sizes = [long[]](1..1000 | ForEach-Object { 2048L })
+    (Get-SelectionCount -ItemSizes $sizes -MaxArticles 300 -TargetBytes 100000000L) -eq 300
+}
+
+Test-Case "select::byte_budget_binds_under_large_count" {
+    # Each 2 KB item -> est min(512,14336) floored... 2048*0.25=512 B. Budget
+    # 2560 B fits exactly 5 before the 6th would exceed. Count cap is generous.
+    $sizes = [long[]](1..1000 | ForEach-Object { 2048L })
+    (Get-SelectionCount -ItemSizes $sizes -MaxArticles 9999 -TargetBytes 2560L) -eq 5
+}
+
+Test-Case "select::tiny_items_floor_to_200_bytes" {
+    # 10-byte items floor to 200 B each; budget 1000 B -> 5 items.
+    $sizes = [long[]](1..100 | ForEach-Object { 10L })
+    (Get-SelectionCount -ItemSizes $sizes -MaxArticles 9999 -TargetBytes 1000L) -eq 5
+}
+
+Test-Case "select::empty_input_is_zero" {
+    (Get-SelectionCount -ItemSizes ([long[]]@()) -MaxArticles 300 -TargetBytes 100000L) -eq 0
+}
+
+# ---------------------------------------------------------------------------
 # runner
 # ---------------------------------------------------------------------------
 

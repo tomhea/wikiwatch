@@ -56,6 +56,15 @@ class wikiwatchKeyboardView extends WatchUi.View {
         }
     }
 
+    // M9.4: the keyboard is the steady-state success screen. Reaching onShow
+    // means the heavy index load (loadCompact in the delegate's initialize, run
+    // during getInitialView / _switchToKeyboard) completed WITHOUT hanging or
+    // OOMing — clear the crash-loop breadcrumb so the next boot is normal.
+    function onShow() as Void {
+        View.onShow();
+        BootGuard.noteReady();
+    }
+
     function setBuffer(b as String) as Void {
         _buffer = b;
         WatchUi.requestUpdate();

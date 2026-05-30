@@ -46,6 +46,31 @@ module ArticleStore {
         return true;
     }
 
+    // M9.4: delete every "article:<id>" body by probing contiguous ids from 0
+    // upward (ids == pack position, 0..N-1) and deleting until a run of
+    // `missTolerance` consecutive misses, capped at `maxProbe`. Deletions only —
+    // no large allocation — so it is safe to call under the memory pressure that
+    // triggers safe mode. Returns the number of bodies deleted. Used by the
+    // SafeModeView wipe-and-recover action (the M9 manifest carries no
+    // articles[], so Manifest.wipeArticles can't reach these keys).
+    function wipeAll() as Number {
+        var deleted = 0;
+        var misses = 0;
+        var k = 0;
+        while (k < 5000 && misses < 10) {
+            var key = KEY_PREFIX + k.toString();
+            if (Application.Storage.getValue(key) == null) {
+                misses++;
+            } else {
+                misses = 0;
+                Application.Storage.deleteValue(key);
+                deleted++;
+            }
+            k++;
+        }
+        return deleted;
+    }
+
     function putBatch(articles as Dictionary) as Number {
         var written = 0;
         var ids = articles.keys();

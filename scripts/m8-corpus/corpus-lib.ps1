@@ -424,3 +424,28 @@ function Get-CorpusTotalBytes {
     foreach ($b in $ChunkByteSizes) { $sum += $b }
     return $sum
 }
+
+# M9.4: how many of the metric-DESC-ranked candidates to keep, honouring BOTH a
+# hard article-count cap and an extracted-byte budget. Pure (operates on raw ZIM
+# item sizes), so the corpus size sweep (300 / 600 / 1000 ... articles) has a
+# unit-pinned, deterministic cap instead of a hand-tuned budget. The byte
+# estimate mirrors select.ps1 exactly (markdown ~= 0.25x raw HTML, capped 14 KB,
+# floored 200 B) so select.ps1 can delegate the decision here.
+function Get-SelectionCount {
+    param(
+        [long[]]$ItemSizes,        # raw ZIM item sizes, already ranked best-first
+        [int]   $MaxArticles,
+        [long]  $TargetBytes
+    )
+    $acc = 0L
+    $n = 0
+    foreach ($size in $ItemSizes) {
+        if ($n -ge $MaxArticles) { break }
+        $est = [Math]::Min([long]($size * 0.25), 14336L)
+        if ($est -lt 200) { $est = 200 }
+        if (($acc + $est) -gt $TargetBytes) { break }
+        $acc += $est
+        $n++
+    }
+    return $n
+}

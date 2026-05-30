@@ -72,23 +72,22 @@ $ranked = $cands | Sort-Object -Property metric -Descending
 $maxMetric = [long]($ranked | Select-Object -First 1).metric
 if ($maxMetric -le 0) { $maxMetric = 1 }
 
-# Select until budget / count limit.
+# Select until budget / count limit. The count+budget decision is the pure
+# Get-SelectionCount (corpus-lib) so the size sweep has a unit-pinned cap.
+$keep = Get-SelectionCount -ItemSizes ([long[]]($ranked | ForEach-Object { $_.size })) `
+                           -MaxArticles $MaxArticles -TargetBytes $TargetBytes
 $sw = [System.IO.StreamWriter]::new($selPath, $false, [System.Text.UTF8Encoding]::new($false))
 $sw.WriteLine("idx`tid`tpopularity`ttitle")
 $accBytes = 0L
-$n = 0
-foreach ($c in $ranked) {
-    if ($n -ge $MaxArticles) { break }
-    # Estimate extracted bytes: markdown is far smaller than raw HTML; cap at 14 KB.
+for ($n = 0; $n -lt $keep; $n++) {
+    $c = $ranked[$n]
     $est = [Math]::Min([long]($c.size * 0.25), 14336L)
     if ($est -lt 200) { $est = 200 }
-    if (($accBytes + $est) -gt $TargetBytes) { break }
     $accBytes += $est
     $id = [System.Uri]::EscapeDataString($c.path)
     $pop = Get-PopularityScore -Views $c.metric -MaxViews $maxMetric
     $t = ($c.title -replace "`t", ' ')
     $sw.WriteLine("$($c.idx)`t$id`t$pop`t$t")
-    $n++
 }
 $sw.Close()
-Write-Host "select: chose $n articles (est ~$([math]::Round($accBytes/1MB,2)) MB extracted) -> $selPath"
+Write-Host "select: chose $keep articles (est ~$([math]::Round($accBytes/1MB,2)) MB extracted) -> $selPath"

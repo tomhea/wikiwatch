@@ -1,0 +1,10 @@
+Ran 292 tests
+FAILED (passed=286, failed=6, errors=0)
+Failing tests (M9.4 functions stubbed: shouldEnterSafeMode->false, MemHud.kb->0, ArticleStore.wipeAll->0):
+articleStore_wipeAllDeletesContiguousBodies            FAIL
+bootGuard_shouldEnterSafeModeAtThreshold               FAIL
+bootGuard_safeModeRecoversAfterReady                   FAIL
+memHud_kbFloorsToKilobytes                             FAIL
+memHud_lineFormat                                      FAIL
+memHud_taggedFormat                                    FAIL
+(Corpus tooling FAIL: stubbing Get-SelectionCount->0 fails the 3 non-empty select:: cap tests; PASS at 34.)

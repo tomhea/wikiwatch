@@ -1,0 +1,5 @@
+BUILD SUCCESSFUL
+Ran 292 tests
+PASSED (passed=292, failed=0, errors=0)
+TESTS OK
+Corpus tooling: 34 tests pass (incl. 4 select::Get-SelectionCount cap tests)
