@@ -73,3 +73,20 @@ until the index parts arrive). Once the body chunks start, the normal
 "Loading: N%" + progress bar + "N / M articles" returns.
 
 Watch-binary-only; v10 corpus unchanged -> re-sideload wikiwatch-M9.3.prg only.
+
+
+=== (a) SIMULATOR EVIDENCE: index-phase label (monkeydo app run) ===
+
+The three index-phase lines are produced by InstallView.indexPhaseLines(idxDone,
+idxCount) (pure, extracted from onUpdate). A temporary ZPROBE in getInitialView
+printed them at app runtime in the venu2 simulator (monkeydo, app mode), then was
+removed:
+
+  ZPROBE indexPhase(0,9) = [Preparing download..., Don't close the app, catalog 0 / 9]
+  ZPROBE indexPhase(3,9) = [Preparing download..., Don't close the app, catalog 3 / 9]
+  ZPROBE indexPhase(9,9) = [Preparing download..., Don't close the app, catalog 9 / 9]
+
+No "0% / 0 of 0" anywhere — confirmed live. onUpdate draws lines[0] (white, top),
+lines[1] (red warning), lines[2] (grey counter) only while _started && _inIndexPhase().
+Unit-pinned by installLabel_indexPhaseShowsPreparing / _indexPhaseCounterTracksProgress
+/ _notZeroOfZero (test_InstallView_label.mc).

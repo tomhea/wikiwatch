@@ -317,16 +317,16 @@ class InstallView extends WatchUi.View {
         // broken. Show a clear "preparing" message + the index part progress
         // instead, with no progress bar / article counter yet.
         if (_started && _inIndexPhase()) {
+            var idxDone = (_indexCtrl as InstallController).receivedCount();
+            var lines = indexPhaseLines(idxDone, _indexCount);
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h / 2 - 44, Graphics.FONT_TINY, "Preparing download...",
+            dc.drawText(cx, h / 2 - 44, Graphics.FONT_TINY, lines[0],
                         Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h / 2 - 16, Graphics.FONT_SMALL, "Don't close the app",
+            dc.drawText(cx, h / 2 - 16, Graphics.FONT_SMALL, lines[1],
                         Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            var idxDone = (_indexCtrl as InstallController).receivedCount();
-            dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY,
-                        "catalog " + idxDone + " / " + _indexCount,
+            dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY, lines[2],
                         Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             return;
         }
@@ -373,6 +373,18 @@ class InstallView extends WatchUi.View {
     // place of a misleading 0%/0-of-0 readout.
     private function _inIndexPhase() as Boolean {
         return _indexCtrl != null && !(_indexCtrl as InstallController).isComplete();
+    }
+
+    // M9.3: the three lines shown DURING the index/catalog phase, in draw order
+    // (top status / red warning / bottom counter). Pure — extracted from onUpdate
+    // so the exact UI text is unit-testable (test_InstallView) and printable in a
+    // monkeydo diagnostic, instead of the misleading "Loading 0% / 0 of 0".
+    function indexPhaseLines(idxDone as Number, idxCount as Number) as Array<String> {
+        return [
+            "Preparing download...",
+            "Don't close the app",
+            "catalog " + idxDone + " / " + idxCount
+        ];
     }
 
     private function _percent() as Number {
