@@ -39,8 +39,17 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _view.setBuffer(_buffer);
         _expanded = null;
         _pressTimer = null;
-        var arts = Manifest.load()[:articles] as Array<Dictionary>?;
-        _articles = (arts == null) ? new [0] : arts;
+        // M9: prefer IndexStore (index parts downloaded during install) over
+        // the manifest's embedded articles[], which is empty for M9 manifests.
+        // Falls back to the manifest articles[] for M8-era corpora where
+        // IndexStore has no parts yet.
+        var indexArts = IndexStore.load();
+        if (indexArts.size() > 0) {
+            _articles = indexArts;
+        } else {
+            var manifestArts = Manifest.load()[:articles] as Array<Dictionary>?;
+            _articles = (manifestArts == null) ? new [0] : manifestArts;
+        }
         // M6.2 pre-loaded every article body into :body so Search.rank could
         // do tier-3 body fallback. That combined with the M6.2 _normalize
         // O(N²) string-concat loop caused uncatchable OOM (the ~2 KB shalom

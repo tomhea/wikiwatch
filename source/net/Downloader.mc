@@ -83,36 +83,42 @@ module Downloader {
         if (version == null || !(version instanceof Number)) {
             return { :ok => false, :error => "missing or non-number version" };
         }
+        // M9: articles[] is OPTIONAL (M9 manifests omit it; the index
+        // arrives via fetchIndex). M8/M7 manifests still include it.
         var rawArts = data["articles"];
-        if (rawArts == null || !(rawArts instanceof Array)) {
-            return { :ok => false, :error => "missing or non-array articles" };
-        }
         var totalBytes = data["totalBytes"];
         if (totalBytes == null) { totalBytes = 0; }
-        // M8: chunked-install fields, extracted via a helper so the defaulting
-        // logic is exercised by the parse tests.
+        // M8: chunked-install fields.
         var chunkFields = _chunkFieldsFrom(data);
         var chunkCount = chunkFields[:chunkCount];
         var chunkUriPattern = chunkFields[:chunkUriPattern];
-        // Convert each article entry from String-keyed to Symbol-keyed.
-        var arts = rawArts as Array<Dictionary>;
+        // M9: index-part fields (stub values returned until real impl).
+        var indexFields = _indexFieldsFrom(data);
+        var indexCount = indexFields[:indexCount];
+        var indexUriPattern = indexFields[:indexUriPattern];
+        // Convert articles[] when present (M7/M8); produce empty list for M9.
         var symArts = [];
-        for (var i = 0; i < arts.size(); i++) {
-            var a = arts[i] as Dictionary;
-            symArts.add({
-                :id         => a["id"],
-                :title      => a["title"],
-                :popularity => a["popularity"]
-            });
+        if (rawArts instanceof Array) {
+            var arts = rawArts as Array<Dictionary>;
+            for (var i = 0; i < arts.size(); i++) {
+                var a = arts[i] as Dictionary;
+                symArts.add({
+                    :id         => a["id"],
+                    :title      => a["title"],
+                    :popularity => a["popularity"]
+                });
+            }
         }
         return {
             :ok => true,
             :manifest => {
-                :version         => version,
-                :totalBytes      => totalBytes,
-                :chunkCount      => chunkCount,
-                :chunkUriPattern => chunkUriPattern,
-                :articles        => symArts
+                :version          => version,
+                :totalBytes       => totalBytes,
+                :chunkCount       => chunkCount,
+                :chunkUriPattern  => chunkUriPattern,
+                :indexCount       => indexCount,
+                :indexUriPattern  => indexUriPattern,
+                :articles         => symArts
             }
         };
     }
@@ -171,6 +177,40 @@ module Downloader {
     function fetchChunk(pattern as String, n as Number, callback as Lang.Method) as Void {
         var url = chunkUrl(pattern, n);
         System.println("M8 net: GET " + url);
+        Communications.makeWebRequest(
+            url,
+            {},
+            {
+                :method => Communications.HTTP_REQUEST_METHOD_GET,
+                :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+            },
+            callback
+        );
+    }
+
+    // M9: extract index-part fields from a manifest JSON dict, defaulting for
+    // M8-era manifests that lack them (indexCount=0 = "no index parts — use
+    // articles[] from the manifest itself").
+    function _indexFieldsFrom(data as Dictionary) as Dictionary {
+        var indexCount = data["indexCount"];
+        if (indexCount == null) { indexCount = 0; }
+        var indexUriPattern = data["indexUriPattern"];
+        if (indexUriPattern == null) { indexUriPattern = "/index/{n}.json"; }
+        return { :indexCount => indexCount, :indexUriPattern => indexUriPattern };
+    }
+
+    // M9: pure index-part URL builder (mirrors _substituteChunkIndex /
+    // chunkUrl). indexUrl("/index/{n}.json", 3) -> BASE_URL + "/index/3.json".
+    function indexUrl(pattern as String, n as Number) as String {
+        return BASE_URL + _substituteChunkIndex(pattern, n);
+    }
+
+    // M9: fire-and-forget index-part fetch. Callback signature:
+    //   callback.invoke(responseCode as Number, data as Dictionary?)
+    // where data is { "index": K, "articles": [{id,title,popularity},...] }.
+    function fetchIndex(pattern as String, n as Number, callback as Lang.Method) as Void {
+        var url = indexUrl(pattern, n);
+        System.println("M9 net: GET " + url);
         Communications.makeWebRequest(
             url,
             {},

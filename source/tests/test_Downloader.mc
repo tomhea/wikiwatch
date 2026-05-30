@@ -50,11 +50,16 @@ function downloader_parseManifestRejectsMissingVersion(logger as Logger) as Bool
 }
 
 (:test)
-function downloader_parseManifestRejectsMissingArticles(logger as Logger) as Boolean {
-    var data = { "version" => 4 };  // no articles
+function downloader_parseManifestNoArticlesIsOk(logger as Logger) as Boolean {
+    // M9: articles[] is optional. A manifest without it (M9-style) parses OK
+    // with an empty articles list (the full index arrives via fetchIndex).
+    var data = { "version" => 10, "chunkCount" => 980, "indexCount" => 6,
+                 "chunkUriPattern" => "/chunk/{n}.json",
+                 "indexUriPattern" => "/index/{n}.json" };
     var r = Downloader.parseManifestResponse(200, data);
-    logger.debug("parse 200 + no-articles -> ok=" + r[:ok]);
-    return r[:ok] == false;
+    logger.debug("M9 no-articles -> ok=" + r[:ok]);
+    return r[:ok] == true
+        && (r[:manifest] as Dictionary)[:articles].size() == 0;
 }
 
 (:test)
@@ -165,4 +170,56 @@ function downloader_parseManifestDefaultsChunkFields(logger as Logger) as Boolea
     var m = r[:manifest] as Dictionary;
     return (m[:chunkCount] as Number) == 0
         && (m[:chunkUriPattern] as String).equals("/chunk/{n}.json");
+}
+
+
+// --- M9: index URL + manifest parse with indexCount / articles-optional ---
+
+(:test)
+function downloader_indexUrlSubstitutesIndex(logger as Logger) as Boolean {
+    var u = Downloader.indexUrl("/index/{n}.json", 3);
+    logger.debug("indexUrl(3) = " + u);
+    return u.equals(Downloader.BASE_URL + "/index/3.json");
+}
+
+(:test)
+function downloader_parseManifestReadsIndexFields(logger as Logger) as Boolean {
+    // M9 manifest: has indexCount/indexUriPattern, no articles[].
+    var data = {
+        "version" => 10, "totalBytes" => 9000000,
+        "chunkCount" => 980, "chunkUriPattern" => "/chunk/{n}.json",
+        "indexCount" => 6, "indexUriPattern" => "/index/{n}.json"
+    };
+    var r = Downloader.parseManifestResponse(200, data);
+    if (r[:ok] != true) { logger.debug("parse failed: " + r[:error]); return false; }
+    var m = r[:manifest] as Dictionary;
+    logger.debug("indexCount=" + m[:indexCount] + " pattern=" + m[:indexUriPattern]);
+    return (m[:indexCount] as Number) == 6
+        && (m[:indexUriPattern] as String).equals("/index/{n}.json");
+}
+
+(:test)
+function downloader_parseManifestDefaultsIndexFields(logger as Logger) as Boolean {
+    // M8-era manifest (no index fields) must still parse, defaulting to 0/pattern.
+    var data = { "version" => 9, "chunkCount" => 180, "articles" => [] };
+    var r = Downloader.parseManifestResponse(200, data);
+    if (r[:ok] != true) { return false; }
+    var m = r[:manifest] as Dictionary;
+    return (m[:indexCount] as Number) == 0
+        && (m[:indexUriPattern] as String).equals("/index/{n}.json");
+}
+
+(:test)
+function downloader_parseManifestM9NoArticlesArray(logger as Logger) as Boolean {
+    // M9 manifests omit articles[] (the index comes via fetchIndex).
+    // parseManifestResponse must succeed even when "articles" key is absent.
+    var data = {
+        "version" => 10, "totalBytes" => 9000000,
+        "chunkCount" => 980, "indexCount" => 6,
+        "chunkUriPattern" => "/chunk/{n}.json",
+        "indexUriPattern" => "/index/{n}.json"
+    };
+    var r = Downloader.parseManifestResponse(200, data);
+    logger.debug("M9 no-articles parse: ok=" + r[:ok]);
+    return r[:ok] == true;
 }

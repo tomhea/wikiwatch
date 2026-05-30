@@ -45,6 +45,13 @@ class InstallView extends WatchUi.View {
     private var _switching as Boolean;
     private var _paused as Boolean;
     private var _chunksUntilBatteryCheck as Number;
+    // M9: index-part fetch fields. _indexCount>0 triggers the two-phase flow.
+    // Index parts are fetched first (fast — only ~6 parts); once all arrive
+    // the body chunk stream begins. Both streams are tracked in InstallState.
+    private var _indexCount as Number;
+    private var _indexPattern as String;
+    private var _indexInFlight as Number;   // currently outstanding index fetches
+    private var _indexReceived as Number;   // index parts successfully written
 
     function initialize(resuming as Boolean) {
         View.initialize();
@@ -59,6 +66,10 @@ class InstallView extends WatchUi.View {
         _switching = false;
         _paused = false;
         _chunksUntilBatteryCheck = BATTERY_CHECK_EVERY;
+        _indexCount = 0;
+        _indexPattern = "/index/{n}.json";
+        _indexInFlight = 0;
+        _indexReceived = 0;
     }
 
     function onShow() as Void {
@@ -83,8 +94,12 @@ class InstallView extends WatchUi.View {
         var remoteVersion = manifest[:version] as Number;
         _chunkCount = manifest[:chunkCount] as Number;
         _pattern = manifest[:chunkUriPattern] as String;
+        // M9: index-part count (0 for M8-era manifests that embed articles[]).
+        _indexCount = manifest[:indexCount] as Number;
+        _indexPattern = manifest[:indexUriPattern] as String;
+        // Total articles: from IndexStore if M9 resumed, else articles[] count.
         var arts = manifest[:articles] as Array;
-        _total = arts.size();
+        _total = _indexCount > 0 ? 0 : arts.size();  // M9: will be known after index fetches
 
         if (_chunkCount <= 0) {
             System.println("M8 install: manifest chunkCount=0 (no chunked corpus)");
@@ -93,11 +108,12 @@ class InstallView extends WatchUi.View {
             _scheduleSwitchToKeyboard(2000);
             return;
         }
-        _perChunk = (_total + _chunkCount - 1) / _chunkCount;
+        _perChunk = (_total > 0 && _chunkCount > 0) ? ((_total + _chunkCount - 1) / _chunkCount) : 1;
         if (_perChunk < 1) { _perChunk = 1; }
 
         // Decide fresh vs resume vs invalidated-resume.
         var seedReceived = [] as Array<Number>;
+        var seedIndexReceived = [] as Array<Number>;
         if (_resuming) {
             var localVersion = InstallState.getManifestVersion();
             if (InstallPlan.shouldInvalidate(localVersion, remoteVersion)) {
@@ -105,10 +121,12 @@ class InstallView extends WatchUi.View {
                     + " remote=" + remoteVersion + ") — wiping + restarting");
                 _freshBegin(manifest, remoteVersion);
             } else {
-                // Same version: keep the partial corpus, resume from bitmap.
+                // Same version: keep the partial corpus, resume from bitmaps.
                 seedReceived = InstallState.getChunksReceived();
+                seedIndexReceived = InstallState.getIndexReceived();  // M9
                 System.println("M8 install: resume same-version, chunks_received="
-                    + seedReceived.size() + "/" + _chunkCount);
+                    + seedReceived.size() + "/" + _chunkCount
+                    + " index_received=" + seedIndexReceived.size() + "/" + _indexCount);
             }
         } else {
             _freshBegin(manifest, remoteVersion);
@@ -117,12 +135,19 @@ class InstallView extends WatchUi.View {
         var maxInFlight = InstallPlan.maxInFlightForMemory(
             System.getSystemStats().freeMemory);
         _ctrl = new InstallController(_chunkCount, seedReceived, maxInFlight);
+        _indexReceived = seedIndexReceived.size();
         _started = true;
         _status = "Loading wikiwatch:";
         System.println("M8 install: begin chunks total=" + _chunkCount
-            + " seeded=" + seedReceived.size() + " maxInFlight=" + maxInFlight);
+            + " seeded=" + seedReceived.size() + " maxInFlight=" + maxInFlight
+            + " indexCount=" + _indexCount);
         WatchUi.requestUpdate();
-        _fireChunks();
+        // M9 two-phase: fetch index parts first (fast — few parts), then body chunks.
+        if (_indexCount > 0 && _indexReceived < _indexCount) {
+            _fireIndexParts(seedIndexReceived);
+        } else {
+            _fireChunks();
+        }
     }
 
     // Save the new manifest, wipe the old corpus, reset install state. Used for
@@ -130,7 +155,60 @@ class InstallView extends WatchUi.View {
     private function _freshBegin(manifest as Dictionary, version as Number) as Void {
         Manifest.wipeArticles();
         Manifest.save(manifest);
+        IndexStore.wipeAll();   // M9: clear stale index parts
         InstallState.begin(version);
+    }
+
+    // --- M9 stage 1: index-part fetch loop ------------------------------------
+    // Index parts are small (few KB each) and few (~6). We fire all at once
+    // (no in-flight cap needed), write them to IndexStore, then transition
+    // to the chunk fetch loop. The body is always skipped if already received.
+
+    private function _fireIndexParts(alreadyReceived as Array<Number>) as Void {
+        // missingChunks reuses the sorted-set difference logic from InstallPlan.
+        var missing = InstallPlan.missingChunks(alreadyReceived, _indexCount);
+        for (var i = 0; i < missing.size(); i++) {
+            var k = missing[i] as Number;
+            System.println("M9 install: fetch index " + k);
+            _indexInFlight++;
+            var cb = new IndexCallback(self, k);
+            Downloader.fetchIndex(_indexPattern, k, cb.method(:onResult));
+        }
+        if (_indexInFlight == 0) {
+            // All parts already received from a prior run — go straight to chunks.
+            _fireChunks();
+        }
+    }
+
+    function onIndexResult(k as Number, rc as Number, data as Dictionary?) as Void {
+        _indexInFlight--;
+        if (rc != 200 || data == null) {
+            System.println("M9 install: index " + k + " FAILED rc=" + rc);
+            // Re-fire this one part (simple retry without cap — there are few).
+            _indexInFlight++;
+            var cb = new IndexCallback(self, k);
+            Downloader.fetchIndex(_indexPattern, k, cb.method(:onResult));
+            return;
+        }
+        var rawArts = data["articles"];
+        if (rawArts instanceof Array) {
+            var symArts = [] as Array<Dictionary>;
+            for (var i = 0; i < (rawArts as Array).size(); i++) {
+                var a = (rawArts as Array)[i] as Dictionary;
+                symArts.add({ :id => a["id"], :title => a["title"], :popularity => a["popularity"] });
+            }
+            IndexStore.putPart(k, symArts);
+        }
+        InstallState.markIndexReceived(k);
+        _indexReceived++;
+        System.println("M9 install: index " + k + " ok, " + _indexReceived + "/" + _indexCount);
+        if (_indexReceived >= _indexCount && _indexInFlight == 0) {
+            // All index parts in — update total articles count + start chunks.
+            _total = IndexStore.load().size();
+            System.println("M9 install: index complete, total articles=" + _total + " — starting chunks");
+            WatchUi.requestUpdate();
+            _fireChunks();
+        }
     }
 
     // --- stage 2: chunk fetch loop ------------------------------------------
@@ -320,6 +398,21 @@ class ChunkCallback {
 
     function onResult(rc as Number, data as Dictionary?) as Void {
         _view.onChunkResult(_n, rc, data);
+    }
+}
+
+// M9: callback wrapper for index-part fetches (mirrors ChunkCallback).
+class IndexCallback {
+    private var _view as InstallView;
+    private var _k as Number;
+
+    function initialize(view as InstallView, k as Number) {
+        _view = view;
+        _k = k;
+    }
+
+    function onResult(rc as Number, data as Dictionary?) as Void {
+        _view.onIndexResult(_k, rc, data);
     }
 }
 

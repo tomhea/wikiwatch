@@ -17,7 +17,10 @@ param(
     # so the article fits in a chunk (the Venu 2 sim rejects responses ≳13 KB
     # with rc=-402/-101). Default 10 KB leaves margin + room for chunk JSON
     # overhead.
-    [int]   $MaxBytes = 10240
+    [int]   $MaxBytes = 10240,
+    # Skip articles whose cache file already exists. Makes incremental
+    # extraction fast (e.g. extending from 585 -> 1200 reuses cached files).
+    [switch]$SkipExisting = $false
 )
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\corpus-lib.ps1"
@@ -70,13 +73,17 @@ if ($Idx -ge 0) {
     if ($rows.Count -eq 0) { Write-Error "idx $Idx not in selected.tsv"; exit 1 }
 }
 
-$count = 0; $done = 0
+$count = 0; $done = 0; $skipped = 0
 foreach ($r in $rows) {
     if ($Limit -gt 0 -and $done -ge $Limit) { break }
+    if ($SkipExisting) {
+        $cachedPath = Join-Path $artDir ((Get-CacheFileName $r.id) + ".txt")
+        if (Test-Path $cachedPath) { $skipped++; $count++; continue }
+    }
     $html = Invoke-ZimShow -Index $r.idx
     $md = Convert-WikiHtmlToMarkdown -Html $html -Title $r.title -MaxBytes $MaxBytes
     Write-ArticleFile -Id $r.id -Markdown $md
     $done++; $count++
     if ($count % 200 -eq 0) { Write-Host "extract: $count / $($rows.Count)..." }
 }
-Write-Host "extract: wrote $done article files -> $artDir"
+Write-Host "extract: wrote $done new + $skipped cached = $($done+$skipped) total -> $artDir"

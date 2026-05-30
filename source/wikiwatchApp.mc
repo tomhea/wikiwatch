@@ -75,12 +75,19 @@ class wikiwatchApp extends Application.AppBase {
         return [ kb, new wikiwatchKeyboardDelegate(kb, "") ];
     }
 
-    // True iff a spot-check sample of the manifest's article ids all have
-    // bodies in Storage. Empty manifest -> true (the hasCorpus=false path
-    // handles first install). O(1)-ish: at most ~5 Storage reads.
+    // True iff a spot-check sample of the installed article ids all have
+    // bodies in Storage. Reads from IndexStore (M9) or Manifest.articles[]
+    // (M8 fallback). Empty corpus -> true (the hasCorpus=false path handles
+    // first install). O(1)-ish: at most ~5 Storage reads.
     private function _corpusIntact() as Boolean {
-        var arts = Manifest.load()[:articles] as Array<Dictionary>?;
-        if (arts == null || arts.size() == 0) { return true; }
+        // M9: use the index parts if available.
+        var arts = IndexStore.load();
+        if (arts.size() == 0) {
+            // M8 fallback: articles[] embedded in the manifest.
+            var manifestArts = Manifest.load()[:articles] as Array<Dictionary>?;
+            arts = (manifestArts == null) ? ([] as Array<Dictionary>) : manifestArts;
+        }
+        if (arts.size() == 0) { return true; }
         var idxs = InstallPlan.sampleIndices(arts.size(), 5);
         var sampleIds = [] as Array<String>;
         for (var i = 0; i < idxs.size(); i++) {
