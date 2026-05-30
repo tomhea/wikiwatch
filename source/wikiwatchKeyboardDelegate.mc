@@ -30,6 +30,10 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     // watch's GC doesn't choke on the 1462-article corpus.
     private var _titles as Array<String>;
     private var _pops as Array<Number>;
+    // M9.5 (D2): titles pre-normalized ONCE at load, so the per-keystroke search
+    // matches against these and never calls Search.normalize per title (removes
+    // the O(S^2) normalize slow-path from the hot path).
+    private var _normTitles as Array<String>;
     private var _ranked as Array<Dictionary>;
     private var _totalMatches as Number;
 
@@ -59,12 +63,28 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
                 for (var i = 0; i < manifestArts.size(); i++) {
                     var a = manifestArts[i] as Dictionary;
                     var id = (a[:id] as String).toNumber();
-                    if (id == null) { continue; }
+                    // M9.5 (B): guard against an absurd/sparse id exploding the
+                    // padding loop (ids are contiguous 0..N-1 in practice).
+                    if (id == null || id < 0 || id > 100000) { continue; }
                     while (_titles.size() <= id) { _titles.add(""); _pops.add(0); }
                     _titles[id] = a[:title] as String;
                     _pops[id] = a[:popularity] as Number;
                 }
             }
+        }
+        // M9.5 (C): cap the searchable index to the stored article prefix, so a
+        // budget-stopped partial install never surfaces an id whose body wasn't
+        // written (no dead taps). installedCount==0 (legacy/full) -> no cap.
+        var cap = InstallState.getInstalledCount();
+        if (cap > 0 && cap < _titles.size()) {
+            _titles = _titles.slice(0, cap);
+            _pops = _pops.slice(0, cap);
+        }
+        // M9.5 (D2): precompute normalized titles ONCE (most Hebrew titles have no
+        // ASCII punctuation, so normalize returns them unchanged — cheap).
+        _normTitles = new [_titles.size()];
+        for (var i = 0; i < _titles.size(); i++) {
+            _normTitles[i] = Search.normalize(_titles[i] as String);
         }
         // M6.2 pre-loaded every article body into :body so Search.rank could
         // do tier-3 body fallback. That combined with the M6.2 _normalize
@@ -175,8 +195,8 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
             _view.setMoreCount(0);
             return;
         }
-        _ranked = Search.rankCompact(_buffer, _titles, _pops);
-        _totalMatches = Search.totalMatchesCompact(_buffer, _titles);
+        _ranked = Search.rankCompact(_buffer, _titles, _normTitles, _pops);
+        _totalMatches = Search.totalMatchesCompact(_buffer, _normTitles);
         var top = _takeTop(_ranked, MAX_SUGGESTIONS);
         var more = _ranked.size() - MAX_SUGGESTIONS;
         if (more < 0) { more = 0; }

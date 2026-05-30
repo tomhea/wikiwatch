@@ -66,6 +66,26 @@ function install_indexPhaseNeverExceedsCapEvenOnRepeatedFailure(logger as Logger
 }
 
 (:test)
+function install_largeChunkCountCompletesViaO1Membership(logger as Logger) as Boolean {
+    // M9.5 (D1): drive a large install end-to-end through the O(1) per-chunk
+    // state machine (was O(chunkCount x received) indexOf scans per nextToFire).
+    // Fire 2-in-flight, succeed each, until complete — proves correctness +
+    // termination at a chunk count well past the real corpus.
+    var c = new InstallController(500, [] as Array<Number>, 2);
+    var iters = 0;
+    while (!c.isComplete() && iters < 100000) {
+        iters++;
+        var f = c.nextToFire();
+        if (f.size() == 0) { break; }
+        for (var i = 0; i < f.size(); i++) { c.onSuccess(f[i], 6); }
+    }
+    logger.debug("large install: received=" + c.receivedCount()
+        + " complete=" + c.isComplete() + " arts=" + c.articlesWritten());
+    return c.isComplete() && c.receivedCount() == 500
+        && c.inFlightCount() == 0 && c.articlesWritten() == 3000;
+}
+
+(:test)
 function install_completesAfterAllChunksReceived(logger as Logger) as Boolean {
     var c = new InstallController(3, [] as Array<Number>, 2);
     c.nextToFire();                  // [0,1]

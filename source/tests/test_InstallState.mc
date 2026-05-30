@@ -83,3 +83,20 @@ function installState_beginClearsPriorReceived(logger as Logger) as Boolean {
     InstallState.reset();
     return ok;
 }
+
+(:test)
+function installState_installedCountRoundtrip(logger as Logger) as Boolean {
+    // M9.5: installedCount persists; defaults 0; begin() + reset() clear it.
+    InstallState.reset();
+    var defaultZero = InstallState.getInstalledCount() == 0;
+    InstallState.setInstalledCount(573);
+    var stored = InstallState.getInstalledCount() == 573;
+    InstallState.begin(7);                 // fresh install clears the count
+    var clearedByBegin = InstallState.getInstalledCount() == 0;
+    InstallState.setInstalledCount(42);
+    InstallState.reset();                  // reset clears it
+    var clearedByReset = InstallState.getInstalledCount() == 0;
+    logger.debug("default0=" + defaultZero + " stored=" + stored
+        + " begin0=" + clearedByBegin + " reset0=" + clearedByReset);
+    return defaultZero && stored && clearedByBegin && clearedByReset;
+}

@@ -20,3 +20,9 @@ function memHud_taggedFormat(logger as Logger) as Boolean {
     logger.debug("tagged=" + MemHud.tagged("idx", 412874));
     return MemHud.tagged("idx", 412874).equals("idx free 403k");
 }
+
+(:test)
+function memHud_storedLineFormat(logger as Logger) as Boolean {
+    logger.debug("stored=" + MemHud.storedLine(573, 1462));
+    return MemHud.storedLine(573, 1462).equals("stored 573 / 1462");
+}

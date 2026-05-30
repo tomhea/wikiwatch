@@ -21,6 +21,12 @@ module InstallState {
     const KEY_CHUNKS  = "installChunksReceived";
     // M9: track index parts received (same sorted-bitmap pattern as chunks).
     const KEY_INDEX   = "installIndexReceived";
+    // M9.5: number of article bodies actually stored (== a contiguous id prefix
+    // [0, installedCount), since chunks install in id order). For a full install
+    // this equals the corpus size; for a budget-stopped partial install it's the
+    // most-popular prefix that fit. Drives search-index capping + the launch
+    // corpus-intact check (so a deliberate partial corpus is "intact", no loop).
+    const KEY_INSTALLED_COUNT = "installInstalledCount";
 
     const STATE_NONE        = "none";
     const STATE_IN_PROGRESS = "in_progress";
@@ -69,6 +75,7 @@ module InstallState {
         _guardedSet(KEY_VERSION, version, 8);
         _guardedSet(KEY_CHUNKS, [] as Array<Number>, 16);
         _guardedSet(KEY_INDEX, [] as Array<Number>, 16);  // M9: reset index bitmap too
+        Application.Storage.deleteValue(KEY_INSTALLED_COUNT);  // M9.5: clear prior count
     }
 
     // M9: record one index part as durably written.
@@ -89,11 +96,23 @@ module InstallState {
         _guardedSet(KEY_STATE, STATE_COMPLETE, 16);
     }
 
+    // M9.5: record how many article bodies were actually stored (contiguous id
+    // prefix). 0 / unset for M8-era corpora (callers fall back to other counts).
+    function setInstalledCount(n as Number) as Void {
+        _guardedSet(KEY_INSTALLED_COUNT, n, 12);
+    }
+
+    function getInstalledCount() as Number {
+        var c = Application.Storage.getValue(KEY_INSTALLED_COUNT) as Number?;
+        return c == null ? 0 : c;
+    }
+
     // Wipe all install-state keys back to "none".
     function reset() as Void {
         Application.Storage.deleteValue(KEY_STATE);
         Application.Storage.deleteValue(KEY_VERSION);
         Application.Storage.deleteValue(KEY_CHUNKS);
         Application.Storage.deleteValue(KEY_INDEX);   // M9
+        Application.Storage.deleteValue(KEY_INSTALLED_COUNT);  // M9.5
     }
 }

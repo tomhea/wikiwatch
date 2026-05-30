@@ -138,3 +138,22 @@ function installPlan_sampleIndicesOne(logger as Logger) as Boolean {
     var r = InstallPlan.sampleIndices(1, 5);
     return r.size() == 1 && r[0] == 0;
 }
+
+(:test)
+function installPlan_storageBudgetStop(logger as Logger) as Boolean {
+    // Below budget -> keep going; at/above -> stop.
+    var b = InstallPlan.STORAGE_BUDGET_BYTES;
+    logger.debug("budget=" + b);
+    return b == 9000000
+        && InstallPlan.shouldStopAtBudget(0) == false
+        && InstallPlan.shouldStopAtBudget(b - 1) == false
+        && InstallPlan.shouldStopAtBudget(b) == true
+        && InstallPlan.shouldStopAtBudget(b + 100) == true;
+}
+
+(:test)
+function installPlan_estimateBytesFromChars(logger as Logger) as Boolean {
+    // Hebrew ~2 bytes/char in UTF-8.
+    return InstallPlan.estimateBytes(0) == 0
+        && InstallPlan.estimateBytes(100) == 200;
+}

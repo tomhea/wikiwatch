@@ -12,6 +12,31 @@ module InstallPlan {
     // drops to a single concurrent chunk request (see maxInFlightForMemory).
     const MEM_PRESSURE_BYTES = 400 * 1024;
 
+    // M9.5: hard cap on how much article-body data we write to Application.Storage
+    // (flash) during an install. The Venu 2 flash quota is invisible to the API
+    // (System.getSystemStats reports only RAM), and overflowing it crashes the
+    // overflowing setValue UNCATCHABLY (the 1462/9.2 MB corpus hard-wedged the
+    // watch). We stop the install at this budget and run search over the stored
+    // prefix (the most-popular articles, since chunks arrive id/popularity order).
+    // 9 MB: the 1000-article corpus (5.9 MB) installed fine, so this admits it in
+    // full while staying below the catastrophic 9.2 MB point.
+    const STORAGE_BUDGET_BYTES = 9000000;
+
+    // Estimate the UTF-8 byte size of a body from its character length. Hebrew
+    // code points are 2 bytes in UTF-8; most corpus text is Hebrew, so ~2x chars
+    // is a reasonable (slightly conservative for mixed ASCII) estimate. Used to
+    // accumulate install bytes against STORAGE_BUDGET_BYTES without allocating a
+    // UTF-8 array per body in the install hot path.
+    function estimateBytes(charLen as Number) as Number {
+        return charLen * 2;
+    }
+
+    // True once the running install byte total has reached the storage budget —
+    // the install should stop writing further chunks (graceful partial install).
+    function shouldStopAtBudget(bytesWritten as Number) as Boolean {
+        return bytesWritten >= STORAGE_BUDGET_BYTES;
+    }
+
     // Insert n into a sorted Array<Number> with no duplicates. Returns a NEW
     // array (does not mutate the input). Maintains the "chunks received so
     // far" bitmap as each chunk lands.

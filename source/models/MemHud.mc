@@ -25,4 +25,12 @@ module MemHud {
     function tagged(tag as String, freeBytes as Number) as String {
         return tag + " " + line(freeBytes);
     }
+
+    // M9.5: install-progress line "stored X / N" — X article bodies written so
+    // far out of N total. On a budget-stopped partial install the final X is the
+    // most-popular prefix that fit in flash; on the watch this is the readout
+    // that tells us the achieved article count (no flash-usage API exists).
+    function storedLine(stored as Number, total as Number) as String {
+        return "stored " + stored + " / " + total;
+    }
 }
