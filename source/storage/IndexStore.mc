@@ -51,7 +51,14 @@ module IndexStore {
     // Concatenate all stored parts in order by probing each key until the
     // first miss (or up to a hard ceiling of 100 parts). Parts missing from
     // Storage are silently skipped to provide a degraded-but-not-crashed result.
+    // R5: ~80 B/article × up to 1500 articles ≈ 120 KB. Guard that 3× that
+    // is free before building the array; return empty on low memory so the
+    // caller (KeyboardDelegate / _corpusIntact) degrades gracefully.
     function load() as Array<Dictionary> {
+        if (System.getSystemStats().freeMemory < 360000) {   // 3 × 120 KB
+            System.println("M9 IndexStore.load: skipped (low memory)");
+            return [] as Array<Dictionary>;
+        }
         var out = [] as Array<Dictionary>;
         var k = 0;
         var misses = 0;
