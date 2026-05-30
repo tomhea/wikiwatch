@@ -19,6 +19,8 @@ module InstallState {
     const KEY_STATE   = "installState";
     const KEY_VERSION = "installManifestVersion";
     const KEY_CHUNKS  = "installChunksReceived";
+    // M9: track index parts received (same sorted-bitmap pattern as chunks).
+    const KEY_INDEX   = "installIndexReceived";
 
     const STATE_NONE        = "none";
     const STATE_IN_PROGRESS = "in_progress";
@@ -56,10 +58,23 @@ module InstallState {
 
     // Begin (or restart) an install for the given version: state=in_progress,
     // version recorded, received-set cleared. NOT called on resume.
+    // M9: get index parts received.
+    function getIndexReceived() as Array<Number> {
+        var c = Application.Storage.getValue(KEY_INDEX) as Array<Number>?;
+        return c == null ? ([] as Array<Number>) : c;
+    }
+
     function begin(version as Number) as Void {
         _guardedSet(KEY_STATE, STATE_IN_PROGRESS, 16);
         _guardedSet(KEY_VERSION, version, 8);
         _guardedSet(KEY_CHUNKS, [] as Array<Number>, 16);
+        _guardedSet(KEY_INDEX, [] as Array<Number>, 16);  // M9: reset index bitmap too
+    }
+
+    // M9: record one index part as durably written.
+    function markIndexReceived(k as Number) as Void {
+        var updated = InstallPlan.sortedInsert(getIndexReceived(), k);
+        _guardedSet(KEY_INDEX, updated, updated.size() * 8 + 32);
     }
 
     // Record one chunk as durably written (sorted-insert, idempotent). The
@@ -79,5 +94,6 @@ module InstallState {
         Application.Storage.deleteValue(KEY_STATE);
         Application.Storage.deleteValue(KEY_VERSION);
         Application.Storage.deleteValue(KEY_CHUNKS);
+        Application.Storage.deleteValue(KEY_INDEX);   // M9
     }
 }

@@ -211,6 +211,42 @@ Test-Case "extractor::bullets_no_blank_before_first" {
 }
 
 # ---------------------------------------------------------------------------
+# pack-index.test — M9 index-part packing
+# ---------------------------------------------------------------------------
+
+Test-Case "pack-index::splits_into_parts_under_cap" {
+    $dir = [System.IO.Path]::Combine($env:TEMP, "pki_test_$(Get-Random)")
+    New-Item -ItemType Directory -Path $dir | Out-Null
+    # Write a packed.tsv with 400 articles (expect ~3 parts at 10KB cap, ~133/part)
+    $sw = [System.IO.StreamWriter]::new("$dir\packed.tsv", $false, [System.Text.UTF8Encoding]::new($false))
+    $sw.WriteLine("id`ttitle`tpopularity")
+    for ($i=0; $i -lt 400; $i++) { $sw.WriteLine("$i`tכותרת-$i`t$([Math]::Max(1,100-$i))") }
+    $sw.Close()
+    & "$PSScriptRoot\pack-index.ps1" -InDir $dir -OutDir "$dir\index" *>&1 | Out-Null
+    $parts = @(Get-ChildItem "$dir\index" -Filter *.json -ErrorAction SilentlyContinue)
+    $meta = Get-Content "$dir\index-meta.json" -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json
+    Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+    ($parts.Count -gt 1) -and ($meta -ne $null) -and ($meta.indexCount -eq $parts.Count) `
+        -and ($meta.indexUriPattern -eq "/index/{n}.json")
+}
+
+Test-Case "pack-index::all_parts_under_12kb" {
+    $dir = [System.IO.Path]::Combine($env:TEMP, "pki_cap_$(Get-Random)")
+    New-Item -ItemType Directory -Path $dir | Out-Null
+    $sw = [System.IO.StreamWriter]::new("$dir\packed.tsv", $false, [System.Text.UTF8Encoding]::new($false))
+    $sw.WriteLine("id`ttitle`tpopularity")
+    for ($i=0; $i -lt 300; $i++) {
+        $title = "ישראל מדינה עם היסטוריה ארוכה ועשירה אשר כוללת " + $i
+        $sw.WriteLine("$i`t$title`t$([Math]::Max(1,100-$i))")
+    }
+    $sw.Close()
+    & "$PSScriptRoot\pack-index.ps1" -InDir $dir -OutDir "$dir\index" *>&1 | Out-Null
+    $over = @(Get-ChildItem "$dir\index" -Filter *.json -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 12288 }).Count
+    Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+    $over -eq 0
+}
+
+# ---------------------------------------------------------------------------
 # pack.test — Split-IntoChunks
 # ---------------------------------------------------------------------------
 

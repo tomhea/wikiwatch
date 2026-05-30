@@ -1,0 +1,69 @@
+M9 — R2 simulator evidence (manifest-chunking + IndexStore + 1462-article corpus)
+=================================================================================
+
+Device: venu2 simulator (SDK 9.1.0). Build: versions/wikiwatch-M9.prg.
+The pure logic (IndexStore put/get/load/isComplete, Downloader index URL/parse,
+InstallPlan.missingChunks reused for index scheduling) is covered by 266 unit
+tests (docs/m9-pass.txt). The sim captures below cover the M9 wiring + the
+critical backward-compatibility path.
+
+
+=== BACKWARD-COMPAT: M9 binary + M8 server (LIVE) ===
+
+The live server still serves the v8 corpus (manifest version=8, no indexCount).
+The M9 binary must handle this gracefully — falling back to the M8 chunk-only path.
+
+Captured against https://wikiwatch.tomhe.app/ (v8 manifest):
+
+    M8 launch: state=none corpus=false intact=true net=true batt=50.0 -> :install
+    M8 install: resuming=false fetching manifest
+    M8 install: begin chunks total=180 seeded=0 maxInFlight=2 indexCount=0
+    M8 install: fetch chunk 0
+    ... 180 chunks, 2-in-flight, zero failures ...
+    M8 install: COMPLETE received=180/180 articlesWritten=180
+
+- indexCount=0 → M9 skips the index-part fetch phase entirely, goes straight
+  to the M8-style chunk loop. No code path changes for existing M8 servers.
+- Install completes identically to M8. Backward-compatibility proven.
+
+
+=== M9 CORPUS SIZING ===
+
+1462 articles, 8.46 MB body data, safely under the ~9 MB Venu 2 Storage cap.
+All responses under the ~12 KB makeWebRequest cap (measured in M8):
+
+  manifest v10:  0.1 KB  (tiny — no articles[], just metadata)
+  body chunks:   1326 files, max 7.8 KB each  (target 7.5 KB)
+  index parts:   9 files,    max 9.6 KB each  (target 10 KB, ~162 articles/part)
+
+
+=== M9 FORWARD PATH: index-part fetch + search with 1462 articles ===
+
+The M9 forward path (indexCount=9, two-phase install) requires the server to
+serve the v10 corpus. Pending server upload of docs/server/ (v10 manifest +
+1326 body chunks + 9 index parts). Once live, the sim will show:
+
+    M9 install: fetch index 0  ...  fetch index 8   (9 small requests, fast)
+    M9 install: index complete, total articles=1462 — starting chunks
+    M8 install: begin chunks total=1326 seeded=0 maxInFlight=2
+    ... 1326 chunks ...
+    M8 install: COMPLETE received=1326/1326 articlesWritten=1462
+
+Logic verified by unit tests:
+  indexStore_putGetRoundtrip, indexStore_loadConcatenatesAllParts,
+  indexStore_isCompleteWhenAllPartsPresent, indexStore_isIncompleteWhenPartMissing,
+  downloader_indexUrlSubstitutesIndex, downloader_parseManifestReadsIndexFields,
+  downloader_parseManifestDefaultsIndexFields, downloader_parseManifestNoArticlesIsOk.
+
+
+=== SEARCH MEMORY CONCERN (1462 articles vs M8's 180) ===
+
+Loading 1462 articles from IndexStore.load() into KeyboardDelegate._articles
+at every keyboard init is a memory risk: at ~80 B/dict × 1462 ≈ 117 KB resident.
+The Venu 2 has ~715 KB free; the keyboard + search overhead leaves ~600 KB, so
+117 KB should fit with margin. However, Search.rank(query, 1462 articles) is
+O(1462) per keystroke — measured in R2 after server upload if search feels slow.
+
+If memory pressure appears (fm: counter drops near 400 KB), the mitigation is to
+load only the matching first-letter bucket (pre-partition the index by first
+Hebrew letter — ~26 buckets × ~56 articles = same IndexStore layout).
