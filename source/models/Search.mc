@@ -94,6 +94,13 @@ module Search {
             // removed in M6.3.
         }
         _sortByPopularityThenTitle(tier1);
+        // M9 perf: if tier1 (prefix matches) already fills TOP_K, tier2
+        // (substring-only) can never appear in the result — skip its sort
+        // entirely. For a common single letter like ש tier2 can be hundreds
+        // of articles; sorting it was the watchdog-tripping O(K^2) hot spot.
+        if (tier1.size() >= TOP_K) {
+            return _take(tier1, TOP_K);
+        }
         _sortByPopularityThenTitle(tier2);
 
         var combined = [];
@@ -115,20 +122,47 @@ module Search {
         return c;
     }
 
-    // Stable insertion sort by :popularity DESC, tiebreak :title ASC
-    // (codepoint order). N is small (<= TOP_K most of the time), so O(N^2)
-    // is fine and stability matters for the tiebreak guarantee.
+    // Stable O(n log n) merge sort by :popularity DESC, tiebreak :title ASC
+    // (codepoint order). M9: replaced the M5 O(n^2) insertion sort — with the
+    // 1462-article corpus a common-letter tier could be hundreds of articles,
+    // and O(K^2) comparisons (each allocating two char arrays in _compareStrings)
+    // tripped the CIQ watchdog ("Code Executed Too Long"). Merge sort keeps the
+    // stable-tiebreak guarantee (ties take from the left half first).
     function _sortByPopularityThenTitle(arr as Array) as Void {
         var n = arr.size();
-        for (var i = 1; i < n; i++) {
-            var current = arr[i] as Dictionary;
-            var j = i - 1;
-            while (j >= 0 && _compare(arr[j] as Dictionary, current) > 0) {
-                arr[j + 1] = arr[j];
-                j--;
+        if (n < 2) { return; }
+        var sorted = _mergeSort(arr);
+        for (var i = 0; i < n; i++) { arr[i] = sorted[i]; }
+    }
+
+    function _mergeSort(arr as Array) as Array {
+        var n = arr.size();
+        if (n < 2) { return arr; }
+        var mid = n / 2;
+        var left = [];
+        var right = [];
+        for (var i = 0; i < mid; i++) { left.add(arr[i]); }
+        for (var i = mid; i < n; i++) { right.add(arr[i]); }
+        return _merge(_mergeSort(left), _mergeSort(right));
+    }
+
+    function _merge(a as Array, b as Array) as Array {
+        var out = [];
+        var i = 0;
+        var j = 0;
+        var la = a.size();
+        var lb = b.size();
+        while (i < la && j < lb) {
+            // <= 0 takes from the LEFT on ties -> stable.
+            if (_compare(a[i] as Dictionary, b[j] as Dictionary) <= 0) {
+                out.add(a[i]); i++;
+            } else {
+                out.add(b[j]); j++;
             }
-            arr[j + 1] = current;
         }
+        while (i < la) { out.add(a[i]); i++; }
+        while (j < lb) { out.add(b[j]); j++; }
+        return out;
     }
 
     // < 0 iff a should come BEFORE b. Higher popularity first; on ties,

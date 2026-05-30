@@ -46,12 +46,15 @@ class InstallView extends WatchUi.View {
     private var _paused as Boolean;
     private var _chunksUntilBatteryCheck as Number;
     // M9: index-part fetch fields. _indexCount>0 triggers the two-phase flow.
-    // Index parts are fetched first (fast — only ~6 parts); once all arrive
-    // the body chunk stream begins. Both streams are tracked in InstallState.
+    // Index parts are fetched FIRST, through their own InstallController so the
+    // same proven 2-in-flight cap + bounded-retry logic applies (firing all
+    // parts at once overran CIQ's ~4-concurrent limit -> rc=-101 -> a
+    // synchronous-callback retry loop -> stack overflow). Once all parts reach
+    // a terminal state the body chunk stream begins.
     private var _indexCount as Number;
     private var _indexPattern as String;
-    private var _indexInFlight as Number;   // currently outstanding index fetches
-    private var _indexReceived as Number;   // index parts successfully written
+    private var _indexCtrl as InstallController?;
+    private var _indexArticleTotal as Number;  // accumulated for the N/M display
 
     function initialize(resuming as Boolean) {
         View.initialize();
@@ -68,8 +71,8 @@ class InstallView extends WatchUi.View {
         _chunksUntilBatteryCheck = BATTERY_CHECK_EVERY;
         _indexCount = 0;
         _indexPattern = "/index/{n}.json";
-        _indexInFlight = 0;
-        _indexReceived = 0;
+        _indexCtrl = null;
+        _indexArticleTotal = 0;
     }
 
     function onShow() as Void {
@@ -135,16 +138,23 @@ class InstallView extends WatchUi.View {
         var maxInFlight = InstallPlan.maxInFlightForMemory(
             System.getSystemStats().freeMemory);
         _ctrl = new InstallController(_chunkCount, seedReceived, maxInFlight);
-        _indexReceived = seedIndexReceived.size();
         _started = true;
         _status = "Loading wikiwatch:";
         System.println("M8 install: begin chunks total=" + _chunkCount
             + " seeded=" + seedReceived.size() + " maxInFlight=" + maxInFlight
             + " indexCount=" + _indexCount);
         WatchUi.requestUpdate();
-        // M9 two-phase: fetch index parts first (fast — few parts), then body chunks.
-        if (_indexCount > 0 && _indexReceived < _indexCount) {
-            _fireIndexParts(seedIndexReceived);
+        // M9 two-phase: fetch index parts first (own controller, 2-in-flight),
+        // then body chunks. If the index is already complete (resume), go
+        // straight to chunks.
+        if (_indexCount > 0) {
+            _indexCtrl = new InstallController(_indexCount, seedIndexReceived, 2);
+            _indexArticleTotal = 0;
+            if ((_indexCtrl as InstallController).isComplete()) {
+                _fireChunks();
+            } else {
+                _fireIndexParts();
+            }
         } else {
             _fireChunks();
         }
@@ -164,50 +174,54 @@ class InstallView extends WatchUi.View {
     // (no in-flight cap needed), write them to IndexStore, then transition
     // to the chunk fetch loop. The body is always skipped if already received.
 
-    private function _fireIndexParts(alreadyReceived as Array<Number>) as Void {
-        // missingChunks reuses the sorted-set difference logic from InstallPlan.
-        var missing = InstallPlan.missingChunks(alreadyReceived, _indexCount);
-        for (var i = 0; i < missing.size(); i++) {
-            var k = missing[i] as Number;
+    private function _fireIndexParts() as Void {
+        if (_indexCtrl == null) { return; }
+        var fire = (_indexCtrl as InstallController).nextToFire();
+        for (var i = 0; i < fire.size(); i++) {
+            var k = fire[i];
             System.println("M9 install: fetch index " + k);
-            _indexInFlight++;
             var cb = new IndexCallback(self, k);
             Downloader.fetchIndex(_indexPattern, k, cb.method(:onResult));
-        }
-        if (_indexInFlight == 0) {
-            // All parts already received from a prior run — go straight to chunks.
-            _fireChunks();
         }
     }
 
     function onIndexResult(k as Number, rc as Number, data as Dictionary?) as Void {
-        _indexInFlight--;
-        if (rc != 200 || data == null) {
-            System.println("M9 install: index " + k + " FAILED rc=" + rc);
-            // Re-fire this one part (simple retry without cap — there are few).
-            _indexInFlight++;
-            var cb = new IndexCallback(self, k);
-            Downloader.fetchIndex(_indexPattern, k, cb.method(:onResult));
-            return;
-        }
-        var rawArts = data["articles"];
-        if (rawArts instanceof Array) {
-            var symArts = [] as Array<Dictionary>;
-            for (var i = 0; i < (rawArts as Array).size(); i++) {
-                var a = (rawArts as Array)[i] as Dictionary;
-                symArts.add({ :id => a["id"], :title => a["title"], :popularity => a["popularity"] });
+        if (_indexCtrl == null) { return; }
+        var ctrl = _indexCtrl as InstallController;
+        if (rc == 200 && data != null) {
+            // Write the part durably BEFORE marking received (resume-safe).
+            var written = 0;
+            var rawArts = data["articles"];
+            if (rawArts instanceof Array) {
+                var symArts = [] as Array<Dictionary>;
+                for (var i = 0; i < (rawArts as Array).size(); i++) {
+                    var a = (rawArts as Array)[i] as Dictionary;
+                    symArts.add({ :id => a["id"], :title => a["title"], :popularity => a["popularity"] });
+                }
+                IndexStore.putPart(k, symArts);
+                written = symArts.size();
             }
-            IndexStore.putPart(k, symArts);
+            InstallState.markIndexReceived(k);
+            _indexArticleTotal += written;
+            ctrl.onSuccess(k, written);
+            System.println("M9 install: index " + k + " ok (+" + written + " arts), "
+                + ctrl.receivedCount() + "/" + _indexCount);
+        } else {
+            // Bounded retry (up to MAX_ATTEMPTS) handled by the controller —
+            // it re-queues k as eligible, or permanently fails it. NO
+            // synchronous re-fetch here: the next fire happens below through
+            // nextToFire(), which the event loop drives so we never recurse.
+            System.println("M9 install: index " + k + " FAILED rc=" + rc);
+            ctrl.onFailure(k);
         }
-        InstallState.markIndexReceived(k);
-        _indexReceived++;
-        System.println("M9 install: index " + k + " ok, " + _indexReceived + "/" + _indexCount);
-        if (_indexReceived >= _indexCount && _indexInFlight == 0) {
-            // All index parts in — update total articles count + start chunks.
-            _total = IndexStore.load().size();
+
+        if (ctrl.isComplete()) {
+            _total = _indexArticleTotal;
             System.println("M9 install: index complete, total articles=" + _total + " — starting chunks");
             WatchUi.requestUpdate();
             _fireChunks();
+        } else {
+            _fireIndexParts();
         }
     }
 

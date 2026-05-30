@@ -38,6 +38,34 @@ function install_setMaxInFlightRaisesCap(logger as Logger) as Boolean {
 }
 
 (:test)
+function install_indexPhaseNeverExceedsCapEvenOnRepeatedFailure(logger as Logger) as Boolean {
+    // M9 regression (the stack-overflow crash): the index phase drives 9 parts
+    // through their own InstallController capped at 2. Even if EVERY fetch
+    // fails (the rc=-101 storm that crashed the watch), the number of times the
+    // controller offers a part is bounded (9 parts x MAX_ATTEMPTS=3 = 27) and
+    // it never offers more than 2 in flight at once — so the view's
+    // fire-on-result loop can't recurse without bound.
+    var c = new InstallController(9, [] as Array<Number>, 2);
+    var totalFires = 0;
+    var maxConcurrent = 0;
+    for (var iter = 0; iter < 1000; iter++) {
+        var f = c.nextToFire();
+        if (f.size() == 0 && c.inFlightCount() == 0) { break; }
+        if (c.inFlightCount() > maxConcurrent) { maxConcurrent = c.inFlightCount(); }
+        // Fail everything we just fired (worst case).
+        for (var i = 0; i < f.size(); i++) {
+            totalFires++;
+            c.onFailure(f[i]);
+        }
+        if (f.size() == 0) { break; }   // nothing eligible + nothing in flight handled above
+    }
+    logger.debug("index storm: totalFires=" + totalFires + " maxConcurrent=" + maxConcurrent
+        + " complete=" + c.isComplete());
+    // Bounded total offers (<=27) + never exceeded the cap of 2 + terminates.
+    return totalFires == 27 && maxConcurrent <= 2 && c.isComplete();
+}
+
+(:test)
 function install_completesAfterAllChunksReceived(logger as Logger) as Boolean {
     var c = new InstallController(3, [] as Array<Number>, 2);
     c.nextToFire();                  // [0,1]
