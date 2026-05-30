@@ -1,0 +1,13 @@
+Ran 283 tests
+FAILED (passed=273, failed=10, errors=0)
+Failing tests (M9.3 functions stubbed: rankCompact->[], totalMatchesCompact->0, loadCompact->empty, indexPhaseLines->'0% / 0 of 0'):
+indexStore_loadCompactIndexesById                      FAIL
+installLabel_indexPhaseShowsPreparing                  FAIL
+installLabel_indexPhaseCounterTracksProgress           FAIL
+installLabel_notZeroOfZero                             FAIL
+rankCompact_prefixMatchByPopularity                    FAIL
+rankCompact_idEqualsArrayPosition                      FAIL
+rankCompact_substringGatedUnderThreeLetters            FAIL
+rankCompact_prefixStillMatchesUnderThree               FAIL
+rankCompact_prefixTierOutranksSubstring                FAIL
+totalMatchesCompact_countsPrefixAndGatedSubstring      FAIL

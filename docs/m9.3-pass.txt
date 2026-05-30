@@ -1,0 +1,4 @@
+BUILD SUCCESSFUL
+Ran 283 tests
+PASSED (passed=283, failed=0, errors=0)
+TESTS OK

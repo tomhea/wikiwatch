@@ -25,7 +25,11 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private var _buffer as String;
     private var _expanded as Dictionary?;
     private var _pressTimer as Timer.Timer?;
-    private var _articles as Array<Dictionary>;
+    // M9.3: compact resident search index (parallel arrays, position == id)
+    // instead of an Array<Dictionary> — ~4x fewer live objects so the real
+    // watch's GC doesn't choke on the 1462-article corpus.
+    private var _titles as Array<String>;
+    private var _pops as Array<Number>;
     private var _ranked as Array<Dictionary>;
     private var _totalMatches as Number;
 
@@ -43,12 +47,24 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         // the manifest's embedded articles[], which is empty for M9 manifests.
         // Falls back to the manifest articles[] for M8-era corpora where
         // IndexStore has no parts yet.
-        var indexArts = IndexStore.load();
-        if (indexArts.size() > 0) {
-            _articles = indexArts;
-        } else {
+        // M9.3: load the compact (title/pop-by-id) index. For M9 corpora this
+        // reads the index parts directly (no resident dicts); for M8-era
+        // corpora (no index parts) fall back to the manifest's articles[].
+        var compact = IndexStore.loadCompact();
+        _titles = compact[:titles] as Array<String>;
+        _pops = compact[:pops] as Array<Number>;
+        if (_titles.size() == 0) {
             var manifestArts = Manifest.load()[:articles] as Array<Dictionary>?;
-            _articles = (manifestArts == null) ? new [0] : manifestArts;
+            if (manifestArts != null) {
+                for (var i = 0; i < manifestArts.size(); i++) {
+                    var a = manifestArts[i] as Dictionary;
+                    var id = (a[:id] as String).toNumber();
+                    if (id == null) { continue; }
+                    while (_titles.size() <= id) { _titles.add(""); _pops.add(0); }
+                    _titles[id] = a[:title] as String;
+                    _pops[id] = a[:popularity] as Number;
+                }
+            }
         }
         // M6.2 pre-loaded every article body into :body so Search.rank could
         // do tier-3 body fallback. That combined with the M6.2 _normalize
@@ -159,8 +175,8 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
             _view.setMoreCount(0);
             return;
         }
-        _ranked = Search.rank(_buffer, _articles);
-        _totalMatches = Search.totalMatches(_buffer, _articles);
+        _ranked = Search.rankCompact(_buffer, _titles, _pops);
+        _totalMatches = Search.totalMatchesCompact(_buffer, _titles);
         var top = _takeTop(_ranked, MAX_SUGGESTIONS);
         var more = _ranked.size() - MAX_SUGGESTIONS;
         if (more < 0) { more = 0; }

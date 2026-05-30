@@ -48,6 +48,13 @@ module Search {
     // future huge corpora (M7+); ResultsView paginates whatever fits.
     const TOP_K = 50;
 
+    // M9.3: substring (tier-2) matching only kicks in once the query is at
+    // least this many characters. Short broad queries (1-2 letters, e.g. a
+    // single common Hebrew letter) do PREFIX-only — they're the queries with
+    // hundreds of substring matches that made ranking the 1462-article corpus
+    // expensive. Longer queries are already narrow, so substring is cheap.
+    const SUBSTRING_MIN_LEN = 3;
+
     // M5.2: count of articles that match `query` BEFORE the TOP_K cap.
     // Empty query matches every article (consistent with rank's empty-query
     // branch returning top-K of the whole corpus). Used by KeyboardDelegate
@@ -103,6 +110,61 @@ module Search {
         }
         _sortByPopularityThenTitle(tier2);
 
+        var combined = [];
+        for (var i = 0; i < tier1.size(); i++) { combined.add(tier1[i]); }
+        for (var i = 0; i < tier2.size(); i++) { combined.add(tier2[i]); }
+        return _take(combined, TOP_K);
+    }
+
+    // M9.3 compact ranking. Instead of an Array<Dictionary> (one dict per
+    // article — ~4 objects each, ~5800 resident objects for the 1462-article
+    // corpus, which the real watch's GC chokes on), the caller keeps the index
+    // as two parallel arrays:
+    //   titles[i] = title of the article whose id is i (i.e. position == id ==
+    //               the "article:<i>" Storage key, so no separate id array)
+    //   pops[i]   = its popularity
+    // Only the <=TOP_K matched articles are materialised into result dicts
+    // ({:id, :title, :popularity}) — created transiently per keystroke, never
+    // held resident. Tier semantics + ordering match rank(); the SUBSTRING_MIN_LEN
+    // gate skips the substring tier for short (broad) queries.
+    // M9.3: total match count over the compact titles array (same prefix +
+    // gated-substring rule as rankCompact), for the ResultsView "X more" footer.
+    // Counts only — allocates nothing per article.
+    function totalMatchesCompact(query as String, titles as Array<String>) as Number {
+        var n = titles.size();
+        if (query.length() == 0) { return 0; }
+        var normQuery = _normalize(query);
+        var allowSubstring = query.length() >= SUBSTRING_MIN_LEN;
+        var count = 0;
+        for (var i = 0; i < n; i++) {
+            var idx = _normalize(titles[i] as String).find(normQuery);
+            if (idx == 0 || (idx != null && allowSubstring)) { count++; }
+        }
+        return count;
+    }
+
+    function rankCompact(query as String, titles as Array<String>, pops as Array<Number>) as Array<Dictionary> {
+        var n = titles.size();
+        if (n == 0 || query.length() == 0) { return []; }
+        var normQuery = _normalize(query);
+        var allowSubstring = query.length() >= SUBSTRING_MIN_LEN;
+        var tier1 = [];
+        var tier2 = [];
+        for (var i = 0; i < n; i++) {
+            var normTitle = _normalize(titles[i] as String);
+            var idx = normTitle.find(normQuery);
+            if (idx == 0) {
+                tier1.add({ :id => i.toString(), :title => titles[i], :popularity => pops[i] });
+            } else if (idx != null && allowSubstring) {
+                tier2.add({ :id => i.toString(), :title => titles[i], :popularity => pops[i] });
+            }
+        }
+        _sortByPopularityThenTitle(tier1);
+        // Prefix tier already fills the result -> skip the substring sort.
+        if (tier1.size() >= TOP_K) {
+            return _take(tier1, TOP_K);
+        }
+        _sortByPopularityThenTitle(tier2);
         var combined = [];
         for (var i = 0; i < tier1.size(); i++) { combined.add(tier1[i]); }
         for (var i = 0; i < tier2.size(); i++) { combined.add(tier2[i]); }

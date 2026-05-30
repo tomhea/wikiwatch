@@ -77,6 +77,43 @@ module IndexStore {
         return out;
     }
 
+    // M9.3: compact load for the keyboard search index. Returns
+    //   { :titles => Array<String>, :pops => Array<Number> }
+    // indexed BY ARTICLE ID (titles[i] = title of article id i, so the array
+    // position is the id and points straight at the "article:<i>" body key —
+    // no separate id array needed). Reads the raw String-keyed parts directly
+    // and never materialises the ~1462 Symbol-keyed dicts that load() builds,
+    // so the resident search structure is ~4x fewer objects (the real watch's
+    // GC chokes on the dict form). R5: guarded like load().
+    function loadCompact() as Dictionary {
+        var titles = [] as Array<String>;
+        var pops = [] as Array<Number>;
+        if (System.getSystemStats().freeMemory < 360000) {
+            System.println("M9 IndexStore.loadCompact: skipped (low memory)");
+            return { :titles => titles, :pops => pops };
+        }
+        var k = 0;
+        var misses = 0;
+        while (k < 100 && misses < 2) {
+            var raw = Application.Storage.getValue(KEY_PREFIX + k.toString()) as Array?;
+            if (raw == null) {
+                misses++;
+            } else {
+                misses = 0;
+                for (var j = 0; j < raw.size(); j++) {
+                    var a = raw[j] as Dictionary;
+                    var id = (a["id"] as String).toNumber();
+                    if (id == null) { continue; }
+                    while (titles.size() <= id) { titles.add(""); pops.add(0); }
+                    titles[id] = a["title"] as String;
+                    pops[id] = a["popularity"] as Number;
+                }
+            }
+            k++;
+        }
+        return { :titles => titles, :pops => pops };
+    }
+
     // True iff every index part K in [0, indexCount) is present in Storage.
     function isComplete(indexCount as Number) as Boolean {
         for (var k = 0; k < indexCount; k++) {
