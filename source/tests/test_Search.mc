@@ -319,6 +319,66 @@ function search_normalizeFastPathReturnsIdenticalString(logger as Logger) as Boo
     return s.equals(n);
 }
 
+// --- M9 perf: merge sort + tier1-fills-TOP_K short-circuit ---
+
+(:test)
+function search_ranksHugeSubstringTierWithoutWatchdog(logger as Logger) as Boolean {
+    // M9.1 regression for the real-watch "Watchdog Tripped" crash: a query that
+    // matches ~1500 articles as a SUBSTRING (tier2, tier1 empty) forced the old
+    // O(K^2) insertion sort to ~2.25M comparisons — each allocating two char
+    // arrays in _compareStrings — which exceeds the CIQ per-execution time
+    // limit and CRASHES this test harness (not a clean fail). The O(n log n)
+    // merge sort completes. If this returns at all, the sort scaled.
+    var arts = [] as Array<Dictionary>;
+    for (var i = 0; i < 1500; i++) {
+        // 'ש' at position 1 (not 0) -> tier2; tier1 stays empty so the whole
+        // 1500-element tier2 must be sorted.
+        arts.add({ :id => i.toString(), :title => "א" + "ש" + i.toString(), :popularity => (i % 100) });
+    }
+    var r = Search.rank("ש", arts);
+    logger.debug("huge tier2 rank returned " + r.size() + " (no watchdog)");
+    return r.size() == 50;
+}
+
+
+(:test)
+function search_mergeSortLargeTierSortedDesc(logger as Logger) as Boolean {
+    // 120 prefix-matching articles -> capped at TOP_K=50, popularity DESC.
+    var arts = [] as Array<Dictionary>;
+    for (var i = 0; i < 120; i++) {
+        arts.add({ :id => i.toString(), :title => "ש" + i.toString(), :popularity => (i % 40) });
+    }
+    var r = Search.rank("ש", arts);
+    if (r.size() != 50) { logger.debug("size=" + r.size()); return false; }
+    var prevPop = 999;
+    for (var i = 0; i < r.size(); i++) {
+        var p = (r[i] as Dictionary)[:popularity] as Number;
+        if (p > prevPop) { logger.debug("not desc at " + i); return false; }
+        prevPop = p;
+    }
+    return true;
+}
+
+(:test)
+function search_tier1FillsTopKSkipsTier2(logger as Logger) as Boolean {
+    // 60 prefix (tier1) + 60 substring-only (tier2, higher popularity). With
+    // tier1 >= 50, result is 50 articles ALL from tier1 — prefix outranks substring.
+    var arts = [] as Array<Dictionary>;
+    for (var i = 0; i < 60; i++) {
+        arts.add({ :id => "p" + i.toString(), :title => "מ" + i.toString(), :popularity => 100 - i });
+    }
+    for (var i = 0; i < 60; i++) {
+        arts.add({ :id => "s" + i.toString(), :title => "אמ" + i.toString(), :popularity => 200 });
+    }
+    var r = Search.rank("מ", arts);
+    if (r.size() != 50) { return false; }
+    for (var i = 0; i < r.size(); i++) {
+        var id = (r[i] as Dictionary)[:id] as String;
+        if (id.substring(0, 1).equals("s")) { logger.debug("tier2 leaked: " + id); return false; }
+    }
+    return true;
+}
+
 // Helper: render an array of article dicts as "[id1,id2,...]" for debug logs.
 // Non-test (no `(:test)` annotation) so the harness doesn't try to run it.
 function _searchIdsOf(arr as Array) as String {

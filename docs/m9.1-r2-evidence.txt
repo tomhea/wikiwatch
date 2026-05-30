@@ -1,0 +1,85 @@
+M9.1 — R2 evidence: two real-watch install/search crashes fixed
+================================================================
+
+Both bugs were on the M9 forward path (indexCount>0, 1462-article corpus) which
+the M9 sim R2 never exercised — it only tested the M8 backward-compat path
+against the still-v8 server. They surfaced when the user uploaded the v10 corpus
+and sideloaded M9: "download screen, then the crash icon." Now reproducible +
+fixed in the sim against the live v10 server.
+
+
+=== BUG 1: install stack-overflow (index-fetch concurrency) ===
+
+BEFORE (.cache/m9-repro.log) — M9 v0.M9 binary, fresh install vs live v10:
+
+    M8 install: begin chunks total=1326 seeded=0 maxInFlight=2 indexCount=9
+    M9 install: fetch index 0 .. fetch index 4         (all fired at once)
+    M9 install: index 4 FAILED rc=-101                 (5th request > CIQ's ~4 cap)
+    M9 install: index 4 FAILED rc=-101  (x many)
+    Error: Stack Overflow Error
+      - onIndexResult() at InstallView.mc:186
+      - onResult() at InstallView.mc:415
+      - fetchIndex() at Downloader.mc:214
+      - onIndexResult() at InstallView.mc:190   <-- synchronous re-fetch
+      ... (recurses without bound) ...
+
+Root cause: _fireIndexParts fired ALL 9 index parts at once; CIQ caps concurrent
+makeWebRequests at ~4, so the 5th returned rc=-101 SYNCHRONOUSLY; onIndexResult's
+synchronous re-fetch on failure re-entered itself → unbounded recursion.
+
+FIX: the index phase now runs through its own InstallController (the same proven
+state machine the chunk phase uses) — 2-in-flight cap (never trips -101) +
+bounded retries (MAX_ATTEMPTS=3 then skip) + NO synchronous re-fetch (next fetch
+driven by nextToFire() across event-loop turns).
+
+AFTER (.cache/m9-fixed.log) — fixed binary, fresh install vs live v10:
+
+    M8 install: begin chunks total=1326 seeded=0 maxInFlight=2 indexCount=9
+    M9 install: fetch index 0 ; fetch index 1          (2 at a time)
+    M9 install: index 0 ok (+149 arts), 1/9
+    M9 install: fetch index 2 ; index 1 ok (+158 arts), 2/9
+    ... (9 parts, 2-in-flight) ...
+    M9 install: index complete, total articles=1462 — starting chunks
+    ... 1326 body chunks, fm steady ~708 KB ...
+    M8 install: COMPLETE received=1326/1326 articlesWritten=1462
+
+-> Full 1462-article install completes end-to-end, zero failures, memory steady.
+Regression test: install_indexPhaseNeverExceedsCapEvenOnRepeatedFailure
+(a -101 failure storm; controller offers <=27 times, never >2 in flight, terminates).
+
+
+=== BUG 2: search watchdog (O(K^2) sort over 1462 articles) ===
+
+BEFORE (.cache/zs9b.log) — a single rank('ש') over the installed 1462-article
+corpus:
+
+    ZSEARCH9 load: 1462 arts in 125 ms, fm=421528
+    Error: Watchdog Tripped Error - Code Executed Too Long
+      - rank() at Search.mc:97   (_sortByPopularityThenTitle on tier2)
+
+Root cause: ש is a very common Hebrew letter, so its substring tier (tier2) was
+hundreds of articles; the M5 O(K^2) insertion sort — each comparison allocating
+two char arrays in _compareStrings — exceeded the CIQ watchdog's per-execution
+time limit.
+
+FIX (source/models/Search.mc):
+- O(n log n) STABLE merge sort replaces the O(K^2) insertion sort.
+- Short-circuit: when tier1 (prefix matches) already fills TOP_K=50, the
+  substring tier2 can never appear in the result — skip building/sorting it.
+
+AFTER (.cache/zs9d.log) — rank('ש') over 1462 synthesised articles (~150 prefix
++ ~350 substring, mirroring the real distribution):
+
+    ZSEARCH9 synth: 1462 arts, fm=431808
+    ZSEARCH9 rank('ש'): 50 hits in 63 ms, fm=431248
+
+-> 63 ms per keystroke for the worst-case broad query, no watchdog, memory stable.
+Tests: search_mergeSortLargeTierSortedDesc, search_tier1FillsTopKSkipsTier2.
+
+
+=== STATUS ===
+
+Both fixes are watch-binary-only — the v10 corpus on the server is correct and
+unchanged. The user re-sideloads wikiwatch-M9.1.prg (no re-upload); the fixed
+binary RESUMES the interrupted install from InstallState, then search works.
+269 watch tests pass; 2 baseline warnings.
