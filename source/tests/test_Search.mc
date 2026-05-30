@@ -319,6 +319,70 @@ function search_normalizeFastPathReturnsIdenticalString(logger as Logger) as Boo
     return s.equals(n);
 }
 
+// --- M9.3 compact ranking: parallel title/pop arrays, id == position,
+//     >=3-letter substring gate ---
+
+(:test)
+function rankCompact_prefixMatchByPopularity(logger as Logger) as Boolean {
+    var titles = ["שבת", "שלום", "תורה"] as Array<String>;
+    var pops   = [2, 9, 1] as Array<Number>;
+    var r = Search.rankCompact("ש", titles, pops);
+    // two ש-prefix hits, popularity DESC -> שלום(id1,pop9) then שבת(id0,pop2)
+    logger.debug("rankCompact ש -> " + r.size());
+    return r.size() == 2
+        && (r[0] as Dictionary)[:id].equals("1") && (r[0] as Dictionary)[:title].equals("שלום")
+        && (r[1] as Dictionary)[:id].equals("0");
+}
+
+(:test)
+function rankCompact_idEqualsArrayPosition(logger as Logger) as Boolean {
+    var titles = ["אא", "שב", "שג"] as Array<String>;
+    var pops   = [1, 5, 4] as Array<Number>;
+    var r = Search.rankCompact("ש", titles, pops);
+    // titles at positions 1,2 match; ids must be "1","2"
+    return r.size() == 2
+        && (r[0] as Dictionary)[:id].equals("1")
+        && (r[1] as Dictionary)[:id].equals("2");
+}
+
+(:test)
+function rankCompact_substringGatedUnderThreeLetters(logger as Logger) as Boolean {
+    // title has "רש" as a SUBSTRING (not prefix). A 2-letter substring query
+    // must NOT match (gate); a 3-letter one matches.
+    var titles = ["מאמרשלי"] as Array<String>;   // contains רשל at index 3
+    var pops   = [5] as Array<Number>;
+    var twoLetter = Search.rankCompact("רש", titles, pops);    // <3 -> no substring
+    var threeLetter = Search.rankCompact("רשל", titles, pops); // >=3 -> substring hit
+    logger.debug("2-letter=" + twoLetter.size() + " 3-letter=" + threeLetter.size());
+    return twoLetter.size() == 0 && threeLetter.size() == 1
+        && (threeLetter[0] as Dictionary)[:id].equals("0");
+}
+
+(:test)
+function rankCompact_prefixStillMatchesUnderThree(logger as Logger) as Boolean {
+    // The gate only affects SUBSTRING; a 1-letter PREFIX still matches.
+    var titles = ["שלום"] as Array<String>;
+    var pops   = [5] as Array<Number>;
+    return Search.rankCompact("ש", titles, pops).size() == 1;
+}
+
+(:test)
+function rankCompact_emptyQueryReturnsEmpty(logger as Logger) as Boolean {
+    return Search.rankCompact("", ["שלום"] as Array<String>, [1] as Array<Number>).size() == 0;
+}
+
+(:test)
+function rankCompact_prefixTierOutranksSubstring(logger as Logger) as Boolean {
+    // id0 = substring match (high pop), id1 = prefix match (low pop). Prefix
+    // tier must come first despite lower popularity. Query >=3 letters so
+    // substring is allowed.
+    var titles = ["אבגדה", "גדהוז"] as Array<String>;   // "גדה" substring in 0, prefix in 1
+    var pops   = [99, 1] as Array<Number>;
+    var r = Search.rankCompact("גדה", titles, pops);
+    logger.debug("r0=" + (r.size() > 0 ? (r[0] as Dictionary)[:id] : "none"));
+    return r.size() == 2 && (r[0] as Dictionary)[:id].equals("1");  // prefix first
+}
+
 // --- M9 perf: merge sort + tier1-fills-TOP_K short-circuit ---
 
 (:test)

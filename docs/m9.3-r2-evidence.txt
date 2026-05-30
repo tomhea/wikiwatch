@@ -1,0 +1,75 @@
+M9.3 — R2 evidence: compact search index + 3-letter substring gate + progress label
+====================================================================================
+
+Two user reports after the M9 1462-article corpus went live:
+  (a) the install screen briefly shows "Loading 0% / 0 of 0" before the body
+      chunks start (during the index/catalog phase);
+  (b) the app freezes / stops responding on the REAL WATCH after all 1462
+      articles finish installing (when the search keyboard takes over).
+
+The freeze does NOT reproduce in the simulator (its GC is far more forgiving —
+the M6.5 lesson). Sim diagnostics localised the cause + verified the fix's effect.
+
+
+=== (b) ROOT CAUSE: resident search index object graph ===
+
+The keyboard held all 1462 articles as an Array<Dictionary> ({:id,:title,:popularity}
+each). Sim diagnostic (post-install, fresh app):
+
+  IndexStore.load(): 1462 articles -> fm 706 KB -> 404 KB   (cost ~302 KB)
+
+404 KB free is NOT out-of-memory, so it's not an OOM. The freeze is the M6.5
+class: the watch's GC stalls the UI when the LIVE OBJECT GRAPH is large — ~1462
+dicts x ~4 objects each = ~5800 resident objects — even with free heap. The sim's
+GC copes; the watch's doesn't.
+
+
+=== (b) FIX: compact title/pop index (id == array position) ===
+
+The keyboard now keeps the index as two PARALLEL ARRAYS instead of dicts:
+  titles[i] = title of the article whose id is i  (position == id == the
+              "article:<i>" body key, so no separate id array)
+  pops[i]   = its popularity
+Only the <=50 MATCHED articles are materialised into result dicts, per keystroke,
+never held resident. New IndexStore.loadCompact() reads the raw index parts
+without building the ~1462 Symbol-keyed dicts at all.
+
+Sim diagnostic — resident cost for 1462 articles (ZMem):
+
+  compact (titles[] + pops[]):  77 KB
+  old Array<Dictionary>:       307 KB     -> ~4x smaller
+
+77 KB resident (vs 307 KB) is a ~4x smaller live object graph -> much lighter GC.
+
+Plus a >=3-letter SUBSTRING GATE (Search.SUBSTRING_MIN_LEN=3): queries of 1-2
+letters do PREFIX-only matching. Those broad single-letter queries (e.g. ש) were
+the ones with hundreds of substring candidates; restricting them to prefix keeps
+per-keystroke work small. 3+ letter queries are already narrow, so substring is
+cheap there.
+
+Unit-covered: rankCompact_prefixMatchByPopularity, rankCompact_idEqualsArrayPosition,
+rankCompact_substringGatedUnderThreeLetters, rankCompact_prefixStillMatchesUnderThree,
+rankCompact_emptyQueryReturnsEmpty, rankCompact_prefixTierOutranksSubstring,
+indexStore_loadCompactIndexesById, indexStore_loadCompactEmpty. 270 -> 278 tests.
+
+NOTE: this is the watch-only first step. If the real watch still struggles at
+77 KB / ~1462 string objects, the queued M9.4 adds server-side first-letter
+buckets so a short query loads only its letter's ~100 articles (needs a corpus
+re-pack + re-upload). M9.3 ships first so it can be validated on the watch with
+just a re-sideload (the v10 corpus is unchanged).
+
+
+=== (a) FIX: "Preparing download..." during the index phase ===
+
+InstallView.onUpdate now detects the index (catalog) phase (_indexCtrl active,
+not yet complete) and shows:
+
+    Preparing download...
+    Don't close the app
+    catalog N / 9
+
+instead of the misleading "Loading 0% / 0 of 0" (the article total isn't known
+until the index parts arrive). Once the body chunks start, the normal
+"Loading: N%" + progress bar + "N / M articles" returns.
+
+Watch-binary-only; v10 corpus unchanged -> re-sideload wikiwatch-M9.3.prg only.

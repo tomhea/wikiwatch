@@ -312,6 +312,25 @@ class InstallView extends WatchUi.View {
         dc.drawText(cx, h / 2 - 80, Graphics.FONT_SMALL, "wikiwatch",
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
+        // M9.3: during the index (catalog) phase the article total isn't known
+        // and no body chunks have started, so a "0% / 0 of 0" readout looks
+        // broken. Show a clear "preparing" message + the index part progress
+        // instead, with no progress bar / article counter yet.
+        if (_started && _inIndexPhase()) {
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h / 2 - 44, Graphics.FONT_TINY, "Preparing download...",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h / 2 - 16, Graphics.FONT_SMALL, "Don't close the app",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            var idxDone = (_indexCtrl as InstallController).receivedCount();
+            dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY,
+                        "catalog " + idxDone + " / " + _indexCount,
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            return;
+        }
+
         // Status line: once chunks are flowing this is the loading %, but
         // before then (manifest stage / error) it carries _status — the
         // "Resuming..." label or a fetch-failure message before we fall back.
@@ -347,6 +366,13 @@ class InstallView extends WatchUi.View {
         dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY,
                     _articlesDisplay() + " / " + _total + " articles",
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+    }
+
+    // M9.3: true while the index (catalog) parts are still downloading — before
+    // the body-chunk phase begins. Used by onUpdate to show "Preparing..." in
+    // place of a misleading 0%/0-of-0 readout.
+    private function _inIndexPhase() as Boolean {
+        return _indexCtrl != null && !(_indexCtrl as InstallController).isComplete();
     }
 
     private function _percent() as Number {

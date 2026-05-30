@@ -8,3 +8,5 @@ ruvector.db
 
 # M8 corpus-pipeline intermediates (regenerated from the ZIM on the dev host).
 scripts/m8-corpus/cached/
+.cache/
+.claude/scheduled_tasks.lock

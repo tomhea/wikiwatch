@@ -80,18 +80,20 @@ class wikiwatchApp extends Application.AppBase {
     // (M8 fallback). Empty corpus -> true (the hasCorpus=false path handles
     // first install). O(1)-ish: at most ~5 Storage reads.
     private function _corpusIntact() as Boolean {
-        // M9: use the index parts if available.
-        var arts = IndexStore.load();
-        if (arts.size() == 0) {
-            // M8 fallback: articles[] embedded in the manifest.
-            var manifestArts = Manifest.load()[:articles] as Array<Dictionary>?;
-            arts = (manifestArts == null) ? ([] as Array<Dictionary>) : manifestArts;
+        // M9.3: count the installed articles via the compact index (id ==
+        // array position). For M9 corpora this comes from the index parts; for
+        // M8-era corpora fall back to the manifest's articles[] count.
+        var count = (IndexStore.loadCompact()[:titles] as Array).size();
+        if (count == 0) {
+            var manifestArts = Manifest.load()[:articles] as Array?;
+            count = (manifestArts == null) ? 0 : manifestArts.size();
         }
-        if (arts.size() == 0) { return true; }
-        var idxs = InstallPlan.sampleIndices(arts.size(), 5);
+        if (count == 0) { return true; }
+        // Sample a few ids (== positions) and check their bodies are present.
+        var idxs = InstallPlan.sampleIndices(count, 5);
         var sampleIds = [] as Array<String>;
         for (var i = 0; i < idxs.size(); i++) {
-            sampleIds.add((arts[idxs[i]] as Dictionary)[:id] as String);
+            sampleIds.add((idxs[i] as Number).toString());
         }
         return ArticleStore.allPresent(sampleIds);
     }
