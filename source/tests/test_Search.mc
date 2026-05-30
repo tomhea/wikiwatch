@@ -383,6 +383,25 @@ function rankCompact_prefixTierOutranksSubstring(logger as Logger) as Boolean {
     return r.size() == 2 && (r[0] as Dictionary)[:id].equals("1");  // prefix first
 }
 
+(:test)
+function totalMatchesCompact_countsPrefixAndGatedSubstring(logger as Logger) as Boolean {
+    // id0: prefix "שב"; id1: "שג" prefix; id2: contains "רש" only as substring.
+    var titles = ["שבת", "שגב", "מרשת"] as Array<String>;
+    // 1-letter "ש": prefix-only (gate blocks substring). Matches id0, id1 (prefix);
+    // id2 has ש as a substring but a 1-letter query is below SUBSTRING_MIN_LEN.
+    var one = Search.totalMatchesCompact("ש", titles);
+    // 3-letter "מרש": substring allowed -> matches id2 only.
+    var three = Search.totalMatchesCompact("מרש", titles);
+    logger.debug("one=" + one + " three=" + three);
+    return one == 2 && three == 1;
+}
+
+(:test)
+function totalMatchesCompact_emptyQueryIsZero(logger as Logger) as Boolean {
+    // Empty query counts nothing (the compact path has no whole-corpus footer).
+    return Search.totalMatchesCompact("", ["שלום", "שבת"] as Array<String>) == 0;
+}
+
 // --- M9 perf: merge sort + tier1-fills-TOP_K short-circuit ---
 
 (:test)
