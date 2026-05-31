@@ -19,6 +19,13 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
         var coords = event.getCoordinates() as Array<Number>;
         var hit = _view.rowAt(coords[0], coords[1]);
         if (hit != null) {
+            // M9.6: low-memory gate — don't open the reader (uncatchable OOM risk).
+            // ResultsView renders the yellow "max open articles" notice.
+            if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+                System.println("M9.6: open-article blocked (low memory)");
+                WatchUi.requestUpdate();
+                return true;
+            }
             var s = hit as Dictionary;
             var body = ArticleStore.bodyOf(s[:id] as String);
             if (body != null) {

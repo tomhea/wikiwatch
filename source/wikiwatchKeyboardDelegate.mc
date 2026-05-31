@@ -109,6 +109,14 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         // with the outer ring.
         var suggestion = _view.suggestionAt(x, y);
         if (suggestion != null) {
+            // M9.6: refuse to open a new article when free heap is low — pushing
+            // the reader allocates a laid-out line list and could OOM uncatchably.
+            // The keyboard view renders the yellow "max open articles" notice.
+            if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+                System.println("M9.6: open-article blocked (low memory)");
+                WatchUi.requestUpdate();
+                return true;
+            }
             var s = suggestion as Dictionary;
             var body = ArticleStore.bodyOf(s[:id] as String);
             if (body != null) {

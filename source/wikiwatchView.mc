@@ -168,6 +168,15 @@ class wikiwatchView extends WatchUi.View {
             var hint = (_body.length() > 24) ? _body.substring(0, 24) : _body;
             System.println("M5.3 first-paint: ms=" + elapsed + " hint='" + hint + "'");
         }
+
+        // M9.6: low-memory warning — long-press to open the search keyboard is
+        // refused (see _resolvePendingHit) to avoid an uncatchable OOM.
+        if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(_screenWidth / 2, _screenHeight - 22, Graphics.FONT_XTINY,
+                        "max open articles",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
     }
 
     // Wake-up callback: re-enter onUpdate where dc is valid for the next batch.
@@ -262,6 +271,14 @@ class wikiwatchView extends WatchUi.View {
             }
             var word = WordHitTest.findWordPx(x, words, wordPx, lineRightX, spacePx);
             if (word != null) {
+                // M9.6: refuse the long-press when free heap is low — pushing a
+                // keyboard layer (which holds the shared index) on top of the
+                // resident reader could OOM uncatchably. Show the yellow notice.
+                if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+                    System.println("M9.6: long-press blocked (low memory)");
+                    WatchUi.requestUpdate();   // reader render shows the yellow notice
+                    return;
+                }
                 System.println("M6 onHold(lazy): word='" + word + "' — pushing keyboard layer");
                 var kbView = new wikiwatchKeyboardView();
                 var kbDelegate = new wikiwatchKeyboardDelegate(kbView, word as String);

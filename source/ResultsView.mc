@@ -1,5 +1,6 @@
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.WatchUi;
 
 // M5.3 full-screen scrollable results view. Refactored from M5.1/M5.2:
@@ -110,6 +111,15 @@ class ResultsView extends WatchUi.View {
                             Graphics.FONT_XTINY, footerText as String,
                             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             }
+        }
+
+        // M9.6: low-memory warning — taps to open an article are refused (the
+        // delegate gates on MemGuard) to avoid an uncatchable OOM.
+        if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(_screenWidth / 2, _screenHeight - 26, Graphics.FONT_XTINY,
+                        "max open articles",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
     }
 
