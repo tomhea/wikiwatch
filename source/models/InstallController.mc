@@ -23,11 +23,21 @@ import Toybox.Lang;
 class InstallController {
     public const MAX_ATTEMPTS = 3;
 
+    // M9.5 (D1): per-chunk state for O(1) eligibility, replacing the O(received)
+    // `indexOf` scans the old _received/_inFlight/_failed arrays needed on every
+    // eligibility check (which made nextToFire O(chunkCount x received) per
+    // callback). State codes:
+    private const ST_ELIGIBLE = 0;
+    private const ST_RECEIVED = 1;
+    private const ST_INFLIGHT = 2;
+    private const ST_FAILED   = 3;
+
     private var _chunkCount as Number;
     private var _maxInFlight as Number;
-    private var _received as Array<Number>;     // durably written, sorted
-    private var _inFlight as Array<Number>;      // currently requested
-    private var _failed as Array<Number>;        // permanently failed (retries gone)
+    private var _state as Array<Number>;         // per-chunk ST_* code
+    private var _receivedCount as Number;
+    private var _inFlightCount as Number;
+    private var _failedCount as Number;
     private var _attempts as Dictionary;         // chunkIdx -> attempt count
     private var _articlesWritten as Number;
 
@@ -35,11 +45,20 @@ class InstallController {
     function initialize(chunkCount as Number, alreadyReceived as Array<Number>, maxInFlight as Number) {
         _chunkCount = chunkCount;
         _maxInFlight = maxInFlight;
-        _received = alreadyReceived;
-        _inFlight = [];
-        _failed = [];
+        _state = new [chunkCount];
+        for (var i = 0; i < chunkCount; i++) { _state[i] = ST_ELIGIBLE; }
+        _receivedCount = 0;
+        _inFlightCount = 0;
+        _failedCount = 0;
         _attempts = {};
         _articlesWritten = 0;
+        for (var i = 0; i < alreadyReceived.size(); i++) {
+            var n = alreadyReceived[i] as Number;
+            if (n >= 0 && n < chunkCount && _state[n] != ST_RECEIVED) {
+                _state[n] = ST_RECEIVED;
+                _receivedCount++;
+            }
+        }
     }
 
     function setMaxInFlight(n as Number) as Void {
@@ -47,17 +66,19 @@ class InstallController {
     }
 
     // Chunk indices to request right now (lowest-first), respecting the
-    // in-flight cap. Marks the returned indices in-flight.
+    // in-flight cap. Marks the returned indices in-flight. O(chunkCount) — no
+    // per-element membership scans.
     function nextToFire() as Array<Number> {
-        var freeSlots = _maxInFlight - _inFlight.size();
+        var freeSlots = _maxInFlight - _inFlightCount;
         if (freeSlots <= 0) {
             return [] as Array<Number>;
         }
         var fire = [] as Array<Number>;
         for (var i = 0; i < _chunkCount && fire.size() < freeSlots; i++) {
-            if (_isEligible(i)) {
+            if (_state[i] == ST_ELIGIBLE) {
                 fire.add(i);
-                _inFlight.add(i);
+                _state[i] = ST_INFLIGHT;
+                _inFlightCount++;
             }
         }
         return fire;
@@ -66,8 +87,12 @@ class InstallController {
     // A chunk's articles are durably written. articleCount feeds the progress
     // counter (articles, not chunks — see plan progress UI).
     function onSuccess(n as Number, articleCount as Number) as Void {
-        _inFlight.remove(n);
-        _received = InstallPlan.sortedInsert(_received, n);
+        if (n < 0 || n >= _chunkCount) { return; }
+        if (_state[n] == ST_INFLIGHT) { _inFlightCount--; }
+        if (_state[n] != ST_RECEIVED) {
+            _state[n] = ST_RECEIVED;
+            _receivedCount++;
+        }
         _articlesWritten += articleCount;
     }
 
@@ -75,21 +100,26 @@ class InstallController {
     // then marks it permanently failed so the install can still complete with
     // a degraded corpus.
     function onFailure(n as Number) as Void {
-        _inFlight.remove(n);
+        if (n < 0 || n >= _chunkCount) { return; }
+        if (_state[n] == ST_INFLIGHT) { _inFlightCount--; }
         var prior = _attempts.hasKey(n) ? (_attempts[n] as Number) : 0;
         var attempts = prior + 1;
         _attempts[n] = attempts;
         if (attempts >= MAX_ATTEMPTS) {
-            _failed = InstallPlan.sortedInsert(_failed, n);
+            if (_state[n] != ST_FAILED) {
+                _state[n] = ST_FAILED;
+                _failedCount++;
+            }
+        } else {
+            _state[n] = ST_ELIGIBLE;   // retry later
         }
-        // else: not in _received / _inFlight / _failed -> eligible again.
     }
 
     // Every chunk has reached a terminal state (received or permanently
     // failed) and nothing is still in flight.
     function isComplete() as Boolean {
-        return (_received.size() + _failed.size()) >= _chunkCount
-            && _inFlight.size() == 0;
+        return (_receivedCount + _failedCount) >= _chunkCount
+            && _inFlightCount == 0;
     }
 
     function articlesWritten() as Number {
@@ -97,22 +127,14 @@ class InstallController {
     }
 
     function receivedCount() as Number {
-        return _received.size();
+        return _receivedCount;
     }
 
     function inFlightCount() as Number {
-        return _inFlight.size();
+        return _inFlightCount;
     }
 
     function attemptsFor(n as Number) as Number {
         return _attempts.hasKey(n) ? (_attempts[n] as Number) : 0;
-    }
-
-    // Eligible = a real chunk index not yet received, not in flight, not
-    // permanently failed.
-    private function _isEligible(i as Number) as Boolean {
-        return _received.indexOf(i) < 0
-            && _inFlight.indexOf(i) < 0
-            && _failed.indexOf(i) < 0;
     }
 }

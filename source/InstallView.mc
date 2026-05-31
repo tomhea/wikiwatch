@@ -55,6 +55,11 @@ class InstallView extends WatchUi.View {
     private var _indexPattern as String;
     private var _indexCtrl as InstallController?;
     private var _indexArticleTotal as Number;  // accumulated for the N/M display
+    // M9.5: running estimate of article-body bytes written to flash, and the flag
+    // that the storage budget was reached (stop installing more chunks). Guards
+    // against overflowing the invisible flash quota, which crashes uncatchably.
+    private var _bytesWritten as Number;
+    private var _budgetStopped as Boolean;
 
     function initialize(resuming as Boolean) {
         View.initialize();
@@ -73,6 +78,8 @@ class InstallView extends WatchUi.View {
         _indexPattern = "/index/{n}.json";
         _indexCtrl = null;
         _indexArticleTotal = 0;
+        _bytesWritten = 0;
+        _budgetStopped = false;
     }
 
     function onShow() as Void {
@@ -233,8 +240,22 @@ class InstallView extends WatchUi.View {
 
     // --- stage 2: chunk fetch loop ------------------------------------------
 
+    // M9.5: finalize the install — record the stored article count (a contiguous
+    // popularity prefix), mark complete, and hand off to the keyboard. Used for
+    // both a full install and a budget-stopped partial one; the launch
+    // corpus-intact check samples within [0, installedCount) so a partial corpus
+    // is accepted (no re-install loop) and search caps to it (no dead taps).
+    private function _finalizeInstall(ctrl as InstallController) as Void {
+        InstallState.setInstalledCount(ctrl.articlesWritten());
+        InstallState.markComplete();
+        System.println("M9.5 install finalize: stored=" + ctrl.articlesWritten()
+            + "/" + _total + " budgetStopped=" + _budgetStopped + " bytes~" + _bytesWritten);
+        WatchUi.requestUpdate();
+        _switchToKeyboard();
+    }
+
     private function _fireChunks() as Void {
-        if (_ctrl == null || _paused) { return; }
+        if (_ctrl == null || _paused || _budgetStopped) { return; }
         var ctrl = _ctrl as InstallController;
         var fire = ctrl.nextToFire();
         for (var i = 0; i < fire.size(); i++) {
@@ -259,8 +280,19 @@ class InstallView extends WatchUi.View {
                 var written = ArticleStore.putBatch(arts as Dictionary);
                 InstallState.markChunkReceived(n);
                 ctrl.onSuccess(n, written);
+                // M9.5: accumulate estimated flash bytes; stop at the budget so
+                // we never issue the overflowing (uncatchable-crash) write.
+                var batchChars = 0;
+                var bids = (arts as Dictionary).keys();
+                for (var bi = 0; bi < bids.size(); bi++) {
+                    batchChars += (arts[bids[bi]] as String).length();
+                }
+                _bytesWritten += InstallPlan.estimateBytes(batchChars);
+                if (InstallPlan.shouldStopAtBudget(_bytesWritten)) {
+                    _budgetStopped = true;
+                }
                 System.println("M8 install: chunk " + n + " ok, +" + written
-                    + " arts (" + ctrl.receivedCount() + "/" + _chunkCount + ")");
+                    + " arts (" + ctrl.receivedCount() + "/" + _chunkCount + ") bytes~" + _bytesWritten);
             } else {
                 System.println("M8 install: chunk " + n + " missing articles dict");
                 ctrl.onFailure(n);
@@ -292,15 +324,17 @@ class InstallView extends WatchUi.View {
             }
         }
 
-        if (ctrl.isComplete()) {
-            InstallState.markComplete();
-            System.println("M8 install: COMPLETE received=" + ctrl.receivedCount()
-                + "/" + _chunkCount + " articlesWritten=" + ctrl.articlesWritten());
-            WatchUi.requestUpdate();
-            _switchToKeyboard();
+        // M9.5: finalize on full completion OR when the storage budget was hit
+        // and the in-flight chunks have drained (graceful partial install).
+        if (ctrl.isComplete() || (_budgetStopped && ctrl.inFlightCount() == 0)) {
+            _finalizeInstall(ctrl);
             return;
         }
-        _fireChunks();
+        // Once the budget is reached we stop firing NEW chunks; we only wait for
+        // the already-in-flight ones to drain (handled by the check above).
+        if (!_budgetStopped) {
+            _fireChunks();
+        }
         WatchUi.requestUpdate();
     }
 
@@ -368,10 +402,10 @@ class InstallView extends WatchUi.View {
             dc.fillRectangle(barX, barY, fillW, barH);
         }
 
-        // N / M articles counter.
+        // "stored X / N" counter (M9.5: the size-sweep article-count instrument).
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, h / 2 + 50, Graphics.FONT_TINY,
-                    _articlesDisplay() + " / " + _total + " articles",
+                    MemHud.storedLine(_articlesDisplay(), _total),
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // M9.4: free-memory HUD (size-sweep instrument). The install->keyboard

@@ -103,7 +103,9 @@ module IndexStore {
                 for (var j = 0; j < raw.size(); j++) {
                     var a = raw[j] as Dictionary;
                     var id = (a["id"] as String).toNumber();
-                    if (id == null) { continue; }
+                    // M9.5 (B): clamp against an absurd/sparse id exploding the
+                    // padding loop (ids are contiguous 0..N-1 in practice).
+                    if (id == null || id < 0 || id > 100000) { continue; }
                     while (titles.size() <= id) { titles.add(""); pops.add(0); }
                     titles[id] = a["title"] as String;
                     pops[id] = a["popularity"] as Number;

@@ -96,10 +96,16 @@ class wikiwatchApp extends Application.AppBase {
     // (M8 fallback). Empty corpus -> true (the hasCorpus=false path handles
     // first install). O(1)-ish: at most ~5 Storage reads.
     private function _corpusIntact() as Boolean {
-        // M9.3: count the installed articles via the compact index (id ==
-        // array position). For M9 corpora this comes from the index parts; for
-        // M8-era corpora fall back to the manifest's articles[] count.
-        var count = (IndexStore.loadCompact()[:titles] as Array).size();
+        // M9.5 (B): prefer the persisted installed-article count — it's the stored
+        // contiguous prefix [0, installedCount) and costs no index build. Falls
+        // back to a (single) loadCompact for legacy installs that predate it, then
+        // to the manifest's articles[] count for M8-era corpora. This removes the
+        // double full-index build at launch (was: _corpusIntact + the keyboard
+        // delegate each calling loadCompact).
+        var count = InstallState.getInstalledCount();
+        if (count <= 0) {
+            count = (IndexStore.loadCompact()[:titles] as Array).size();
+        }
         if (count == 0) {
             var manifestArts = Manifest.load()[:articles] as Array?;
             count = (manifestArts == null) ? 0 : manifestArts.size();

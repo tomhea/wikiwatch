@@ -55,6 +55,12 @@ module Search {
     // expensive. Longer queries are already narrow, so substring is cheap.
     const SUBSTRING_MIN_LEN = 3;
 
+    // M9.5: cap the totalMatchesCompact count scan so a common letter on a big
+    // corpus can't run a full O(N) match-count every keystroke. The footer just
+    // needs to know "there are more than fit", so any value past this cap is
+    // reported as the cap (rendered "<cap>+"); the scan stops once reached.
+    const MATCH_COUNT_CAP = 200;
+
     // M5.2: count of articles that match `query` BEFORE the TOP_K cap.
     // Empty query matches every article (consistent with rank's empty-query
     // branch returning top-K of the whole corpus). Used by KeyboardDelegate
@@ -127,40 +133,64 @@ module Search {
     // ({:id, :title, :popularity}) — created transiently per keystroke, never
     // held resident. Tier semantics + ordering match rank(); the SUBSTRING_MIN_LEN
     // gate skips the substring tier for short (broad) queries.
-    // M9.3: total match count over the compact titles array (same prefix +
-    // gated-substring rule as rankCompact), for the ResultsView "X more" footer.
-    // Counts only — allocates nothing per article.
-    function totalMatchesCompact(query as String, titles as Array<String>) as Number {
-        var n = titles.size();
+    // M9.5: total match count for the ResultsView "X more" footer, over the
+    // PRE-NORMALIZED title array (normTitles[i] == normalize(titles[i]), computed
+    // once at index load — no per-title _normalize per keystroke). Bounded:
+    // stops at MATCH_COUNT_CAP so a common letter on a big corpus can't run a
+    // full O(N) count every keystroke. Counts only — allocates nothing.
+    function totalMatchesCompact(query as String, normTitles as Array<String>) as Number {
+        var n = normTitles.size();
         if (query.length() == 0) { return 0; }
-        var normQuery = _normalize(query);
+        var normQuery = normalize(query);
         var allowSubstring = query.length() >= SUBSTRING_MIN_LEN;
         var count = 0;
         for (var i = 0; i < n; i++) {
-            var idx = _normalize(titles[i] as String).find(normQuery);
-            if (idx == 0 || (idx != null && allowSubstring)) { count++; }
+            var idx = (normTitles[i] as String).find(normQuery);
+            if (idx == 0 || (idx != null && allowSubstring)) {
+                count++;
+                if (count >= MATCH_COUNT_CAP) { break; }   // bounded — footer shows "cap+"
+            }
         }
         return count;
     }
 
-    function rankCompact(query as String, titles as Array<String>, pops as Array<Number>) as Array<Dictionary> {
-        var n = titles.size();
+    // M9.5 bounded compact ranking — fixes the per-keystroke watchdog crash.
+    //
+    // Inputs are PARALLEL arrays indexed by article id, and the index is stored
+    // in POPULARITY-DESCENDING order (id 0 = most popular), so scanning ids in
+    // order yields matches already in popularity order:
+    //   titles[i]     = display title of article id i
+    //   normTitles[i] = normalize(titles[i]), precomputed at load (no per-keystroke normalize)
+    //   pops[i]       = popularity
+    // The old code matched + built BOTH tiers fully then merge-sorted the entire
+    // prefix tier before the TOP_K cutoff — for a common Hebrew letter that tier
+    // is hundreds of entries and the sort (each compare allocating two char
+    // arrays) tripped the CIQ watchdog ("Code Executed Too Long") at ~1000+
+    // articles. Now we CAP each tier at TOP_K during the scan and STOP the scan
+    // entirely once the prefix tier fills TOP_K (prefix always outranks
+    // substring, so it alone is the result). Per-keystroke work is bounded by
+    // ~TOP_K matches, not N. The collected tiers are already popularity-ordered;
+    // a bounded stable title-tiebreak sort runs only on the <=TOP_K result.
+    function rankCompact(query as String, titles as Array<String>, normTitles as Array<String>, pops as Array<Number>) as Array<Dictionary> {
+        var n = normTitles.size();
         if (n == 0 || query.length() == 0) { return []; }
-        var normQuery = _normalize(query);
+        var normQuery = normalize(query);
         var allowSubstring = query.length() >= SUBSTRING_MIN_LEN;
         var tier1 = [];
         var tier2 = [];
         for (var i = 0; i < n; i++) {
-            var normTitle = _normalize(titles[i] as String);
-            var idx = normTitle.find(normQuery);
+            var idx = (normTitles[i] as String).find(normQuery);
             if (idx == 0) {
                 tier1.add({ :id => i.toString(), :title => titles[i], :popularity => pops[i] });
-            } else if (idx != null && allowSubstring) {
+                // Prefix tier fills the result -> no later match can displace it.
+                if (tier1.size() >= TOP_K) { break; }
+            } else if (idx != null && allowSubstring && tier2.size() < TOP_K) {
                 tier2.add({ :id => i.toString(), :title => titles[i], :popularity => pops[i] });
             }
         }
+        // Tiers are in popularity order from the scan; sort is bounded by TOP_K
+        // (stable title tiebreak within equal popularity).
         _sortByPopularityThenTitle(tier1);
-        // Prefix tier already fills the result -> skip the substring sort.
         if (tier1.size() >= TOP_K) {
             return _take(tier1, TOP_K);
         }
@@ -261,6 +291,13 @@ module Search {
     // fresh String), so on a long input it can blow the heap. Most titles
     // and queries have no punctuation; the fast-path means the hot path
     // pays nothing.
+    // M9.5: public entry to the matching normalization, so callers (the keyboard
+    // delegate building its cached _normTitles, and the index loader) can
+    // precompute normalized titles ONCE at load instead of per keystroke.
+    function normalize(s as String) as String {
+        return _normalize(s);
+    }
+
     function _normalize(s as String) as String {
         if (s.length() == 0) { return s; }
         if (s.find("\"") == null && s.find("'") == null && s.find("-") == null) {

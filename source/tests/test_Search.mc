@@ -326,7 +326,7 @@ function search_normalizeFastPathReturnsIdenticalString(logger as Logger) as Boo
 function rankCompact_prefixMatchByPopularity(logger as Logger) as Boolean {
     var titles = ["שבת", "שלום", "תורה"] as Array<String>;
     var pops   = [2, 9, 1] as Array<Number>;
-    var r = Search.rankCompact("ש", titles, pops);
+    var r = Search.rankCompact("ש", titles, titles, pops);
     // two ש-prefix hits, popularity DESC -> שלום(id1,pop9) then שבת(id0,pop2)
     logger.debug("rankCompact ש -> " + r.size());
     return r.size() == 2
@@ -338,7 +338,7 @@ function rankCompact_prefixMatchByPopularity(logger as Logger) as Boolean {
 function rankCompact_idEqualsArrayPosition(logger as Logger) as Boolean {
     var titles = ["אא", "שב", "שג"] as Array<String>;
     var pops   = [1, 5, 4] as Array<Number>;
-    var r = Search.rankCompact("ש", titles, pops);
+    var r = Search.rankCompact("ש", titles, titles, pops);
     // titles at positions 1,2 match; ids must be "1","2"
     return r.size() == 2
         && (r[0] as Dictionary)[:id].equals("1")
@@ -351,8 +351,8 @@ function rankCompact_substringGatedUnderThreeLetters(logger as Logger) as Boolea
     // must NOT match (gate); a 3-letter one matches.
     var titles = ["מאמרשלי"] as Array<String>;   // contains רשל at index 3
     var pops   = [5] as Array<Number>;
-    var twoLetter = Search.rankCompact("רש", titles, pops);    // <3 -> no substring
-    var threeLetter = Search.rankCompact("רשל", titles, pops); // >=3 -> substring hit
+    var twoLetter = Search.rankCompact("רש", titles, titles, pops);    // <3 -> no substring
+    var threeLetter = Search.rankCompact("רשל", titles, titles, pops); // >=3 -> substring hit
     logger.debug("2-letter=" + twoLetter.size() + " 3-letter=" + threeLetter.size());
     return twoLetter.size() == 0 && threeLetter.size() == 1
         && (threeLetter[0] as Dictionary)[:id].equals("0");
@@ -363,12 +363,12 @@ function rankCompact_prefixStillMatchesUnderThree(logger as Logger) as Boolean {
     // The gate only affects SUBSTRING; a 1-letter PREFIX still matches.
     var titles = ["שלום"] as Array<String>;
     var pops   = [5] as Array<Number>;
-    return Search.rankCompact("ש", titles, pops).size() == 1;
+    return Search.rankCompact("ש", titles, titles, pops).size() == 1;
 }
 
 (:test)
 function rankCompact_emptyQueryReturnsEmpty(logger as Logger) as Boolean {
-    return Search.rankCompact("", ["שלום"] as Array<String>, [1] as Array<Number>).size() == 0;
+    return Search.rankCompact("", ["שלום"] as Array<String>, ["שלום"] as Array<String>, [1] as Array<Number>).size() == 0;
 }
 
 (:test)
@@ -378,7 +378,7 @@ function rankCompact_prefixTierOutranksSubstring(logger as Logger) as Boolean {
     // substring is allowed.
     var titles = ["אבגדה", "גדהוז"] as Array<String>;   // "גדה" substring in 0, prefix in 1
     var pops   = [99, 1] as Array<Number>;
-    var r = Search.rankCompact("גדה", titles, pops);
+    var r = Search.rankCompact("גדה", titles, titles, pops);
     logger.debug("r0=" + (r.size() > 0 ? (r[0] as Dictionary)[:id] : "none"));
     return r.size() == 2 && (r[0] as Dictionary)[:id].equals("1");  // prefix first
 }
@@ -400,6 +400,57 @@ function totalMatchesCompact_countsPrefixAndGatedSubstring(logger as Logger) as 
 function totalMatchesCompact_emptyQueryIsZero(logger as Logger) as Boolean {
     // Empty query counts nothing (the compact path has no whole-corpus footer).
     return Search.totalMatchesCompact("", ["שלום", "שבת"] as Array<String>) == 0;
+}
+
+// --- M9.5: per-keystroke work bounded by TOP_K, not corpus size (watchdog fix) ---
+
+(:test)
+function rankCompact_boundedTopKOnHugeCommonPrefix(logger as Logger) as Boolean {
+    // 5000 titles that ALL match the query as a prefix, stored popularity-DESC by
+    // id (the real index ordering: id 0 = most popular). The M9.4 code merge-sorted
+    // all 5000 before the TOP_K cutoff -> watchdog crash on the real watch. The
+    // bounded scan must return the 50 most-popular = the first 50 ids in order,
+    // stopping the scan at TOP_K instead of sorting the whole tier.
+    var titles = new [5000];
+    var norm   = new [5000];
+    var pops   = new [5000];
+    for (var i = 0; i < 5000; i++) {
+        var t = "א" + i.toString();          // every title starts with א
+        titles[i] = t; norm[i] = t; pops[i] = 5000 - i;   // id 0 most popular
+    }
+    var r = Search.rankCompact("א", titles, norm, pops);
+    if (r.size() != Search.TOP_K) { logger.debug("size=" + r.size()); return false; }
+    for (var i = 0; i < Search.TOP_K; i++) {
+        if (!((r[i] as Dictionary)[:id] as String).equals(i.toString())) {
+            logger.debug("pos " + i + " id=" + (r[i] as Dictionary)[:id]);
+            return false;
+        }
+    }
+    return true;
+}
+
+(:test)
+function totalMatchesCompact_cappedNotFullScan(logger as Logger) as Boolean {
+    // 5000 all-matching titles -> the count is capped (bounds the per-keystroke
+    // footer scan), NOT the full 5000.
+    var norm = new [5000];
+    for (var i = 0; i < 5000; i++) { norm[i] = "א" + i.toString(); }
+    var c = Search.totalMatchesCompact("א", norm);
+    logger.debug("capped count=" + c + " cap=" + Search.MATCH_COUNT_CAP);
+    return c == Search.MATCH_COUNT_CAP && c < 5000;
+}
+
+(:test)
+function rankCompact_smallTierStillSortsByPopularity(logger as Logger) as Boolean {
+    // When matches are FEWER than TOP_K (no early stop), the bounded sort still
+    // orders the whole (small) tier by popularity, even if input isn't pre-sorted.
+    var titles = ["אא", "אב", "אג"] as Array<String>;
+    var pops   = [1, 9, 5] as Array<Number>;       // NOT descending by id
+    var r = Search.rankCompact("א", titles, titles, pops);
+    return r.size() == 3
+        && (r[0] as Dictionary)[:id].equals("1")   // pop 9
+        && (r[1] as Dictionary)[:id].equals("2")   // pop 5
+        && (r[2] as Dictionary)[:id].equals("0");  // pop 1
 }
 
 // --- M9 perf: merge sort + tier1-fills-TOP_K short-circuit ---

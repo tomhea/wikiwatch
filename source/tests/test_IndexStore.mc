@@ -71,6 +71,26 @@ function indexStore_loadCompactIndexesById(logger as Logger) as Boolean {
 }
 
 (:test)
+function indexStore_loadCompactSkipsAbsurdId(logger as Logger) as Boolean {
+    IndexStore.wipeAll();
+    // M9.5 (B): a sparse/absurd id must be SKIPPED, not pad the compact arrays
+    // up to that id (id 150000 would add 150k empty slots -> OOM). Valid ids
+    // 0,1 plus one out-of-range id 150000 (> 100000 clamp threshold).
+    IndexStore.putPart(0, [
+        { :id => "0", :title => "אפס", :popularity => 100 },
+        { :id => "150000", :title => "שגוי", :popularity => 50 },
+        { :id => "1", :title => "אחת", :popularity => 90 }
+    ] as Array<Dictionary>);
+    var c = IndexStore.loadCompact();
+    var titles = c[:titles] as Array<String>;
+    IndexStore.wipeAll();
+    logger.debug("compact size with absurd id = " + titles.size());
+    // absurd id skipped -> array bounded to the valid ids (0,1) -> size 2.
+    return titles.size() == 2
+        && titles[0].equals("אפס") && titles[1].equals("אחת");
+}
+
+(:test)
 function indexStore_loadCompactEmpty(logger as Logger) as Boolean {
     IndexStore.wipeAll();
     var c = IndexStore.loadCompact();
