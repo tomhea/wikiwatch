@@ -36,6 +36,9 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private var _normTitles as Array<String>;
     private var _ranked as Array<Dictionary>;
     private var _totalMatches as Number;
+    // M9.7: timestamp (ms) of the physical back-button press, for long-press
+    // (close-app) detection on key release. null when the back key isn't down.
+    private var _backDownMs as Number?;
 
     // M6: initialBuffer lets the long-press flow push a new keyboard
     // layer with a pre-filled word. Existing callers pass "" for the
@@ -47,6 +50,7 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _view.setBuffer(_buffer);
         _expanded = null;
         _pressTimer = null;
+        _backDownMs = null;
         // M9.6: load the compact index ONCE per session via IndexCache and share
         // it across every keyboard. Previously each keyboard re-ran loadCompact +
         // the manifest fallback + installedCount cap + a full normalize pass; the
@@ -169,9 +173,8 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    // M9.7: long-press the on-screen backspace (X) wedge -> "Close app?" modal.
-    // (The physical back button can't emit a touch-hold, and Venu 2 firmware may
-    // claim a physical long-press, so the X wedge is the long-pressable "back".)
+    // M9.7: long-press the on-screen backspace (X) wedge = clear the WHOLE typing
+    // buffer (delete all letters). (Close-app is on the physical back long-press.)
     function onHold(event as WatchUi.ClickEvent) as Boolean {
         if (_view.isCloseQuery()) { return true; }
         var coords = event.getCoordinates() as Array<Number>;
@@ -179,10 +182,39 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         var b = KeyboardLayout.buttonAt(coords[0], coords[1],
                                         settings.screenWidth, settings.screenHeight);
         if (b != null && (b as Dictionary)[:type] == :BACKSPACE) {
-            System.println("M9.7: long-press X — showing close-app query");
-            _view.setCloseQuery(true);
+            System.println("M9.7: long-press X — clear buffer");
+            _buffer = InputBuffer.clear(_buffer);
+            _view.setBuffer(_buffer);
+            _recomputeSuggestions();
         }
         return true;
+    }
+
+    // M9.7: long-press the PHYSICAL back button -> "Close app?" modal. The back
+    // button doesn't emit a touch-hold, so time its key down/up: a hold past
+    // LongPress.BACK_HOLD_MS shows the modal and is CONSUMED (so the normal back
+    // action doesn't also fire); a short press returns false -> onBack handles it.
+    function onKeyPressed(keyEvent as WatchUi.KeyEvent) as Boolean {
+        var k = keyEvent.getKey();
+        System.println("M9.7 keyPressed key=" + k);
+        if (k == WatchUi.KEY_ESC) {
+            _backDownMs = System.getTimer();
+        }
+        return false;
+    }
+
+    function onKeyReleased(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_ESC) {
+            var down = _backDownMs;
+            _backDownMs = null;
+            if (down != null
+                    && LongPress.isLong(down as Number, System.getTimer(), LongPress.BACK_HOLD_MS)) {
+                System.println("M9.7: long-press BACK — showing close-app query");
+                _view.setCloseQuery(true);
+                return true;   // consume so onBack doesn't also pop/cancel
+            }
+        }
+        return false;          // short press -> let onBack handle normally
     }
 
     function onBack() as Boolean {
