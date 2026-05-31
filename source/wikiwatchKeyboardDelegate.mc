@@ -80,6 +80,18 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         var w = settings.screenWidth;
         var h = settings.screenHeight;
 
+        // M9.7: while the "Close app?" modal is up, a tap inside the button exits
+        // the app entirely; a tap elsewhere cancels. (Physical back also cancels.)
+        if (_view.isCloseQuery()) {
+            if (CloseQuery.buttonHit(x, y, w, h)) {
+                System.println("M9.7: close app confirmed — exiting");
+                System.exit();
+            } else {
+                _view.setCloseQuery(false);
+            }
+            return true;
+        }
+
         // M9.7: under low memory ("max open articles" shown) allow ONLY backing
         // out — the on-screen backspace (X) wedge + the physical back button
         // (onBack). Block typing/expansion/opening so the user reduces, not grows,
@@ -157,7 +169,28 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    // M9.7: long-press the on-screen backspace (X) wedge -> "Close app?" modal.
+    // (The physical back button can't emit a touch-hold, and Venu 2 firmware may
+    // claim a physical long-press, so the X wedge is the long-pressable "back".)
+    function onHold(event as WatchUi.ClickEvent) as Boolean {
+        if (_view.isCloseQuery()) { return true; }
+        var coords = event.getCoordinates() as Array<Number>;
+        var settings = System.getDeviceSettings();
+        var b = KeyboardLayout.buttonAt(coords[0], coords[1],
+                                        settings.screenWidth, settings.screenHeight);
+        if (b != null && (b as Dictionary)[:type] == :BACKSPACE) {
+            System.println("M9.7: long-press X — showing close-app query");
+            _view.setCloseQuery(true);
+        }
+        return true;
+    }
+
     function onBack() as Boolean {
+        // M9.7: a normal back press cancels the "Close app?" modal.
+        if (_view.isCloseQuery()) {
+            _view.setCloseQuery(false);
+            return true;
+        }
         if (_expanded != null) {
             _expanded = null;
             _view.clearExpansion();
