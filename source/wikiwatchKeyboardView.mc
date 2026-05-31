@@ -167,6 +167,14 @@ class wikiwatchKeyboardView extends WatchUi.View {
         dc.drawText(cx, cy + 105, Graphics.FONT_XTINY,
                     "fm:" + freeMem.toString(),
                     Graphics.TEXT_JUSTIFY_CENTER);
+        // M9.6: when free heap is too low to safely open a new article, warn in
+        // yellow (taps on a suggestion are refused — see the delegate).
+        if (!MemGuard.canOpen(freeMem)) {
+            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, cy + 80, Graphics.FONT_XTINY,
+                        "max open articles",
+                        Graphics.TEXT_JUSTIFY_CENTER);
+        }
 
         // 1. Center display (drawn FIRST so expansion can cover it).
         _drawCenterDisplay(dc, cx, cy);
