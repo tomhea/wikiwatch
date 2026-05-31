@@ -173,7 +173,8 @@ class wikiwatchView extends WatchUi.View {
         // refused (see _resolvePendingHit) to avoid an uncatchable OOM.
         if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_screenWidth / 2, _screenHeight - 22, Graphics.FONT_XTINY,
+            // M9.7: 10 px higher than M9.6 (was screenH-22).
+            dc.drawText(_screenWidth / 2, _screenHeight - 32, Graphics.FONT_XTINY,
                         "max open articles",
                         Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
@@ -271,6 +272,8 @@ class wikiwatchView extends WatchUi.View {
             }
             var word = WordHitTest.findWordPx(x, words, wordPx, lineRightX, spacePx);
             if (word != null) {
+                // M9.7: strip punctuation etc. so the search bar gets a clean query.
+                word = WordSanitize.searchable(word as String);
                 // M9.6: refuse the long-press when free heap is low — pushing a
                 // keyboard layer (which holds the shared index) on top of the
                 // resident reader could OOM uncatchably. Show the yellow notice.

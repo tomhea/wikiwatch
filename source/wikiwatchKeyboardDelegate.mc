@@ -80,6 +80,22 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         var w = settings.screenWidth;
         var h = settings.screenHeight;
 
+        // M9.7: under low memory ("max open articles" shown) allow ONLY backing
+        // out — the on-screen backspace (X) wedge + the physical back button
+        // (onBack). Block typing/expansion/opening so the user reduces, not grows,
+        // the view stack / heap.
+        if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+            var bk = KeyboardLayout.buttonAt(x, y, w, h);
+            if (bk != null && (bk as Dictionary)[:type] == :BACKSPACE) {
+                _buffer = InputBuffer.popLast(_buffer);
+                _view.setBuffer(_buffer);
+                _recomputeSuggestions();
+                _flashPressed((bk as Dictionary)[:centerAngleDeg] as Number);
+            }
+            WatchUi.requestUpdate();
+            return true;
+        }
+
         if (_expanded != null) {
             var sub = KeyboardLayout.subButtonAt(x, y, _expanded as Dictionary, w, h);
             if (sub != null) {
@@ -109,14 +125,7 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         // with the outer ring.
         var suggestion = _view.suggestionAt(x, y);
         if (suggestion != null) {
-            // M9.6: refuse to open a new article when free heap is low — pushing
-            // the reader allocates a laid-out line list and could OOM uncatchably.
-            // The keyboard view renders the yellow "max open articles" notice.
-            if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
-                System.println("M9.6: open-article blocked (low memory)");
-                WatchUi.requestUpdate();
-                return true;
-            }
+            // (low-memory opens are already refused at the top of onTap.)
             var s = suggestion as Dictionary;
             var body = ArticleStore.bodyOf(s[:id] as String);
             if (body != null) {
