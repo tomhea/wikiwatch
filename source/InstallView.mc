@@ -39,7 +39,6 @@ class InstallView extends WatchUi.View {
     private var _pattern as String;
     private var _chunkCount as Number;
     private var _total as Number;            // total articles (progress denominator)
-    private var _perChunk as Number;         // est. articles/chunk (resume display)
     private var _status as String;
     private var _started as Boolean;         // controller built + chunks flowing
     private var _switching as Boolean;
@@ -68,7 +67,6 @@ class InstallView extends WatchUi.View {
         _pattern = "/chunk/{n}.json";
         _chunkCount = 0;
         _total = 0;
-        _perChunk = 1;
         _status = resuming ? "Resuming..." : "Loading wikiwatch...";
         _started = false;
         _switching = false;
@@ -124,8 +122,6 @@ class InstallView extends WatchUi.View {
             _scheduleSwitchToKeyboard(2000);
             return;
         }
-        _perChunk = (_total > 0 && _chunkCount > 0) ? ((_total + _chunkCount - 1) / _chunkCount) : 1;
-        if (_perChunk < 1) { _perChunk = 1; }
 
         // Decide fresh vs resume vs invalidated-resume.
         var seedReceived = [] as Array<Number>;
@@ -451,9 +447,15 @@ class InstallView extends WatchUi.View {
 
     private function _articlesDisplay() as Number {
         if (_ctrl == null) { return 0; }
-        var est = (_ctrl as InstallController).receivedCount() * _perChunk;
-        if (est > _total) { est = _total; }
-        return est;
+        // The REAL stored count: articles actually written to flash so far
+        // (accumulated per chunk from ArticleStore.putBatch). The old code
+        // showed receivedCount * _perChunk, but on the M9 chunked path _perChunk
+        // is computed before _total is known (index parts not yet fetched), so it
+        // stayed at 1 and the line showed the CHUNK count (max chunkCount ~314),
+        // not the article count. articlesWritten() is the true instrument.
+        var done = (_ctrl as InstallController).articlesWritten();
+        if (done > _total) { done = _total; }
+        return done;
     }
 
     // --- transitions ---------------------------------------------------------

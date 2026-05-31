@@ -164,6 +164,27 @@ function install_progressCountsArticlesNotChunks(logger as Logger) as Boolean {
 }
 
 (:test)
+function install_storedCountIsArticlesNotChunkIndex(logger as Logger) as Boolean {
+    // M9.6: the "stored X / N" install readout must show the ARTICLE count
+    // (articlesWritten), NOT the chunk count. Regression fixed here: the view
+    // derived the displayed count from receivedCount * _perChunk, and on the M9
+    // chunked path _perChunk stayed 1 (computed before the article total was
+    // known), so the line showed the chunk index — capped at chunkCount (~314 on
+    // the v14 corpus) instead of climbing toward 1462. Drive 5 chunks each
+    // writing 9 articles: the article total (45) must exceed the chunk count (5).
+    var c = new InstallController(5, [] as Array<Number>, 2);
+    while (!c.isComplete()) {
+        var f = c.nextToFire();
+        if (f.size() == 0) { break; }
+        for (var i = 0; i < f.size(); i++) { c.onSuccess(f[i], 9); }
+    }
+    logger.debug("stored=" + c.articlesWritten() + " chunks=" + c.receivedCount());
+    return c.articlesWritten() == 45
+        && c.receivedCount() == 5
+        && c.articlesWritten() > c.receivedCount();
+}
+
+(:test)
 function install_resumeSeedsReceivedChunks(logger as Logger) as Boolean {
     // Resume: chunks 0,1,5 already durably written. Next fired must skip them.
     var c = new InstallController(10, [0, 1, 5] as Array<Number>, 2);
