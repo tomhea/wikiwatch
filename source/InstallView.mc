@@ -175,6 +175,7 @@ class InstallView extends WatchUi.View {
         Manifest.wipeArticles();
         Manifest.save(manifest);
         IndexStore.wipeAll();   // M9: clear stale index parts
+        IndexCache.clear();     // M9.6: drop the shared compact-index cache
         InstallState.begin(version);
     }
 

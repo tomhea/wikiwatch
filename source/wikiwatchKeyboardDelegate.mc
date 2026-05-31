@@ -47,45 +47,17 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _view.setBuffer(_buffer);
         _expanded = null;
         _pressTimer = null;
-        // M9: prefer IndexStore (index parts downloaded during install) over
-        // the manifest's embedded articles[], which is empty for M9 manifests.
-        // Falls back to the manifest articles[] for M8-era corpora where
-        // IndexStore has no parts yet.
-        // M9.3: load the compact (title/pop-by-id) index. For M9 corpora this
-        // reads the index parts directly (no resident dicts); for M8-era
-        // corpora (no index parts) fall back to the manifest's articles[].
-        var compact = IndexStore.loadCompact();
-        _titles = compact[:titles] as Array<String>;
-        _pops = compact[:pops] as Array<Number>;
-        if (_titles.size() == 0) {
-            var manifestArts = Manifest.load()[:articles] as Array<Dictionary>?;
-            if (manifestArts != null) {
-                for (var i = 0; i < manifestArts.size(); i++) {
-                    var a = manifestArts[i] as Dictionary;
-                    var id = (a[:id] as String).toNumber();
-                    // M9.5 (B): guard against an absurd/sparse id exploding the
-                    // padding loop (ids are contiguous 0..N-1 in practice).
-                    if (id == null || id < 0 || id > 100000) { continue; }
-                    while (_titles.size() <= id) { _titles.add(""); _pops.add(0); }
-                    _titles[id] = a[:title] as String;
-                    _pops[id] = a[:popularity] as Number;
-                }
-            }
-        }
-        // M9.5 (C): cap the searchable index to the stored article prefix, so a
-        // budget-stopped partial install never surfaces an id whose body wasn't
-        // written (no dead taps). installedCount==0 (legacy/full) -> no cap.
-        var cap = InstallState.getInstalledCount();
-        if (cap > 0 && cap < _titles.size()) {
-            _titles = _titles.slice(0, cap);
-            _pops = _pops.slice(0, cap);
-        }
-        // M9.5 (D2): precompute normalized titles ONCE (most Hebrew titles have no
-        // ASCII punctuation, so normalize returns them unchanged — cheap).
-        _normTitles = new [_titles.size()];
-        for (var i = 0; i < _titles.size(); i++) {
-            _normTitles[i] = Search.normalize(_titles[i] as String);
-        }
+        // M9.6: load the compact index ONCE per session via IndexCache and share
+        // it across every keyboard. Previously each keyboard re-ran loadCompact +
+        // the manifest fallback + installedCount cap + a full normalize pass; the
+        // long-press flow pushes a SECOND keyboard on top of the resident article
+        // reader, so at ~1200 articles that redundant second index copy + normalize
+        // loop exhausted the heap / tripped the watchdog and crashed. IndexCache
+        // (which owns load + cap + normalize) makes every reuse a no-op.
+        var idx = IndexCache.get();
+        _titles = idx[:titles] as Array<String>;
+        _pops = idx[:pops] as Array<Number>;
+        _normTitles = idx[:normTitles] as Array<String>;
         // M6.2 pre-loaded every article body into :body so Search.rank could
         // do tier-3 body fallback. That combined with the M6.2 _normalize
         // O(N²) string-concat loop caused uncatchable OOM (the ~2 KB shalom
