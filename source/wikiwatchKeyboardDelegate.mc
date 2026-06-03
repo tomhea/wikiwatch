@@ -36,9 +36,6 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private var _normTitles as Array<String>;
     private var _ranked as Array<Dictionary>;
     private var _totalMatches as Number;
-    // M9.7: timestamp (ms) of the physical back-button press, for long-press
-    // (close-app) detection on key release. null when the back key isn't down.
-    private var _backDownMs as Number?;
 
     // M6: initialBuffer lets the long-press flow push a new keyboard
     // layer with a pre-filled word. Existing callers pass "" for the
@@ -50,7 +47,6 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _view.setBuffer(_buffer);
         _expanded = null;
         _pressTimer = null;
-        _backDownMs = null;
         // M9.6: load the compact index ONCE per session via IndexCache and share
         // it across every keyboard. Previously each keyboard re-ran loadCompact +
         // the manifest fallback + installedCount cap + a full normalize pass; the
@@ -190,31 +186,19 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    // M9.7: long-press the PHYSICAL back button -> "Close app?" modal. The back
-    // button doesn't emit a touch-hold, so time its key down/up: a hold past
-    // LongPress.BACK_HOLD_MS shows the modal and is CONSUMED (so the normal back
-    // action doesn't also fire); a short press returns false -> onBack handles it.
-    function onKeyPressed(keyEvent as WatchUi.KeyEvent) as Boolean {
-        var k = keyEvent.getKey();
-        System.println("M9.7 keyPressed key=" + k);
-        if (k == WatchUi.KEY_ESC) {
-            _backDownMs = System.getTimer();
+    // M9.7: long-press the PHYSICAL back button -> "Close app?" modal. On the
+    // Venu 2 the firmware turns a HELD back button into a MENU key (confirmed by
+    // an on-watch input probe: a short back press is KEY_ESC, a held back press
+    // becomes KEY_MENU). So we catch KEY_MENU and show the modal, consuming it so
+    // the default menu behavior doesn't also fire. A short back stays KEY_ESC and
+    // falls through to onBack as before.
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_MENU) {
+            System.println("M9.7: long-press BACK (MENU) — showing close-app query");
+            _view.setCloseQuery(true);
+            return true;
         }
         return false;
-    }
-
-    function onKeyReleased(keyEvent as WatchUi.KeyEvent) as Boolean {
-        if (keyEvent.getKey() == WatchUi.KEY_ESC) {
-            var down = _backDownMs;
-            _backDownMs = null;
-            if (down != null
-                    && LongPress.isLong(down as Number, System.getTimer(), LongPress.BACK_HOLD_MS)) {
-                System.println("M9.7: long-press BACK — showing close-app query");
-                _view.setCloseQuery(true);
-                return true;   // consume so onBack doesn't also pop/cancel
-            }
-        }
-        return false;          // short press -> let onBack handle normally
     }
 
     function onBack() as Boolean {
