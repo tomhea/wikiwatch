@@ -139,7 +139,9 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         if (suggestion != null) {
             // (low-memory opens are already refused at the top of onTap.)
             var s = suggestion as Dictionary;
-            var body = ArticleStore.bodyOf(s[:id] as String);
+            var stored = ArticleStore.bodyOf(s[:id] as String);
+            // M10.1: stored bodies may be BPE+Huffman blobs — decode per manifest codec.
+            var body = (stored == null) ? null : CompModel.decodeBody(stored);
             if (body != null) {
                 var reader = new wikiwatchView(body, s[:id] as String);
                 var readerDelegate = new wikiwatchDelegate(reader);

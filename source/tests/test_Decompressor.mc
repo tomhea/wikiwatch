@@ -2,6 +2,7 @@ import Toybox.Lang;
 import Toybox.Test;
 import Toybox.WatchUi;
 import Toybox.System;
+import Toybox.Application;
 
 // M10.0 tests for the byte-level-BPE + canonical-Huffman Decompressor (candidate
 // E2) and the baked-model loader CompModel. The golden round-trip vectors at the
@@ -147,4 +148,42 @@ function decompressGolden_1143(logger as Logger) as Boolean {
     var got = Decompressor.decompress(blob, model as Dictionary);
     logger.debug("id=1143 got=" + got.length() + " want=" + want.length());
     return got.equals(want);
+}
+
+// ---------------------------------------------------------------------------
+// M10.1: CompModel.decodeBody — the read-path entry that routes a stored body
+// per the persisted manifest codec (plain verbatim / bpe-huff-1 decode /
+// mismatch -> null). Exercises Manifest persistence + BodyCodec + decompress.
+// ---------------------------------------------------------------------------
+
+(:test)
+function compModel_decodeBodyPlainReturnsStored(logger as Logger) as Boolean {
+    // No stored manifest -> codec defaults to "plain" -> stored String verbatim.
+    Application.Storage.deleteValue("manifest");
+    var got = CompModel.decodeBody("plain body text");
+    logger.debug("decodeBody(plain) -> '" + got + "'");
+    return got != null && got.equals("plain body text");
+}
+
+(:test)
+function compModel_decodeBodyDecompressesWhenFlagged(logger as Logger) as Boolean {
+    // Compressed corpus whose modelVersion matches the baked model -> decode.
+    Application.Storage.deleteValue("manifest");
+    Manifest.save({ :version => 16, :articles => [], :bodyCodec => "bpe-huff-1", :modelVersion => 1 });
+    var got = CompModel.decodeBody("AAACL4tg");   // tiny golden blob
+    Application.Storage.deleteValue("manifest");
+    logger.debug("decodeBody(bpe-huff-1) -> '" + got + "'");
+    return got != null && got.equals("אבא");
+}
+
+(:test)
+function compModel_decodeBodyUnavailableOnMismatch(logger as Logger) as Boolean {
+    // Compressed corpus trained with a model version this binary lacks -> null
+    // (never renders base64 garbage; caller just won't open the article).
+    Application.Storage.deleteValue("manifest");
+    Manifest.save({ :version => 99, :articles => [], :bodyCodec => "bpe-huff-1", :modelVersion => 2 });
+    var got = CompModel.decodeBody("AAACL4tg");
+    Application.Storage.deleteValue("manifest");
+    logger.debug("decodeBody(mismatch) -> " + got);
+    return got == null;
 }

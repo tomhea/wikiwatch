@@ -96,6 +96,10 @@ module Downloader {
         var indexFields = _indexFieldsFrom(data);
         var indexCount = indexFields[:indexCount];
         var indexUriPattern = indexFields[:indexUriPattern];
+        // M10.1: body-codec fields (default to the plain v15 corpus shape).
+        var codecFields = _codecFieldsFrom(data);
+        var bodyCodec = codecFields[:bodyCodec];
+        var modelVersion = codecFields[:modelVersion];
         // Convert articles[] when present (M7/M8); produce empty list for M9.
         var symArts = [];
         if (rawArts instanceof Array) {
@@ -118,9 +122,22 @@ module Downloader {
                 :chunkUriPattern  => chunkUriPattern,
                 :indexCount       => indexCount,
                 :indexUriPattern  => indexUriPattern,
+                :bodyCodec        => bodyCodec,
+                :modelVersion     => modelVersion,
                 :articles         => symArts
             }
         };
+    }
+
+    // M10.1: extract body-codec fields, defaulting for pre-M10.1 manifests that
+    // lack them (the plain v15 corpus has no bodyCodec → treat as "plain", and
+    // modelVersion 0 never matches the baked model so nothing tries to decode it).
+    function _codecFieldsFrom(data as Dictionary) as Dictionary {
+        var bodyCodec = data["bodyCodec"];
+        if (bodyCodec == null) { bodyCodec = "plain"; }
+        var modelVersion = data["modelVersion"];
+        if (modelVersion == null) { modelVersion = 0; }
+        return { :bodyCodec => bodyCodec, :modelVersion => modelVersion };
     }
 
     // Fire-and-forget manifest fetch. Callback signature (per CIQ):

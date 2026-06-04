@@ -111,6 +111,23 @@ class InstallView extends WatchUi.View {
         // M9: index-part count (0 for M8-era manifests that embed articles[]).
         _indexCount = manifest[:indexCount] as Number;
         _indexPattern = manifest[:indexUriPattern] as String;
+
+        // M10.1: refuse a compressed corpus this binary can't decode (its
+        // modelVersion != the model baked into this .prg). Keep the current corpus
+        // and tell the user to update the app, rather than download bodies we could
+        // never render. (Ship the binary BEFORE flipping the server corpus so this
+        // never fires in the field; plain corpora always pass.)
+        var bodyCodec = manifest[:bodyCodec] as String;
+        var modelVersion = manifest[:modelVersion] as Number;
+        if (!BodyCodec.installable(bodyCodec, modelVersion, CompModel.bakedVersion())) {
+            System.println("M10.1 install: incompatible corpus bodyCodec=" + bodyCodec
+                + " modelVersion=" + modelVersion + " baked=" + CompModel.bakedVersion()
+                + " — refusing (update the app)");
+            _status = "Update the app.";
+            WatchUi.requestUpdate();
+            _scheduleSwitchToKeyboard(2500);
+            return;
+        }
         // Total articles: from IndexStore if M9 resumed, else articles[] count.
         var arts = manifest[:articles] as Array;
         _total = _indexCount > 0 ? 0 : arts.size();  // M9: will be known after index fetches

@@ -27,7 +27,9 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
                 return true;
             }
             var s = hit as Dictionary;
-            var body = ArticleStore.bodyOf(s[:id] as String);
+            var stored = ArticleStore.bodyOf(s[:id] as String);
+            // M10.1: stored bodies may be BPE+Huffman blobs — decode per manifest codec.
+            var body = (stored == null) ? null : CompModel.decodeBody(stored);
             if (body != null) {
                 var reader = new wikiwatchView(body, s[:id] as String);
                 WatchUi.pushView(reader, new wikiwatchDelegate(reader), WatchUi.SLIDE_LEFT);

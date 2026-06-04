@@ -57,7 +57,7 @@ module CompModel {
 
     // Guarded production-style decode of one article blob. Returns the decoded
     // String, or null if the model is unavailable or free heap is too low for the
-    // output buffer (R5). M10.1's article-open path calls this.
+    // output buffer (R5). M10.1's article-open path calls this via decodeBody.
     function decompress(blob as ByteArray) as String? {
         var m = model();
         if (m == null) { return null; }
@@ -65,5 +65,26 @@ module CompModel {
             return null;                     // R5: refuse the output-buffer alloc
         }
         return Decompressor.decompress(blob, m);
+    }
+
+    // M10.1 read-path entry: turn a stored body String into displayable text per
+    // the persisted manifest's bodyCodec/modelVersion (see BodyCodec.readAction).
+    //   plain corpus / pre-M10.1  -> the stored String verbatim (no model touch)
+    //   bpe-huff-1 + version match -> BPE+Huffman decode (base64 -> ByteArray -> text)
+    //   compressed but mismatch    -> null (caller must NOT open; never shows garbage)
+    // Returns null if free heap is too low to decode (R5) — caller treats a null
+    // body as "don't open", exactly as it already handles a missing body.
+    function decodeBody(stored as String) as String? {
+        var man = Manifest.load();
+        var codec = man[:bodyCodec] as String?;
+        // Fast path: plain corpus never loads/parses the baked model.
+        if (codec == null || codec.equals(BodyCodec.PLAIN)) {
+            return stored;
+        }
+        var action = BodyCodec.readAction(codec, man[:modelVersion] as Number?, bakedVersion());
+        if (action == :decompress) {
+            return decompress(Decompressor.b64ToBytes(stored));
+        }
+        return null;   // :unavailable — compressed corpus this binary can't decode
     }
 }

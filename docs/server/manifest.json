@@ -1,1 +1,1 @@
-{"version":15,"totalBytes":7133388,"chunkCount":254,"chunkUriPattern":"/chunk/{n}.json","indexCount":8,"indexUriPattern":"/index/{n}.json"}
+{"version":16,"totalBytes":2528068,"chunkCount":254,"chunkUriPattern":"/chunk/{n}.json","indexCount":8,"indexUriPattern":"/index/{n}.json","bodyCodec":"bpe-huff-1","modelVersion":1}
