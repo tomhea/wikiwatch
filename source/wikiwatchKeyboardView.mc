@@ -42,6 +42,8 @@ class wikiwatchKeyboardView extends WatchUi.View {
     // in place. dc.fillPolygon copies what it needs, so mutating after
     // the call is safe.
     private var _polygonPts as Array;
+    // M9.7: "Close app?" confirmation modal (shown on long-press of the X wedge).
+    private var _closeQuery as Boolean;
 
     function initialize() {
         View.initialize();
@@ -50,6 +52,7 @@ class wikiwatchKeyboardView extends WatchUi.View {
         _pressedAngleDeg = null;
         _suggestions = null;
         _moreCount = 0;
+        _closeQuery = false;
         _polygonPts = new [10];
         for (var i = 0; i < 10; i++) {
             _polygonPts[i] = [0, 0];
@@ -68,6 +71,16 @@ class wikiwatchKeyboardView extends WatchUi.View {
     function setBuffer(b as String) as Void {
         _buffer = b;
         WatchUi.requestUpdate();
+    }
+
+    // M9.7: show/hide the "Close app?" confirmation modal.
+    function setCloseQuery(b as Boolean) as Void {
+        _closeQuery = b;
+        WatchUi.requestUpdate();
+    }
+
+    function isCloseQuery() as Boolean {
+        return _closeQuery;
     }
 
     function setExpanded(p as Dictionary) as Void {
@@ -155,6 +168,23 @@ class wikiwatchKeyboardView extends WatchUi.View {
         var screenH = dc.getHeight();
         var cx = screenW / 2;
         var cy = screenH / 2;
+
+        // M9.7: "Close app?" confirmation modal — long-pressing the X wedge sets
+        // it. Tap the button to exit (System.exit in the delegate); physical back
+        // cancels. Rendered as a full-screen modal (skips the keyboard).
+        if (_closeQuery) {
+            var bw = CloseQuery.BTN_W;
+            var bh = CloseQuery.BTN_H;
+            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+            dc.fillRectangle(cx - bw / 2, cy - bh / 2, bw, bh);
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, cy, Graphics.FONT_SMALL, "close app",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, cy + bh / 2 + 24, Graphics.FONT_XTINY, "back = cancel",
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            return;
+        }
 
         // M6.5 diagnostic — freeMemory near the BOTTOM of the visible
         // circle (cy + 130 — below the suggestion-area dead zone, above

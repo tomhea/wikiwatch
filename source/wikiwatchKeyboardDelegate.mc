@@ -80,6 +80,34 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         var w = settings.screenWidth;
         var h = settings.screenHeight;
 
+        // M9.7: while the "Close app?" modal is up, a tap inside the button exits
+        // the app entirely; a tap elsewhere cancels. (Physical back also cancels.)
+        if (_view.isCloseQuery()) {
+            if (CloseQuery.buttonHit(x, y, w, h)) {
+                System.println("M9.7: close app confirmed — exiting");
+                System.exit();
+            } else {
+                _view.setCloseQuery(false);
+            }
+            return true;
+        }
+
+        // M9.7: under low memory ("max open articles" shown) allow ONLY backing
+        // out — the on-screen backspace (X) wedge + the physical back button
+        // (onBack). Block typing/expansion/opening so the user reduces, not grows,
+        // the view stack / heap.
+        if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
+            var bk = KeyboardLayout.buttonAt(x, y, w, h);
+            if (bk != null && (bk as Dictionary)[:type] == :BACKSPACE) {
+                _buffer = InputBuffer.popLast(_buffer);
+                _view.setBuffer(_buffer);
+                _recomputeSuggestions();
+                _flashPressed((bk as Dictionary)[:centerAngleDeg] as Number);
+            }
+            WatchUi.requestUpdate();
+            return true;
+        }
+
         if (_expanded != null) {
             var sub = KeyboardLayout.subButtonAt(x, y, _expanded as Dictionary, w, h);
             if (sub != null) {
@@ -109,14 +137,7 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         // with the outer ring.
         var suggestion = _view.suggestionAt(x, y);
         if (suggestion != null) {
-            // M9.6: refuse to open a new article when free heap is low — pushing
-            // the reader allocates a laid-out line list and could OOM uncatchably.
-            // The keyboard view renders the yellow "max open articles" notice.
-            if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
-                System.println("M9.6: open-article blocked (low memory)");
-                WatchUi.requestUpdate();
-                return true;
-            }
+            // (low-memory opens are already refused at the top of onTap.)
             var s = suggestion as Dictionary;
             var body = ArticleStore.bodyOf(s[:id] as String);
             if (body != null) {
@@ -148,7 +169,44 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    // M9.7: long-press the on-screen backspace (X) wedge = clear the WHOLE typing
+    // buffer (delete all letters). (Close-app is on the physical back long-press.)
+    function onHold(event as WatchUi.ClickEvent) as Boolean {
+        if (_view.isCloseQuery()) { return true; }
+        var coords = event.getCoordinates() as Array<Number>;
+        var settings = System.getDeviceSettings();
+        var b = KeyboardLayout.buttonAt(coords[0], coords[1],
+                                        settings.screenWidth, settings.screenHeight);
+        if (b != null && (b as Dictionary)[:type] == :BACKSPACE) {
+            System.println("M9.7: long-press X — clear buffer");
+            _buffer = InputBuffer.clear(_buffer);
+            _view.setBuffer(_buffer);
+            _recomputeSuggestions();
+        }
+        return true;
+    }
+
+    // M9.7: long-press the PHYSICAL back button -> "Close app?" modal. On the
+    // Venu 2 the firmware turns a HELD back button into a MENU key (confirmed by
+    // an on-watch input probe: a short back press is KEY_ESC, a held back press
+    // becomes KEY_MENU). So we catch KEY_MENU and show the modal, consuming it so
+    // the default menu behavior doesn't also fire. A short back stays KEY_ESC and
+    // falls through to onBack as before.
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_MENU) {
+            System.println("M9.7: long-press BACK (MENU) — showing close-app query");
+            _view.setCloseQuery(true);
+            return true;
+        }
+        return false;
+    }
+
     function onBack() as Boolean {
+        // M9.7: a normal back press cancels the "Close app?" modal.
+        if (_view.isCloseQuery()) {
+            _view.setCloseQuery(false);
+            return true;
+        }
         if (_expanded != null) {
             _expanded = null;
             _view.clearExpansion();

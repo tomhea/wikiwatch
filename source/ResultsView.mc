@@ -117,7 +117,8 @@ class ResultsView extends WatchUi.View {
         // delegate gates on MemGuard) to avoid an uncatchable OOM.
         if (!MemGuard.canOpen(System.getSystemStats().freeMemory)) {
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_screenWidth / 2, _screenHeight - 26, Graphics.FONT_XTINY,
+            // M9.7: 10 px higher than M9.6 (was screenH-26).
+            dc.drawText(_screenWidth / 2, _screenHeight - 36, Graphics.FONT_XTINY,
                         "max open articles",
                         Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
