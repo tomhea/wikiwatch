@@ -1,0 +1,28 @@
+M10.2 R2 — watchdog + streaming gate on the worst-case article (id 1143, 1392 tokens).
+scripts/watchdog-check.ps1  (venu2, monkeydo app-run — enforces the watchdog).
+
+Force-opens DecodeView(largest blob) -> parse gate -> streaming reader. Two runs:
+
+---- run 1 ----
+M5.3 first-paint: ms=63 sublines=23 contentH=903 screenH=416 hint='מדינות הציר'
+M10.2 stream first-paint: tokensDone=300 tokenCount=1392
+M8.3 full-layout: ms=641 lines=103 key=wdcheck
+WDCHECK OK: first-paint contentH=903 >= ~2 screens (screenH=416, sublines=23).
+WDCHECK PASS: ... first screen before full decode (tokensDone=300/1392); first-paint sublines=23 contentH=903; full-layout lines=103.
+exit=0
+
+---- run 2 (stability) ----
+M5.3 first-paint: ms=32 sublines=23 contentH=903 screenH=416 hint='מדינות הציר'
+M10.2 stream first-paint: tokensDone=300 tokenCount=1392
+M8.3 full-layout: ms=610 lines=103 key=wdcheck
+WDCHECK OK: first-paint contentH=903 >= ~2 screens (screenH=416, sublines=23).
+WDCHECK PASS
+exit=0
+
+Proves:
+- NO watchdog trip on the worst-case streaming open (decode+layout sliced per tick).
+- STREAMING: text renders at first paint with only 300/1392 tokens decoded
+  (tokensDone < tokenCount), not decode-then-paint.
+- FIRST PAINT ~2 screens: contentH=903 >= 1.6*screenH (416) — the height target
+  (Change 2), not the old fixed 2 raw lines.
+- Background decode+layout completes (full-layout lines=103) within ~0.6 s.

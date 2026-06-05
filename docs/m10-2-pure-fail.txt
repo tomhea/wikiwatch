@@ -1,0 +1,16 @@
+M10.2 step 1+2 — TDD RED (before fix): decodeTakeLines + StreamProgress predicates
+stubbed (decodeTakeLines -> [], needMoreRawLines/firstPaintShouldContinue -> false).
+scripts/test.ps1  (venu2, --unit-test)
+
+decodeTakeLines_concatEqualsSplitOfDecodeText          FAIL
+decodeTakeLines_utf8AcrossTokenSlices                  FAIL
+decodeTakeLines_tailOnlyOnDone                         FAIL
+decodeTakeLines_bodyEndingInNewline                    FAIL
+decodeTakeLines_emptyLines                             FAIL
+decodeTakeLines_noNewlineThenDone                      FAIL
+streamProgress_needMoreWhenCursorNearTail              FAIL
+streamProgress_firstPaintContinuesBelowTwoScreens      FAIL
+(the 4 predicate cases that assert the false branch still PASS against the stub)
+
+Ran 357 tests
+FAILED (passed=349, failed=8, errors=0)

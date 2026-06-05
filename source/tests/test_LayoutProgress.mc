@@ -116,13 +116,13 @@ function layoutProgress_clampedScrollContentSmallerThanScreen(logger as Logger) 
     return r == 0;
 }
 
-// M5.3/M5.4: bounded first-batch invariant. Encodes the contract that
-// wikiwatchView's first paint processes at most _INITIAL_LINES raw lines
-// regardless of body length. M5.4 tightened from 5 to 2 so שלום (50 raw)
-// first-paints as fast as שבת (2 raw) — both produce 2 lines of work.
+// M5.3/M5.4: bounded-batch invariant for nextBatchEnd — capping a batch never
+// reads past the body. (M10.2 replaced the view's fixed first-batch with a
+// height target, but nextBatchEnd's clamp contract is unchanged and still drives
+// the background fill; this exercises it with a small cap.)
 (:test)
 function layoutProgress_initialBatchIsBoundedForAnyBodyLength(logger as Logger) as Boolean {
-    var INITIAL = 2;  // matches wikiwatchView._INITIAL_LINES in M5.4
+    var INITIAL = 2;  // a small batch cap
     var shortBatch = LayoutProgress.nextBatchEnd(0, 2, INITIAL);    // שבת (2 raw lines)
     var longBatch  = LayoutProgress.nextBatchEnd(0, 50, INITIAL);   // שלום (50 raw lines)
     logger.debug("INITIAL=" + INITIAL + " shortBatch=" + shortBatch + " longBatch=" + longBatch);

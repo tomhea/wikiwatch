@@ -1,0 +1,31 @@
+M10.2 step 1+2 (Decompressor.decodeTakeLines/splitLines + StreamProgress) — PASS
+scripts/test.ps1  (venu2, --unit-test)
+
+Executing test decodeTakeLines_concatEqualsSplitOfDecodeText...
+DEBUG: slice=100 acc=21 expect=21
+PASS
+Executing test decodeTakeLines_utf8AcrossTokenSlices...
+DEBUG: slice=1 acc=21 expect=21
+PASS
+Executing test decodeTakeLines_tailOnlyOnDone...
+DEBUG: mid=[ab] fin=[cd]
+PASS
+Executing test decodeTakeLines_bodyEndingInNewline...
+DEBUG: got=[a, b, ]
+PASS
+Executing test decodeTakeLines_emptyLines...
+DEBUG: got=[a, , b]
+PASS
+Executing test decodeTakeLines_noNewlineThenDone...
+DEBUG: mid=[] fin=[abc]
+PASS
+Executing test streamProgress_needMoreWhenCursorNearTail...        PASS
+Executing test streamProgress_noMoreWhenFarAhead...                PASS
+Executing test streamProgress_gapEqualsLookaheadIsFalse...         PASS
+Executing test streamProgress_firstPaintContinuesBelowTwoScreens...PASS
+Executing test streamProgress_firstPaintStopsAtTwoScreens...       PASS
+Executing test streamProgress_firstPaintStopsAtBudget...           PASS
+
+Ran 357 tests
+PASSED (passed=357, failed=0, errors=0)
+TESTS OK
