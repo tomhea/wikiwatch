@@ -82,7 +82,7 @@ if ($null -eq $errText) { $errText = "" }
 $all = $text + "`n" + $errText
 
 Write-Host "---- wdcheck simulator log (relevant lines) ----"
-($all -split "`r?`n") | Select-String -Pattern "Watchdog|Tripped|crash|Error:|first-paint|full-layout|cache HIT" | ForEach-Object { Write-Host $_ }
+($all -split "`r?`n") | Select-String -Pattern "Watchdog|Tripped|crash|Error:|first-paint|stream first-paint|full-layout|cache HIT" | ForEach-Object { Write-Host $_ }
 Write-Host "------------------------------------------------"
 
 $fail = $false
@@ -105,6 +105,37 @@ if (-not $hasFullLayout) {
     Write-Host "WDCHECK WARN: full-layout lines=$layoutLines (<=2) — lazy-load may not have exercised a multi-batch fill." -ForegroundColor Yellow
 }
 
+# M10.2 streaming property: the reader must paint its first ~2 screens BEFORE the
+# full decode finishes (tokensDone < tokenCount at first paint), proving it streams
+# rather than decode-then-paint.
+$hasStreamFP = $all -match "stream first-paint: tokensDone=(\d+) tokenCount=(\d+)"
+if ($hasStreamFP) { $tokDone = [int]$Matches[1]; $tokCount = [int]$Matches[2] } else { $tokDone = 0; $tokCount = 0 }
+if (-not $hasStreamFP) {
+    Write-Host "WDCHECK FAIL: no 'stream first-paint' log (streaming reader never rendered)." -ForegroundColor Red
+    $fail = $true
+} elseif ($tokDone -ge $tokCount) {
+    Write-Host "WDCHECK FAIL: stream first-paint tokensDone=$tokDone >= tokenCount=$tokCount (whole body decoded before first paint — not streaming)." -ForegroundColor Red
+    $fail = $true
+}
+
+# M10.2 first paint covers ~2 screens (height target), not the old fixed 2 lines.
+$hasFPMetrics = $all -match "first-paint: ms=\d+ sublines=(\d+) contentH=(\d+) screenH=(\d+)"
+if ($hasFPMetrics) {
+    $fpSub = [int]$Matches[1]; $fpContentH = [int]$Matches[2]; $fpScreenH = [int]$Matches[3]
+    $twoScreens = [int]($fpScreenH * 1.6)   # ~2 screens, slack for the dense-budget cap
+    if ($fpSub -le 2) {
+        Write-Host "WDCHECK FAIL: first-paint sublines=$fpSub (<=2) — regressed to the old tiny first batch." -ForegroundColor Red
+        $fail = $true
+    } elseif ($fpContentH -lt $twoScreens) {
+        Write-Host "WDCHECK WARN: first-paint contentH=$fpContentH < ~2 screens (screenH=$fpScreenH x1.6=$twoScreens), sublines=$fpSub — dense-paragraph budget cap; acceptable." -ForegroundColor Yellow
+    } else {
+        Write-Host "WDCHECK OK: first-paint contentH=$fpContentH >= ~2 screens (screenH=$fpScreenH, sublines=$fpSub)." -ForegroundColor Green
+    }
+} else {
+    Write-Host "WDCHECK FAIL: first-paint metrics (sublines/contentH/screenH) not logged." -ForegroundColor Red
+    $fail = $true
+}
+
 if ($fail) { exit 1 }
-Write-Host "WDCHECK PASS: worst-case article decoded + rendered, no watchdog; lazy-load ok (full-layout lines=$layoutLines)." -ForegroundColor Green
+Write-Host "WDCHECK PASS: worst-case article streamed + rendered, no watchdog; first screen before full decode (tokensDone=$tokDone/$tokCount); first-paint sublines=$fpSub contentH=$fpContentH; full-layout lines=$layoutLines." -ForegroundColor Green
 exit 0

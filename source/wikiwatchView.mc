@@ -15,30 +15,49 @@ import Toybox.WatchUi;
 // at the bottom of the screen tells the user more content is loading.
 //
 // State invariants (held across onUpdate / timer ticks):
-//   _rawLines        — parsed once, never mutated
+//   _rawLines        — for plain bodies: split once, never mutated. For a
+//                      compressed STREAM (M10.2): GROWS as decodeTakeLines emits
+//                      complete lines; only ever appended to.
 //   _lines           — appended to incrementally per batch
 //   _layoutCursor    — next raw-line index to lay out
 //   _layoutY         — y-offset where the next sub-line will be placed
 //   _contentHeight   — same as _layoutY at end of last batch
-//   _layoutComplete  — true once _layoutCursor reaches _rawLines.size()
+//   _layoutComplete  — true once decode is done (streaming) AND _layoutCursor
+//                      reaches _rawLines.size()
 //   _layoutTimer     — instance field per CIQ quirk (local Timer GC'd
 //                      before fire); stopped + cleared in onHide
 class wikiwatchView extends WatchUi.View {
     private const _RIGHT_MARGIN = 100;
-    // M5.4: tightened further — _INITIAL_LINES 5->2 so first paint is
-    // essentially the H1 + first body line only (~20 dc.getTextWidthInPixels
-    // calls). _INCREMENTAL_LINES 4->2 for finer-grained ticks.
-    // _LAYOUT_TICK_MS 80->50 (CIQ minimum) so subsequent batches arrive as
-    // fast as the platform allows.
-    private const _INITIAL_LINES = 2;
-    // M8.3: incremental batch 2 -> 48. M5.4 kept this tiny for first-paint
-    // parity, but that made FULL layout of long articles slow (the 50 ms/tick
-    // floor dominates: 16 lines/tick was still ~17 ticks ≈ 1 s for a heavy
-    // article). First paint still uses _INITIAL_LINES=2 so parity is
-    // unchanged; the background fill now finishes in ~3-4 ticks. 48 lines of
-    // per-word px measurement is well under one frame, so no UI hitch.
+    // M10.2: first paint is no longer a fixed raw-line count — it's a height
+    // target (~2 screens) bounded by _FIRST_PAINT_SUBLINE_BUDGET below. The old
+    // _INITIAL_LINES=2 (M5.4) is gone; see the height-target loop in onUpdate.
+    //
+    // M8.3: background incremental batch is 48 raw lines/tick. M5.4 kept this tiny
+    // for first-paint parity, but that made FULL layout of long articles slow (the
+    // 50 ms/tick floor dominates). 48 lines of per-word px measurement is well
+    // under one frame, so no UI hitch; the background fill finishes in ~3-4 ticks.
     private const _INCREMENTAL_LINES = 48;
     private const _LAYOUT_TICK_MS = 50;      // CIQ minimum
+
+    // M10.2 streaming decode (compressed articles). The reader holds the decode
+    // state + model and decodes more tokens on demand inside the lazy-layout loop,
+    // so text paints after the first ~2 screens decode instead of the whole body.
+    // CRITICAL (watchdog): decode AND layout run in the SAME onUpdate handler, so
+    // their per-tick budgets must be small enough that their SUM stays under the
+    // watchdog. DecodeView's old decode-ONLY budget was 250 tokens/tick; combined
+    // with layout that trips, so decode here is a smaller slice. _DECODE_LOOKAHEAD
+    // keeps ~this many raw lines decoded ahead of the layout cursor.
+    private const _DECODE_TOKENS_PER_TICK = 150;
+    private const _DECODE_LOOKAHEAD = 64;
+    // First paint decodes a couple of slices (still well under the ~400-token
+    // per-handler watchdog ceiling — 500 trips) so ~2 screens of raw lines exist
+    // for the first render, instead of the single-slice ~1 screen.
+    private const _FIRST_PAINT_DECODE_TOKENS = 300;
+    // Cap the per-tick wrapped sub-line layout work so a single dense paragraph
+    // (worst case id 1143) plus a decode slice can't exceed the watchdog budget in
+    // one handler. First paint fills toward ~2 screens but stops at this cap; the
+    // "..." marker shows and the next 50 ms tick continues.
+    private const _FIRST_PAINT_SUBLINE_BUDGET = 34;
 
     private var _body as String;
     private var _rawLines as Array<String>?;
@@ -66,6 +85,13 @@ class wikiwatchView extends WatchUi.View {
     // guards a one-time write when this view's own layout completes.
     private var _cacheKey as String;
     private var _storedToCache as Boolean;
+    // M10.2 streaming-decode state. _streaming=false (default) keeps the plain /
+    // cached-layout path byte-identical. _decodeDone starts true so non-streaming
+    // mode's _layoutComplete test (which now ANDs _decodeDone) is unchanged.
+    private var _streaming as Boolean;
+    private var _decodeState as Dictionary?;
+    private var _model as Dictionary?;
+    private var _decodeDone as Boolean;
 
     function initialize(body as String, cacheKey as String) {
         View.initialize();
@@ -88,6 +114,23 @@ class wikiwatchView extends WatchUi.View {
         _screenWidth = 0;
         _pendingHitX = -1;
         _pendingHitY = -1;
+        _streaming = false;
+        _decodeState = null;
+        _model = null;
+        _decodeDone = true;
+    }
+
+    // M10.2: enter streaming-decode mode for a compressed article. Called right
+    // after construction (with an empty body) by ArticleOpener / the DecodeView
+    // parse gate. The reader decodes `blob` against the already-parsed `model`
+    // incrementally inside its lazy-layout loop, growing _rawLines as complete
+    // lines become available. _rawLines / _lines are initialised on the first
+    // onUpdate (where dc — needed for _middleWidth — is valid).
+    function startStreaming(blob as ByteArray, model as Dictionary) as Void {
+        _streaming = true;
+        _decodeState = Decompressor.decodeStart(blob);
+        _model = model;
+        _decodeDone = false;
     }
 
     // M6.5: delegate calls this on long-press. We can't measure word widths
@@ -107,34 +150,78 @@ class wikiwatchView extends WatchUi.View {
         // Lazy init on first onUpdate (we need dc to compute middleWidth).
         if (_lines == null) {
             _middleWidth = Layout.middleWidth(dc.getWidth(), _leftMargin, _RIGHT_MARGIN);
-            // M8.3: instant re-open — if this article's layout is cached, adopt
-            // it whole and skip the lazy-load entirely.
-            var cached = (_cacheKey.length() > 0) ? ArticleLayoutCache.get(_cacheKey) : null;
-            if (cached != null) {
-                _lines = cached[:lines] as Array<Dictionary>;
-                _contentHeight = cached[:contentHeight] as Number;
-                _layoutComplete = true;
-                _storedToCache = true;   // already in cache
-                System.println("M8.3 cache HIT key=" + _cacheKey + " lines="
-                    + (_lines as Array).size());
-            } else {
-                _rawLines = _splitLines(_body);
+            if (_streaming) {
+                // M10.2: compressed stream — raw lines arrive from the decoder.
+                _rawLines = [];
                 _lines = [];
+            } else {
+                // M8.3: instant re-open — if this article's layout is cached, adopt
+                // it whole and skip the lazy-load entirely.
+                var cached = (_cacheKey.length() > 0) ? ArticleLayoutCache.get(_cacheKey) : null;
+                if (cached != null) {
+                    _lines = cached[:lines] as Array<Dictionary>;
+                    _contentHeight = cached[:contentHeight] as Number;
+                    _layoutComplete = true;
+                    _storedToCache = true;   // already in cache
+                    System.println("M8.3 cache HIT key=" + _cacheKey + " lines="
+                        + (_lines as Array).size());
+                } else {
+                    _rawLines = Decompressor.splitLines(_body);
+                    _lines = [];
+                }
             }
         }
 
-        // Lay out the next batch (firstPass gets the bigger initial budget).
-        // Skipped when the layout came from cache (_rawLines stays null).
+        // M10.2: streaming decode pump — decode ONE bounded slice to top up
+        // _rawLines before laying out, when the layout cursor is nearing the
+        // decoded tail (or on the very first pass). BOTH this decode and the layout
+        // below are bounded per handler so a single tick can't trip the watchdog
+        // (verified on id 1143). The first ~2 screens fill over the first few ticks
+        // rather than one big handler.
+        if (_streaming && !_decodeDone
+                && (_layoutCursor == 0
+                    || StreamProgress.needMoreRawLines(_layoutCursor,
+                            (_rawLines as Array).size(), _DECODE_LOOKAHEAD))) {
+            // First pass decodes up to _FIRST_PAINT_DECODE_TOKENS (a couple of
+            // slices) for a ~2-screen first paint; background ticks decode ONE
+            // slice. Slice count stays under the per-handler watchdog ceiling.
+            var tokenCap = (_layoutCursor == 0) ? _FIRST_PAINT_DECODE_TOKENS : _DECODE_TOKENS_PER_TICK;
+            var decoded = 0;
+            while (!_decodeDone && decoded < tokenCap) {
+                _decodeDone = Decompressor.decodeStep(_decodeState as Dictionary,
+                    _model as Dictionary, _DECODE_TOKENS_PER_TICK);
+                var newLines = Decompressor.decodeTakeLines(_decodeState as Dictionary, _decodeDone);
+                if (newLines.size() > 0) { (_rawLines as Array<String>).addAll(newLines); }
+                decoded += _DECODE_TOKENS_PER_TICK;
+            }
+        }
+
+        // Lay out the next batch. Skipped when the layout came from cache
+        // (_rawLines stays null).
         if (_rawLines != null && !_layoutComplete) {
             var totalRaw = (_rawLines as Array<String>).size();
             var firstPass = (_layoutCursor == 0);
-            var batch = firstPass ? _INITIAL_LINES : _INCREMENTAL_LINES;
-            var newCursor = LayoutProgress.nextBatchEnd(_layoutCursor, totalRaw, batch);
-            if (newCursor > _layoutCursor) {
-                _layoutBatchRange(dc, _layoutCursor, newCursor);
-                _layoutCursor = newCursor;
+            if (firstPass) {
+                // M10.2: height-target first paint — lay out raw lines one at a
+                // time until ~2 screens are filled, or the per-tick sub-line budget
+                // caps us (dense paragraph / watchdog guard). The "..." marker +
+                // next tick continue the fill. Replaces the old fixed 2-line batch.
+                while (_layoutCursor < totalRaw
+                        && StreamProgress.firstPaintShouldContinue(_layoutY, _screenHeight,
+                                (_lines as Array).size(), _FIRST_PAINT_SUBLINE_BUDGET)) {
+                    _layoutBatchRange(dc, _layoutCursor, _layoutCursor + 1);
+                    _layoutCursor += 1;
+                }
+            } else {
+                var newCursor = LayoutProgress.nextBatchEnd(_layoutCursor, totalRaw, _INCREMENTAL_LINES);
+                if (newCursor > _layoutCursor) {
+                    _layoutBatchRange(dc, _layoutCursor, newCursor);
+                    _layoutCursor = newCursor;
+                }
             }
-            _layoutComplete = LayoutProgress.isComplete(_layoutCursor, totalRaw);
+            // M10.2: complete means BOTH decode finished AND all raw lines laid out
+            // (non-streaming keeps _decodeDone=true, so this is the old test).
+            _layoutComplete = _decodeDone && LayoutProgress.isComplete(_layoutCursor, totalRaw);
         }
 
         // M8.3: cache the finished layout for instant re-open next time.
@@ -159,14 +246,30 @@ class wikiwatchView extends WatchUi.View {
         }
 
         // M5.3: log first-paint wall-clock time (constructor -> first render
-        // returning). Used to verify the bounded-first-batch invariant
-        // perceptually matches: e.g. שבת and שלום should be within ~30 ms.
+        // returning). M10.2: also log sublines / contentH / screenH so the
+        // watchdog gate can assert the first paint now covers ~2 screens, and (for
+        // streaming) the decode progress so it can assert text rendered BEFORE the
+        // full decode finished (tokensDone < tokenCount).
         if (!_firstPaintLogged) {
             _firstPaintLogged = true;
             var elapsed = System.getTimer() - _ctorTimeMs;
-            // Body's first ~24 chars (typically the H1 line incl. "# ").
-            var hint = (_body.length() > 24) ? _body.substring(0, 24) : _body;
-            System.println("M5.3 first-paint: ms=" + elapsed + " hint='" + hint + "'");
+            // First laid-out sub-line (streaming has no _body); else body prefix.
+            var hint;
+            if ((_lines as Array).size() > 0) {
+                hint = ((_lines as Array<Dictionary>)[0] as Dictionary)[:text] as String;
+            } else {
+                hint = _body;
+            }
+            if (hint.length() > 24) { hint = hint.substring(0, 24); }
+            System.println("M5.3 first-paint: ms=" + elapsed
+                + " sublines=" + (_lines as Array).size()
+                + " contentH=" + _contentHeight + " screenH=" + _screenHeight
+                + " hint='" + hint + "'");
+            if (_streaming && _decodeState != null) {
+                System.println("M10.2 stream first-paint: tokensDone="
+                    + Decompressor.decodeTokensDone(_decodeState as Dictionary)
+                    + " tokenCount=" + Decompressor.decodeTokenCount(_decodeState as Dictionary));
+            }
         }
 
         // M9.6: low-memory warning — long-press to open the search keyboard is
@@ -338,7 +441,12 @@ class wikiwatchView extends WatchUi.View {
             if (i == 0) {
                 subs = LineWrap.wrapPxToWidths(words, wordPx, spacePx, firstWidths, 0);
                 widthsUsed = firstWidths;
-            } else if (i == totalRaw - 1) {
+            } else if (i == totalRaw - 1 && (!_streaming || _decodeDone)) {
+                // M10.2: only the GENUINE last line gets the narrow tail. While a
+                // compressed body is still streaming, _rawLines is growing, so a
+                // mid-stream line transiently at totalRaw-1 must NOT be tapered
+                // (it would be permanently mis-wrapped). Apply the tail only once
+                // decode is done (or for non-streaming bodies).
                 subs = LineWrap.wrapPxWithNarrowTail(words, wordPx, spacePx, _middleWidth, narrowSecond, narrowEdge);
                 perSubWidth = [];
                 var sCount = subs.size();
@@ -442,21 +550,4 @@ class wikiwatchView extends WatchUi.View {
         return Graphics.FONT_XTINY;
     }
 
-    private function _splitLines(text as String) as Array<String> {
-        var lines = [];
-        var start = 0;
-        var len = text.length();
-        while (start <= len) {
-            var rest = text.substring(start, len);
-            var nl = rest.find("\n");
-            if (nl == null) {
-                lines.add(rest);
-                start = len + 1;
-            } else {
-                lines.add(rest.substring(0, nl));
-                start = start + nl + 1;
-            }
-        }
-        return lines;
-    }
 }
