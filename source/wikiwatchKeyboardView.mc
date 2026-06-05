@@ -48,6 +48,10 @@ class wikiwatchKeyboardView extends WatchUi.View {
     // without the one-time parse gate). Started here because the keyboard is the
     // first steady-state interactive screen and onShow runs after BootGuard.
     private var _warmer as ModelWarmer;
+    // M10.5: true while the search index is still loading across ticks (the
+    // delegate drives the sliced build). Typed search isn't ready yet; recents
+    // (empty buffer) still work since they don't need the index.
+    private var _indexLoading as Boolean;
 
     function initialize() {
         View.initialize();
@@ -58,6 +62,7 @@ class wikiwatchKeyboardView extends WatchUi.View {
         _moreCount = 0;
         _closeQuery = false;
         _warmer = new ModelWarmer();
+        _indexLoading = false;
         _polygonPts = new [10];
         for (var i = 0; i < 10; i++) {
             _polygonPts[i] = [0, 0];
@@ -87,6 +92,12 @@ class wikiwatchKeyboardView extends WatchUi.View {
 
     function setBuffer(b as String) as Void {
         _buffer = b;
+        WatchUi.requestUpdate();
+    }
+
+    // M10.5: toggle the "loading articles" hint while the search index builds.
+    function setIndexLoading(b as Boolean) as Void {
+        _indexLoading = b;
         WatchUi.requestUpdate();
     }
 
@@ -220,6 +231,14 @@ class wikiwatchKeyboardView extends WatchUi.View {
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
             dc.drawText(cx, cy + 80, Graphics.FONT_XTINY,
                         "max open articles",
+                        Graphics.TEXT_JUSTIFY_CENTER);
+        }
+
+        // M10.5: while the search index loads (across ticks), tell the user typed
+        // search isn't ready yet. Recents on the empty buffer still work.
+        if (_indexLoading) {
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, cy + 40, Graphics.FONT_XTINY, "טוען מאמרים...",
                         Graphics.TEXT_JUSTIFY_CENTER);
         }
 

@@ -20,11 +20,18 @@ import Toybox.WatchUi;
 class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     private const PRESS_FLASH_MS = 200;
     private const MAX_SUGGESTIONS = 2;
+    // M10.5: drive the sliced index build a couple of parts per 50 ms tick — both
+    // bounded, so a large corpus loads across ticks instead of one watchdog-
+    // tripping handler at construction.
+    private const INDEX_LOAD_TICK_MS = 50;
+    private const INDEX_PARTS_PER_TICK = 2;
 
     private var _view as wikiwatchKeyboardView;
     private var _buffer as String;
     private var _expanded as Dictionary?;
     private var _pressTimer as Timer.Timer?;
+    private var _indexTimer as Timer.Timer?;
+    private var _indexTicks as Number = 0;   // M10.5: sliced-load tick counter
     // M9.3: compact resident search index (parallel arrays, position == id)
     // instead of an Array<Dictionary> — ~4x fewer live objects so the real
     // watch's GC doesn't choke on the 1462-article corpus.
@@ -47,17 +54,25 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
         _view.setBuffer(_buffer);
         _expanded = null;
         _pressTimer = null;
-        // M9.6: load the compact index ONCE per session via IndexCache and share
-        // it across every keyboard. Previously each keyboard re-ran loadCompact +
-        // the manifest fallback + installedCount cap + a full normalize pass; the
-        // long-press flow pushes a SECOND keyboard on top of the resident article
-        // reader, so at ~1200 articles that redundant second index copy + normalize
-        // loop exhausted the heap / tripped the watchdog and crashed. IndexCache
-        // (which owns load + cap + normalize) makes every reuse a no-op.
-        var idx = IndexCache.get();
-        _titles = idx[:titles] as Array<String>;
-        _pops = idx[:pops] as Array<Number>;
-        _normTitles = idx[:normTitles] as Array<String>;
+        _indexTimer = null;
+        // M9.6: load the compact index ONCE per session via IndexCache and share it
+        // across every keyboard (the long-press flow's second keyboard reuses it).
+        // M10.5: build it SLICED across Timer ticks — doing the whole load in this
+        // construction handler trips the watchdog once the corpus is large. If a
+        // previous keyboard already loaded it, adopt it now; otherwise start empty
+        // and drive the build on a timer (recents still work meanwhile).
+        if (IndexCache.isLoaded()) {
+            var idx = IndexCache.get();
+            _titles = idx[:titles] as Array<String>;
+            _pops = idx[:pops] as Array<Number>;
+            _normTitles = idx[:normTitles] as Array<String>;
+        } else {
+            _titles = [] as Array<String>;
+            _pops = [] as Array<Number>;
+            _normTitles = [] as Array<String>;
+            _view.setIndexLoading(true);
+            _startIndexLoad();
+        }
         // M6.2 pre-loaded every article body into :body so Search.rank could
         // do tier-3 body fallback. That combined with the M6.2 _normalize
         // O(N²) string-concat loop caused uncatchable OOM (the ~2 KB shalom
@@ -276,5 +291,31 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
 
     function onPressClearTimer() as Void {
         _view.clearPressed();
+    }
+
+    // M10.5: drive the sliced index build off the construction handler.
+    private function _startIndexLoad() as Void {
+        if (_indexTimer != null) { return; }
+        _indexTimer = new Timer.Timer();
+        (_indexTimer as Timer.Timer).start(method(:onIndexLoadTimer), INDEX_LOAD_TICK_MS, false);
+    }
+
+    // Each tick advances the index by a bounded number of parts. When it finishes,
+    // adopt the shared arrays, drop the loading hint, and refresh suggestions.
+    function onIndexLoadTimer() as Void {
+        _indexTimer = null;
+        _indexTicks++;
+        if (IndexCache.buildStep(INDEX_PARTS_PER_TICK)) {
+            var idx = IndexCache.get();
+            _titles = idx[:titles] as Array<String>;
+            _pops = idx[:pops] as Array<Number>;
+            _normTitles = idx[:normTitles] as Array<String>;
+            _view.setIndexLoading(false);
+            System.println("M10.5 index loaded: n=" + _titles.size() + " ticks=" + _indexTicks);
+            _recomputeSuggestions();
+            WatchUi.requestUpdate();
+            return;
+        }
+        _startIndexLoad();   // more parts remain — tick again
     }
 }
