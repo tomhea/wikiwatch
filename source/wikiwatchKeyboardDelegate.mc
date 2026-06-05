@@ -142,8 +142,9 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
             var stored = ArticleStore.bodyOf(s[:id] as String);
             // M10.1: route plain vs compressed. A compressed body is decoded
             // across event-loop turns (DecodeView) to stay watchdog-safe.
+            // M10.4: ArticleOpener records the open into the recently-read list.
             if (stored != null) {
-                ArticleOpener.open(stored, s[:id] as String);
+                ArticleOpener.open(stored, s[:id] as String, s[:title] as String);
             }
             return true;
         }
@@ -222,15 +223,20 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
     }
 
     private function _recomputeSuggestions() as Void {
-        // M5.3: empty-buffer guard — show NO suggestions / NO "more" footer
-        // until the user types something. Avoids visual noise + skips the
-        // rank work entirely.
+        // M10.4: with an EMPTY buffer, show the recently-read articles (most-recent
+        // first) so you can jump back without searching — replacing M5.3's
+        // show-nothing. Reuses the suggestion rows + "▼ N more" → ResultsView path
+        // (recents are {:id,:title}, the same shape as ranked results). No recents
+        // yet → empty list → nothing shown, exactly as before.
         if (_buffer.length() == 0) {
-            _ranked = new [0];
-            _totalMatches = 0;
-            System.println("M5 rank: buf='' (empty — no results shown)");
-            _view.setSuggestions(_ranked);
-            _view.setMoreCount(0);
+            _ranked = RecentsStore.load();
+            _totalMatches = _ranked.size();
+            var rTop = _takeTop(_ranked, MAX_SUGGESTIONS);
+            var rMore = _ranked.size() - MAX_SUGGESTIONS;
+            if (rMore < 0) { rMore = 0; }
+            System.println("M10.4 recents: n=" + _ranked.size() + " top=" + _titlesOf(rTop));
+            _view.setSuggestions(rTop);
+            _view.setMoreCount(rMore);
             return;
         }
         _ranked = Search.rankCompact(_buffer, _titles, _normTitles, _pops);

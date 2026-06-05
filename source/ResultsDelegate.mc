@@ -30,8 +30,9 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
             var stored = ArticleStore.bodyOf(s[:id] as String);
             // M10.1: route plain vs compressed. A compressed body is decoded
             // across event-loop turns (DecodeView) to stay watchdog-safe.
+            // M10.4: ArticleOpener records the open into the recently-read list.
             if (stored != null) {
-                ArticleOpener.open(stored, s[:id] as String);
+                ArticleOpener.open(stored, s[:id] as String, s[:title] as String);
             }
         }
         return true;
