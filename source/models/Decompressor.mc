@@ -50,7 +50,9 @@ module Decompressor {
     }
 
     // Parse model.bin into the canonical-Huffman decode tables + a flat token
-    // store. Pure. Returns null if the magic/format is unrecognized.
+    // store. INCREMENTAL: the V=4096 fill loops are too many iterations for one
+    // event handler (they trip the watchdog on-device), so parsing is sliced
+    // across event-loop turns via parseStart/parseStep, exactly like decode.
     //
     // model.bin layout (FROZEN v1, big-endian; see gen_model.py):
     //   0..3  magic 'WWM1'        4..5  formatVersion=1   6..7  modelVersion
@@ -58,10 +60,14 @@ module Decompressor {
     //   12..  codeLens[V] (1 byte each)
     //   then  per id: [tokenLen:1][tokenLen bytes]
     //
-    // The returned dict keeps `mb` (the whole model.bin) resident and records each
-    // token's byte START offset in `mb`; the token's length is derived at decode
-    // (the byte before the next token's start is that token's length byte).
-    function parseModel(mb as ByteArray) as Dictionary? {
+    // The state dict (which IS the finished model) keeps `mb` resident and records
+    // each token's byte START offset in `mb`; the token's length is derived at
+    // decode (the byte before the next token's start is that token's length byte).
+
+    // Begin parsing: validate the header, allocate the tables, set phase 0.
+    // Returns null if the magic/format is unrecognized (safe fallback). Cheap
+    // (no fill loops) — the fills happen in parseStep.
+    function parseStart(mb as ByteArray) as Dictionary? {
         if (mb.size() < 12) { return null; }
         // magic 'WWM1' = 0x57 0x57 0x4D 0x31
         if (!(mb[0] == 0x57 && mb[1] == 0x57 && mb[2] == 0x4D && mb[3] == 0x31)) {
@@ -69,79 +75,131 @@ module Decompressor {
         }
         var formatVersion = (mb[4] << 8) | mb[5];
         if (formatVersion != 1) { return null; }
-        var modelVersion = (mb[6] << 8) | mb[7];
-        var V            = (mb[8] << 8) | mb[9];
-        var maxCodeLen   = (mb[10] << 8) | mb[11];
-
-        var pos = 12;
-        var codeLens = new [V];
-        for (var i = 0; i < V; i++) {
-            codeLens[i] = mb[pos + i];
-        }
-        pos += V;
-
-        // Record each token's byte-start offset in mb (no per-token allocation).
-        var tokenStart = new [V];
-        for (var i = 0; i < V; i++) {
-            var tlen = mb[pos] as Number;   // length byte
-            pos++;
-            tokenStart[i] = pos;            // bytes start right after the length
-            pos += tlen;
-        }
-
-        // --- canonical Huffman reconstruction from code lengths ---
-        var countByLen = new [maxCodeLen + 1];
-        for (var L = 0; L <= maxCodeLen; L++) { countByLen[L] = 0; }
-        for (var i = 0; i < V; i++) {
-            var cl = codeLens[i] as Number;
-            countByLen[cl] = (countByLen[cl] as Number) + 1;
-        }
-
-        var firstIndex = new [maxCodeLen + 1];
-        var acc = 0;
-        for (var L = 1; L <= maxCodeLen; L++) {
-            firstIndex[L] = acc;
-            acc += countByLen[L] as Number;
-        }
-
-        // order = token ids grouped by length, ascending id within a length.
-        var order = new [V];
-        var cursor = new [maxCodeLen + 1];
-        for (var L = 0; L <= maxCodeLen; L++) { cursor[L] = firstIndex[L]; }
-        for (var i = 0; i < V; i++) {
-            var cl = codeLens[i] as Number;
-            var c = cursor[cl] as Number;
-            order[c] = i;
-            cursor[cl] = c + 1;
-        }
-
-        var firstCode = new [maxCodeLen + 1];
-        for (var L = 0; L <= maxCodeLen; L++) { firstCode[L] = 0; }
-        var code = 0;
-        var prevLen = 0;
-        for (var L = 1; L <= maxCodeLen; L++) {
-            var cnt = countByLen[L] as Number;
-            if (cnt > 0) {
-                if (prevLen != 0) {
-                    code = (code + 1) << (L - prevLen);
-                }
-                firstCode[L] = code;
-                code = code + (cnt - 1);
-                prevLen = L;
-            }
-        }
-
+        var V          = (mb[8] << 8) | mb[9];
+        var maxCodeLen = (mb[10] << 8) | mb[11];
         return {
-            :modelVersion => modelVersion,
+            :modelVersion => (mb[6] << 8) | mb[7],
             :V            => V,
             :maxCodeLen   => maxCodeLen,
-            :mb           => mb,           // model.bin kept resident (token bytes)
-            :tokenStart   => tokenStart,   // per-token byte offset into mb
-            :order        => order,
-            :firstCode    => firstCode,
-            :firstIndex   => firstIndex,
-            :countByLen   => countByLen
+            :mb           => mb,
+            :codeLens     => new [V],
+            :tokenStart   => new [V],
+            :order        => new [V],
+            :countByLen   => new [maxCodeLen + 1],
+            :firstIndex   => new [maxCodeLen + 1],
+            :firstCode    => new [maxCodeLen + 1],
+            :cursor       => new [maxCodeLen + 1],
+            :phase        => 0,
+            :i            => 0,
+            :pos          => 12 + V          // read cursor for the tokenStart phase
         };
+    }
+
+    // Do up to ~budget items of the current parse phase. Returns true once the
+    // model is fully built. Phases: 0 codeLens, 1 tokenStart, 2 countByLen,
+    // 3 order, 4 done. The small per-length loops (firstIndex/firstCode, ~21
+    // iterations) run at phase transitions.
+    function parseStep(state as Dictionary, budget as Number) as Boolean {
+        var phase      = state[:phase] as Number;
+        var V          = state[:V] as Number;
+        var maxCodeLen = state[:maxCodeLen] as Number;
+        var i          = state[:i] as Number;
+        var end        = i + budget;
+        if (end > V) { end = V; }
+
+        if (phase == 0) {                       // codeLens[i] = mb[12+i]
+            var mb = state[:mb] as ByteArray;
+            var codeLens = state[:codeLens] as Array;
+            for (; i < end; i++) { codeLens[i] = mb[12 + i]; }
+            state[:i] = i;
+            if (i >= V) { state[:phase] = 1; state[:i] = 0; }
+            return false;
+        }
+        if (phase == 1) {                       // tokenStart[i] (sequential pos)
+            var mb = state[:mb] as ByteArray;
+            var tokenStart = state[:tokenStart] as Array;
+            var pos = state[:pos] as Number;
+            for (; i < end; i++) {
+                var tlen = mb[pos] as Number;
+                pos++;
+                tokenStart[i] = pos;
+                pos += tlen;
+            }
+            state[:i] = i;
+            state[:pos] = pos;
+            if (i >= V) {
+                state[:phase] = 2;
+                state[:i] = 0;
+                var cb = state[:countByLen] as Array;     // init counts (small)
+                for (var L = 0; L <= maxCodeLen; L++) { cb[L] = 0; }
+            }
+            return false;
+        }
+        if (phase == 2) {                       // countByLen[codeLens[i]]++
+            var codeLens = state[:codeLens] as Array;
+            var cb = state[:countByLen] as Array;
+            for (; i < end; i++) {
+                var cl = codeLens[i] as Number;
+                cb[cl] = (cb[cl] as Number) + 1;
+            }
+            state[:i] = i;
+            if (i >= V) {
+                state[:phase] = 3;
+                state[:i] = 0;
+                // firstIndex prefix sum + cursor seed (small per-length loops).
+                var fi = state[:firstIndex] as Array;
+                var cur = state[:cursor] as Array;
+                var acc = 0;
+                for (var L = 1; L <= maxCodeLen; L++) {
+                    fi[L] = acc;
+                    acc += cb[L] as Number;
+                }
+                for (var L = 0; L <= maxCodeLen; L++) { cur[L] = fi[L]; }
+            }
+            return false;
+        }
+        if (phase == 3) {                       // order = ids grouped by length
+            var codeLens = state[:codeLens] as Array;
+            var order = state[:order] as Array;
+            var cur = state[:cursor] as Array;
+            for (; i < end; i++) {
+                var cl = codeLens[i] as Number;
+                var c = cur[cl] as Number;
+                order[c] = i;
+                cur[cl] = c + 1;
+            }
+            state[:i] = i;
+            if (i >= V) {
+                state[:phase] = 4;
+                state[:i] = 0;
+                // first canonical code per length (small per-length loop).
+                var cb = state[:countByLen] as Array;
+                var fc = state[:firstCode] as Array;
+                for (var L = 0; L <= maxCodeLen; L++) { fc[L] = 0; }
+                var code = 0;
+                var prevLen = 0;
+                for (var L = 1; L <= maxCodeLen; L++) {
+                    var cnt = cb[L] as Number;
+                    if (cnt > 0) {
+                        if (prevLen != 0) { code = (code + 1) << (L - prevLen); }
+                        fc[L] = code;
+                        code = code + (cnt - 1);
+                        prevLen = L;
+                    }
+                }
+            }
+            return false;
+        }
+        return true;                            // phase 4 — fully parsed
+    }
+
+    // One-shot parse (tests + non-UI callers). The UI path uses parseStart +
+    // parseStep across ticks to stay watchdog-safe. Returns null on bad header.
+    function parseModel(mb as ByteArray) as Dictionary? {
+        var st = parseStart(mb);
+        if (st == null) { return null; }
+        while (!parseStep(st, 1000000)) {}
+        return st;
     }
 
     // ---- incremental decode (so a long article decodes a slice per turn) ----

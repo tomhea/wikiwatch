@@ -17,12 +17,16 @@ class DecodeView extends WatchUi.View {
     // ~250 tokens/tick ≈ a small fraction of the worst article (1392 tokens) —
     // far under the per-handler watchdog budget on real hardware.
     private const _TOKENS_PER_TICK = 250;
+    // Per-tick item budget for the (one-time) model parse. The V=4096 table fills
+    // must be sliced too — done all at once they trip the watchdog on-device.
+    private const _PARSE_ITEMS_PER_TICK = 1000;
     private const _TICK_MS = 50;        // CIQ Timer minimum
 
     private var _blob as ByteArray;
     private var _cacheKey as String;
     private var _model as Dictionary?;
     private var _state as Dictionary?;
+    private var _parseState as Dictionary?;
     private var _timer as Timer.Timer?;
     private var _pct as Number;
     private var _w as Number;
@@ -34,6 +38,7 @@ class DecodeView extends WatchUi.View {
         _cacheKey = cacheKey;
         _model = null;
         _state = null;
+        _parseState = null;
         _timer = null;
         _pct = 0;
         _w = 0;
@@ -62,27 +67,49 @@ class DecodeView extends WatchUi.View {
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
-    // Timer callback: parse (tick 1) then decode one slice per tick.
+    // Timer callback: incrementally parse the model (first open only; reused from
+    // cache afterwards), then incrementally decode — a slice per tick so no single
+    // event handler exceeds the watchdog budget.
     function onDecodeTick() as Void {
         _timer = null;
+
+        // --- phase A: ensure the model is parsed (sliced across ticks) ---
         if (_model == null) {
-            // Tick 1: parse the baked model (one-time; freeMemory-guarded inside).
-            _model = CompModel.model();
-            if (_model == null) {
-                // Low memory / unreadable model — back out safely (no garbage).
-                System.println("M10.1 decode: model unavailable — popping");
-                WatchUi.popView(WatchUi.SLIDE_RIGHT);
-                return;
+            _model = CompModel.cachedModel();          // reuse if already built
+        }
+        if (_model == null) {
+            if (_parseState == null) {
+                if (System.getSystemStats().freeMemory < CompModel.MIN_FREE_PARSE) {
+                    System.println("M10.1 decode: low memory — popping");
+                    WatchUi.popView(WatchUi.SLIDE_RIGHT);
+                    return;
+                }
+                _parseState = Decompressor.parseStart(CompModel.rawModelBytes());
+                if (_parseState == null) {
+                    System.println("M10.1 decode: unreadable model — popping");
+                    WatchUi.popView(WatchUi.SLIDE_RIGHT);
+                    return;
+                }
+            } else if (Decompressor.parseStep(_parseState as Dictionary, _PARSE_ITEMS_PER_TICK)) {
+                CompModel.cacheModel(_parseState as Dictionary);
+                _model = _parseState;
             }
-            _state = Decompressor.decodeStart(_blob);
+            // coarse progress: parse fills the first half of the bar.
+            var ph = (_parseState == null) ? 0 : (_parseState[:phase] as Number);
+            _pct = (ph * 50) / 4;
             WatchUi.requestUpdate();
             _scheduleTick();
             return;
         }
+
+        // --- phase B: decode the article body (sliced across ticks) ---
+        if (_state == null) {
+            _state = Decompressor.decodeStart(_blob);
+        }
         var done = Decompressor.decodeStep(_state as Dictionary, _model as Dictionary, _TOKENS_PER_TICK);
         var n = Decompressor.decodeTokenCount(_state as Dictionary);
         var d = Decompressor.decodeTokensDone(_state as Dictionary);
-        _pct = (n > 0) ? (d * 100) / n : 100;
+        _pct = 50 + ((n > 0) ? (d * 50) / n : 50);     // decode fills the second half
         if (done) {
             var text = Decompressor.decodeText(_state as Dictionary);
             var reader = new wikiwatchView(text, _cacheKey);
