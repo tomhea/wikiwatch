@@ -140,12 +140,10 @@ class wikiwatchKeyboardDelegate extends WatchUi.BehaviorDelegate {
             // (low-memory opens are already refused at the top of onTap.)
             var s = suggestion as Dictionary;
             var stored = ArticleStore.bodyOf(s[:id] as String);
-            // M10.1: stored bodies may be BPE+Huffman blobs — decode per manifest codec.
-            var body = (stored == null) ? null : CompModel.decodeBody(stored);
-            if (body != null) {
-                var reader = new wikiwatchView(body, s[:id] as String);
-                var readerDelegate = new wikiwatchDelegate(reader);
-                WatchUi.pushView(reader, readerDelegate, WatchUi.SLIDE_LEFT);
+            // M10.1: route plain vs compressed. A compressed body is decoded
+            // across event-loop turns (DecodeView) to stay watchdog-safe.
+            if (stored != null) {
+                ArticleOpener.open(stored, s[:id] as String);
             }
             return true;
         }
