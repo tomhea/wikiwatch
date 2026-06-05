@@ -23,8 +23,6 @@ class DecodeView extends WatchUi.View {
 
     private var _blob as ByteArray;
     private var _cacheKey as String;
-    private var _model as Dictionary?;
-    private var _parseState as Dictionary?;
     private var _timer as Timer.Timer?;
     private var _w as Number;
     private var _h as Number;
@@ -33,8 +31,6 @@ class DecodeView extends WatchUi.View {
         View.initialize();
         _blob = blob;
         _cacheKey = cacheKey;
-        _model = null;
-        _parseState = null;
         _timer = null;
         _w = 0;
         _h = 0;
@@ -65,53 +61,37 @@ class DecodeView extends WatchUi.View {
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
-    // Timer callback: incrementally parse the model (a slice per tick so no single
-    // event handler exceeds the watchdog budget), then hand off to the streaming
-    // reader. Reached only on the first compressed open of a session.
+    // Timer callback: advance the ONE shared sliced model-parse (a slice per tick
+    // so no single event handler exceeds the watchdog budget), then hand off to
+    // the streaming reader. M10.3: drives CompModel.parseSlice — the SAME state the
+    // eager ModelWarmer advances at keyboard-idle, so if warming already finished
+    // (or partly ran) this gate resumes/returns instantly instead of re-parsing.
     function onDecodeTick() as Void {
         _timer = null;
-
-        if (_model == null) {
-            _model = CompModel.cachedModel();          // reuse if already built
+        var st = CompModel.parseSlice(_PARSE_ITEMS_PER_TICK);
+        if (st == :more) {
+            _scheduleTick();        // still parsing — slice again next tick
+            return;
         }
-        if (_model == null) {
-            if (_parseState == null) {
-                if (System.getSystemStats().freeMemory < CompModel.MIN_FREE_PARSE) {
-                    System.println("M10.2 gate: low memory — popping");
-                    WatchUi.popView(WatchUi.SLIDE_RIGHT);
-                    return;
-                }
-                _parseState = Decompressor.parseStart(CompModel.rawModelBytes());
-                if (_parseState == null) {
-                    System.println("M10.2 gate: unreadable model — popping");
-                    WatchUi.popView(WatchUi.SLIDE_RIGHT);
-                    return;
-                }
-            } else if (Decompressor.parseStep(_parseState as Dictionary, _PARSE_ITEMS_PER_TICK)) {
-                CompModel.cacheModel(_parseState as Dictionary);
-                _model = _parseState;
-            }
-            if (_model == null) {
-                _scheduleTick();    // still parsing — slice again next tick
-                return;
-            }
+        if (st == :done) {
+            _handoffToReader();     // model ready → reader owns decode + layout
+            return;
         }
-
-        // Model ready → hand the article to the streaming reader, which owns the
-        // incremental decode + layout from here.
-        _handoffToReader();
+        // :lowmem (not enough heap to begin the parse) or :unreadable (bad model).
+        System.println("M10.3 gate: parse " + st + " — popping");
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
     }
 
     // R5: guard the decode output buffer alloc (the reader's :out grows to the full
     // body) — mirrors CompModel.decompress / the old DecodeView decode guard.
     private function _handoffToReader() as Void {
         if (System.getSystemStats().freeMemory < CompModel.MIN_FREE_DECODE) {
-            System.println("M10.2 gate: low memory for decode buffer — popping");
+            System.println("M10.3 gate: low memory for decode buffer — popping");
             WatchUi.popView(WatchUi.SLIDE_RIGHT);
             return;
         }
         var reader = new wikiwatchView("", _cacheKey);
-        reader.startStreaming(_blob, _model as Dictionary);
+        reader.startStreaming(_blob, CompModel.cachedModel() as Dictionary);
         WatchUi.switchToView(reader, new wikiwatchDelegate(reader), WatchUi.SLIDE_IMMEDIATE);
     }
 

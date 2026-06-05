@@ -177,6 +177,53 @@ function compModel_decompressGuardedTiny(logger as Logger) as Boolean {
 }
 
 // ---------------------------------------------------------------------------
+// M10.3 eager model parse: the sliced parse (shared by the eager ModelWarmer +
+// the DecodeView gate via CompModel.parseSlice) must produce a working model, and
+// the warmer must only run for a corpus that actually needs the model.
+// ---------------------------------------------------------------------------
+
+(:test)
+function parseSliced_decodesCorrectly(logger as Logger) as Boolean {
+    // Parsing the baked model in SMALL slices (as the warmer/gate do per tick)
+    // must yield a model that decodes a known vector byte-for-byte.
+    var st = Decompressor.parseStart(CompModel.rawModelBytes());
+    if (st == null) { logger.error("parseStart null"); return false; }
+    var ticks = 0;
+    while (!Decompressor.parseStep(st as Dictionary, 500)) { ticks++; }
+    var got = Decompressor.decompress(Decompressor.b64ToBytes("AAACL4tg"), st as Dictionary);
+    logger.debug("sliced-parse (" + ticks + " ticks) decode tiny -> '" + got + "'");
+    return got.equals("אבא");
+}
+
+(:test)
+function compModel_parseSliceReachesDone(logger as Logger) as Boolean {
+    // Driving CompModel.parseSlice to completion caches a usable model.
+    var st = :more;
+    var guard = 0;
+    while (st == :more && guard < 1000) { st = CompModel.parseSlice(500); guard++; }
+    logger.debug("parseSlice final=" + st + " iters=" + guard);
+    if (st != :done) { return false; }
+    if (CompModel.cachedModel() == null) { return false; }
+    var got = CompModel.decompress(Decompressor.b64ToBytes("AAACL4tg"));
+    return got != null && got.equals("אבא");
+}
+
+(:test)
+function compModel_corpusNeedsModelMatchesCodec(logger as Logger) as Boolean {
+    // The warmer guard: true for a compressed corpus this binary can decode,
+    // false for a plain corpus. Save a fake manifest, assert, then restore.
+    var orig = Manifest.load();
+    Manifest.save({ :version => 16, :articles => [], :bodyCodec => BodyCodec.BPE_HUFF_1,
+                    :modelVersion => CompModel.bakedVersion() });
+    var compressed = CompModel.corpusNeedsModel();
+    Manifest.save({ :version => 1, :articles => [], :bodyCodec => BodyCodec.PLAIN, :modelVersion => 0 });
+    var plain = CompModel.corpusNeedsModel();
+    Manifest.save(orig);   // restore the real manifest
+    logger.debug("corpusNeedsModel compressed=" + compressed + " plain=" + plain);
+    return compressed == true && plain == false;
+}
+
+// ---------------------------------------------------------------------------
 // R2 evidence: decode + print a real Hebrew vector to monkeydo stdout, with the
 // live freeMemory after the decode.
 // ---------------------------------------------------------------------------

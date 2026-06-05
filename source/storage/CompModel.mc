@@ -34,6 +34,12 @@ module CompModel {
     const MIN_FREE_DECODE = _MIN_FREE_DECODE;
 
     var _model as Dictionary? = null;
+    // M10.3: the SINGLE in-progress sliced-parse state, shared by every driver of
+    // the incremental parse (the eager ModelWarmer at keyboard-idle AND the
+    // DecodeView open-gate). Sharing one state means they never double-parse or
+    // double the ~137 KB allocation if the user opens an article mid-warm.
+    var _parseState as Dictionary? = null;
+    var _parseFailed as Boolean = false;   // model resource unreadable — don't retry
 
     // The cached parsed model, or null if it hasn't been built yet. Does NOT
     // build it — the incremental UI path (DecodeView) builds it across ticks and
@@ -46,6 +52,46 @@ module CompModel {
     // article opens reuse it instead of re-parsing.
     function cacheModel(m as Dictionary) as Void {
         _model = m;
+    }
+
+    // M10.3: advance the ONE shared sliced parse by up to `items` table-fills,
+    // returning a status:
+    //   :done       — model fully parsed + cached (or already was). Stop slicing.
+    //   :more       — progress made; call again next tick.
+    //   :lowmem     — not enough free heap to begin the parse (R5 guard); caller
+    //                 should stop and retry later (memory may free up).
+    //   :unreadable — the baked model resource is malformed; never retry.
+    // Both the eager warmer and the open-gate drive THIS, so whoever finishes
+    // first caches the model and the other immediately sees :done.
+    function parseSlice(items as Number) as Symbol {
+        if (_model != null) { return :done; }
+        if (_parseFailed) { return :unreadable; }
+        if (_parseState == null) {
+            if (System.getSystemStats().freeMemory < _MIN_FREE_PARSE) {
+                return :lowmem;              // R5: refuse the parse allocation
+            }
+            _parseState = Decompressor.parseStart(rawModelBytes());
+            if (_parseState == null) {
+                _parseFailed = true;
+                return :unreadable;          // bad magic / format — safe fallback
+            }
+        }
+        if (Decompressor.parseStep(_parseState as Dictionary, items)) {
+            _model = _parseState;            // promote the finished state to the cache
+            _parseState = null;
+            return :done;
+        }
+        return :more;
+    }
+
+    // M10.3: true iff the persisted corpus is compressed AND this binary can decode
+    // it (so the eager warmer only parses the model when it will actually be used —
+    // a plain corpus never needs it). Mirrors the ArticleOpener routing condition.
+    function corpusNeedsModel() as Boolean {
+        var man = Manifest.load();
+        var codec = man[:bodyCodec] as String?;
+        if (codec == null || codec.equals(BodyCodec.PLAIN)) { return false; }
+        return BodyCodec.readAction(codec, man[:modelVersion] as Number?, bakedVersion()) == :decompress;
     }
 
     // The raw model.bin bytes from the baked resource (loadResource + base64
