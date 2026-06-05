@@ -50,6 +50,99 @@ function decode_incrementalMatchesOneShot(logger as Logger) as Boolean {
     return sliced.equals(oneShot) && oneShot.length() == 4263;
 }
 
+// ---------------------------------------------------------------------------
+// M10.2 streaming-line drain (decodeTakeLines): the reader pumps decodeStep then
+// pulls COMPLETE raw lines, growing _rawLines without converting a partial char.
+// Master invariant: the concatenation of all decodeTakeLines calls equals
+// splitLines(decodeText(state)) — a one-shot split of the full decode.
+// ---------------------------------------------------------------------------
+
+// The largest corpus article (worst-case decode), same blob as
+// decode_incrementalMatchesOneShot.
+function _largestBlobBytes() as ByteArray {
+    return Decompressor.b64ToBytes("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");
+}
+
+// Compare two arrays of Strings element-wise (Array.equals is not dependable
+// across SDKs for nested compare).
+function _strArraysEqual(a as Array, b as Array) as Boolean {
+    if (a.size() != b.size()) { return false; }
+    for (var i = 0; i < a.size(); i++) {
+        if (!(a[i] as String).equals(b[i] as String)) { return false; }
+    }
+    return true;
+}
+
+// Decode the largest blob in `slice`-token steps, draining complete lines after
+// each step; assert the accumulation equals a one-shot splitLines(decodeText).
+function _streamConcatMatches(slice as Number, logger as Logger) as Boolean {
+    var model = CompModel.model();
+    if (model == null) { logger.error("model null"); return false; }
+    var st = Decompressor.decodeStart(_largestBlobBytes());
+    var acc = [] as Array<String>;
+    var done = false;
+    while (!done) {
+        done = Decompressor.decodeStep(st, model as Dictionary, slice);
+        var got = Decompressor.decodeTakeLines(st, done);
+        for (var i = 0; i < got.size(); i++) { acc.add(got[i] as String); }
+    }
+    var expect = Decompressor.splitLines(Decompressor.decodeText(st));
+    logger.debug("slice=" + slice + " acc=" + acc.size() + " expect=" + expect.size());
+    return _strArraysEqual(acc, expect);
+}
+
+(:test)
+function decodeTakeLines_concatEqualsSplitOfDecodeText(logger as Logger) as Boolean {
+    return _streamConcatMatches(100, logger);
+}
+
+(:test)
+function decodeTakeLines_utf8AcrossTokenSlices(logger as Logger) as Boolean {
+    // One token per step — :out frequently ends mid-UTF-8-char (byte-level BPE),
+    // but decodeTakeLines only converts up to '\n' boundaries, so it must still
+    // match the one-shot split exactly.
+    return _streamConcatMatches(1, logger);
+}
+
+(:test)
+function decodeTakeLines_tailOnlyOnDone(logger as Logger) as Boolean {
+    // "ab\ncd": mid-stream emits only the complete "ab"; the tail "cd" appears
+    // only on the done call.
+    var st = { :out => [0x61, 0x62, 0x0A, 0x63, 0x64]b, :emitPos => 0 };
+    var mid = Decompressor.decodeTakeLines(st, false);
+    var fin = Decompressor.decodeTakeLines(st, true);
+    logger.debug("mid=" + mid + " fin=" + fin);
+    return _strArraysEqual(mid, ["ab"]) && _strArraysEqual(fin, ["cd"]);
+}
+
+(:test)
+function decodeTakeLines_bodyEndingInNewline(logger as Logger) as Boolean {
+    // "a\nb\n" -> ["a","b",""] (trailing "" parity with splitLines).
+    var st = { :out => [0x61, 0x0A, 0x62, 0x0A]b, :emitPos => 0 };
+    var got = Decompressor.decodeTakeLines(st, true);
+    logger.debug("got=" + got);
+    return _strArraysEqual(got, Decompressor.splitLines("a\nb\n"));
+}
+
+(:test)
+function decodeTakeLines_emptyLines(logger as Logger) as Boolean {
+    // "a\n\nb" -> ["a","","b"] (blank line preserved).
+    var st = { :out => [0x61, 0x0A, 0x0A, 0x62]b, :emitPos => 0 };
+    var got = Decompressor.decodeTakeLines(st, true);
+    logger.debug("got=" + got);
+    return _strArraysEqual(got, ["a", "", "b"]);
+}
+
+(:test)
+function decodeTakeLines_noNewlineThenDone(logger as Logger) as Boolean {
+    // "abc" (no newline): nothing mid-stream, the whole thing on done.
+    var st = { :out => [0x61, 0x62, 0x63]b, :emitPos => 0 };
+    var mid = Decompressor.decodeTakeLines(st, false);
+    var fin = Decompressor.decodeTakeLines(st, true);
+    logger.debug("mid=" + mid + " fin=" + fin);
+    return mid.size() == 0 && _strArraysEqual(fin, ["abc"]);
+}
+
 (:test)
 function parseModel_rejectsBadMagic(logger as Logger) as Boolean {
     // 12 bytes of the wrong magic -> safe fallback (null), never garbage.

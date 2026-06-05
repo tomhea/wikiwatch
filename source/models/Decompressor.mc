@@ -49,6 +49,28 @@ module Decompressor {
         return bytesToString(b64ToBytes(s));
     }
 
+    // Split a body String on '\n' into raw lines. The SINGLE definition (the
+    // reader calls this; streaming decodeTakeLines reuses it). A text ending in
+    // '\n' yields a trailing "" element, and "" yields [""] — both preserved so
+    // the incremental streaming path stays byte-identical to a one-shot split.
+    function splitLines(text as String) as Array<String> {
+        var lines = [];
+        var start = 0;
+        var len = text.length();
+        while (start <= len) {
+            var rest = text.substring(start, len);
+            var nl = rest.find("\n");
+            if (nl == null) {
+                lines.add(rest);
+                start = len + 1;
+            } else {
+                lines.add(rest.substring(0, nl));
+                start = start + nl + 1;
+            }
+        }
+        return lines;
+    }
+
     // Parse model.bin into the canonical-Huffman decode tables + a flat token
     // store. INCREMENTAL: the V=4096 fill loops are too many iterations for one
     // event handler (they trip the watchdog on-device), so parsing is sliced
@@ -205,9 +227,11 @@ module Decompressor {
     // ---- incremental decode (so a long article decodes a slice per turn) ----
 
     // Start decoding a blob: read the 24-bit token count, return mutable state.
+    // :emitPos (M10.2) = byte offset in :out one past the last newline already
+    // handed out by decodeTakeLines (the streaming-line cursor).
     function decodeStart(blob as ByteArray) as Dictionary {
         var n = (blob[0] << 16) | (blob[1] << 8) | blob[2];
-        return { :blob => blob, :n => n, :t => 0, :bitpos => 24, :out => []b };
+        return { :blob => blob, :n => n, :t => 0, :bitpos => 24, :out => []b, :emitPos => 0 };
     }
 
     function decodeTokenCount(state as Dictionary) as Number { return state[:n] as Number; }
@@ -270,6 +294,54 @@ module Decompressor {
     // Finished decoded text (call once decodeStep returns true).
     function decodeText(state as Dictionary) as String {
         return bytesToString(state[:out] as ByteArray);
+    }
+
+    // M10.2: streaming-line drain. Returns the raw lines that have become COMPLETE
+    // in :out since the last call, advancing the :emitPos cursor. The reader pumps
+    // decodeStep then calls this to grow its _rawLines without ever converting a
+    // partial UTF-8 char: a line break is '\n' (0x0A), a single byte that never
+    // appears inside a multi-byte UTF-8 sequence, so every converted slice begins
+    // and ends on a char boundary.
+    //
+    // Mid-stream (done==false): emits every line up to the LAST '\n' in :out; the
+    // bytes after it (a possibly-incomplete final line) stay buffered for next call.
+    // Final (done==true): also emits the trailing remainder as the last line, so
+    // the concatenation of all calls equals splitLines(decodeText(state)) exactly
+    // (including the trailing "" when the body ends in '\n', and [""] for an empty
+    // body). One bytesToString per call (two on the final call) — no per-line
+    // convert, no O(N^2) concat.
+    function decodeTakeLines(state as Dictionary, done as Boolean) as Array<String> {
+        var out     = state[:out] as ByteArray;
+        var emitPos = state[:emitPos] as Number;
+        var size    = out.size();
+
+        // Find the offset of the last newline in the un-emitted region.
+        var lastNl = -1;
+        for (var i = size - 1; i >= emitPos; i--) {
+            if (out[i] == 0x0A) { lastNl = i; break; }
+        }
+
+        var result = [] as Array<String>;
+        if (lastNl >= emitPos) {
+            // Convert the newline-terminated chunk ONCE, split, drop the trailing
+            // "" the terminating '\n' produces (the real final line, if any, is
+            // emitted separately on the done call).
+            var chunk = bytesToString(out.slice(emitPos, lastNl + 1));
+            var parts = splitLines(chunk);
+            for (var k = 0; k < parts.size() - 1; k++) {
+                result.add(parts[k] as String);
+            }
+            emitPos = lastNl + 1;
+            state[:emitPos] = emitPos;
+        }
+        if (done) {
+            // The (newlines+1)th element: the bytes after the last '\n', or "" if
+            // the buffer ends in '\n' / is empty.
+            var tail = (emitPos < size) ? bytesToString(out.slice(emitPos, size)) : "";
+            result.add(tail);
+            state[:emitPos] = size;
+        }
+        return result;
     }
 
     // One-shot decode (tests + small/non-UI callers). For the UI read path the
