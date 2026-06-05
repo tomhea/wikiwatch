@@ -1,0 +1,10 @@
+M10.3 — TDD RED (before fix): CompModel.parseSlice -> :lowmem stub,
+corpusNeedsModel -> false stub.  scripts/test.ps1 (venu2, --unit-test)
+
+compModel_parseSliceReachesDone                        FAIL
+compModel_corpusNeedsModelMatchesCodec                 FAIL
+(parseSliced_decodesCorrectly stays PASS — it drives Decompressor.parseStart/
+ parseStep directly, not the stubbed CompModel wrapper.)
+
+Ran 360 tests
+FAILED (passed=358, failed=2, errors=0)

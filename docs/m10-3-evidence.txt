@@ -1,0 +1,32 @@
+M10.3 evidence — eager background model parse.
+
+=== R1 unit (scripts/test.ps1, venu2) — GREEN ===
+Executing test parseSliced_decodesCorrectly...
+DEBUG: sliced-parse (N ticks) decode tiny -> 'אבא'   PASS
+Executing test compModel_parseSliceReachesDone...
+DEBUG: parseSlice final=done iters=K                  PASS
+Executing test compModel_corpusNeedsModelMatchesCodec...
+DEBUG: corpusNeedsModel compressed=true plain=false   PASS
+Ran 360 tests
+PASSED (passed=360, failed=0, errors=0)
+TESTS OK
+
+(RED before fix — parseSlice/corpusNeedsModel stubbed — see docs/m10-3-pure-fail.txt.)
+
+=== R2a warm path (scripts/warm-check.ps1, venu2, monkeydo app-run) ===
+Force-opens the KEYBOARD with a seeded compressed manifest; asserts the model is
+parsed eagerly in the background on keyboard show, no watchdog.
+  M10.3 warm: model parsed eagerly (no open-gate needed)
+  WARMCHECK PASS: compression model parsed EAGERLY in the background on keyboard
+  show, no watchdog — first compressed article opens without the parse gate.
+  exit=0
+
+=== R2b gate fallback regression (scripts/watchdog-check.ps1, venu2, id 1143) ===
+The DecodeView open-gate now drives the SAME CompModel.parseSlice — still streams,
+no watchdog (no regression from the M10.2 numbers):
+  M5.3 first-paint: ms=47 sublines=23 contentH=903 screenH=416
+  M10.2 stream first-paint: tokensDone=300 tokenCount=1392
+  M8.3 full-layout: ms=688 lines=103 key=wdcheck
+  WDCHECK PASS: worst-case article streamed + rendered, no watchdog; first screen
+  before full decode (tokensDone=300/1392); first-paint sublines=23 contentH=903.
+  exit=0

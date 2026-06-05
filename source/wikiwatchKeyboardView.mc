@@ -44,6 +44,10 @@ class wikiwatchKeyboardView extends WatchUi.View {
     private var _polygonPts as Array;
     // M9.7: "Close app?" confirmation modal (shown on long-press of the X wedge).
     private var _closeQuery as Boolean;
+    // M10.3: background model-parse warmer (so the first compressed article opens
+    // without the one-time parse gate). Started here because the keyboard is the
+    // first steady-state interactive screen and onShow runs after BootGuard.
+    private var _warmer as ModelWarmer;
 
     function initialize() {
         View.initialize();
@@ -53,6 +57,7 @@ class wikiwatchKeyboardView extends WatchUi.View {
         _suggestions = null;
         _moreCount = 0;
         _closeQuery = false;
+        _warmer = new ModelWarmer();
         _polygonPts = new [10];
         for (var i = 0; i < 10; i++) {
             _polygonPts[i] = [0, 0];
@@ -66,6 +71,18 @@ class wikiwatchKeyboardView extends WatchUi.View {
     function onShow() as Void {
         View.onShow();
         BootGuard.noteReady();
+        // M10.3: warm the compression model in the background now that we're past
+        // the boot-critical index load. Idempotent + self-guarding (no-op if the
+        // model is cached or the corpus is plain).
+        _warmer.start();
+    }
+
+    // M10.3: pause warming when the keyboard is hidden (e.g. an article opened).
+    // The shared CompModel parse state is preserved, so the open-gate or the next
+    // onShow resumes it — no work is lost.
+    function onHide() as Void {
+        _warmer.stop();
+        View.onHide();
     }
 
     function setBuffer(b as String) as Void {
