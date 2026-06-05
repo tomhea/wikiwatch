@@ -27,9 +27,11 @@ module CompModel {
     // a transient String of the same order. Guard the decode buffer alloc (R5).
     const _MIN_FREE_DECODE = 96 * 1024;     // 98304
 
-    // Minimum free heap to begin building the model (R5). Public so DecodeView
-    // (which drives the incremental parse) can apply the same guard.
+    // Minimum free heap to begin building the model / the decode output buffer
+    // (R5). Public so DecodeView (which drives the incremental parse + decode)
+    // can apply the same guards the synchronous decompress()/decodeBody() do.
     const MIN_FREE_PARSE = _MIN_FREE_PARSE;
+    const MIN_FREE_DECODE = _MIN_FREE_DECODE;
 
     var _model as Dictionary? = null;
 

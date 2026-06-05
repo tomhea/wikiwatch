@@ -104,6 +104,14 @@ class DecodeView extends WatchUi.View {
 
         // --- phase B: decode the article body (sliced across ticks) ---
         if (_state == null) {
+            // R5: guard the decode output buffer alloc (grows to the full body).
+            // The cached-model branch skips phase A's MIN_FREE_PARSE check, so the
+            // decode path needs its own guard (mirrors CompModel.decompress).
+            if (System.getSystemStats().freeMemory < CompModel.MIN_FREE_DECODE) {
+                System.println("M10.1 decode: low memory for output buffer — popping");
+                WatchUi.popView(WatchUi.SLIDE_RIGHT);
+                return;
+            }
             _state = Decompressor.decodeStart(_blob);
         }
         var done = Decompressor.decodeStep(_state as Dictionary, _model as Dictionary, _TOKENS_PER_TICK);
