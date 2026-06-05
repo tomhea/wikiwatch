@@ -65,6 +65,51 @@ function indexCache_normTitlesPrecomputed(logger as Logger) as Boolean {
 }
 
 (:test)
+function indexCache_buildStepSlicedMatchesOneShot(logger as Logger) as Boolean {
+    // M10.5: building the index ONE part per tick (sliced, watchdog-safe) must
+    // take multiple ticks AND produce exactly the same arrays as a one-shot build.
+    IndexStore.wipeAll();
+    InstallState.reset();
+    IndexCache.clear();
+    IndexStore.putPart(0, [
+        { :id => "0", :title => "אפס", :popularity => 9 },
+        { :id => "1", :title => "שב\"ק", :popularity => 8 }
+    ] as Array<Dictionary>);
+    IndexStore.putPart(1, [ { :id => "2", :title => "שלום", :popularity => 7 } ] as Array<Dictionary>);
+    IndexStore.putPart(2, [ { :id => "3", :title => "תורה", :popularity => 6 } ] as Array<Dictionary>);
+
+    // sliced: 1 part per tick
+    var ticks = 0;
+    while (!IndexCache.buildStep(1)) { ticks++; }
+    var sliced = IndexCache.get();
+    var st = sliced[:titles] as Array<String>;
+    var sn = sliced[:normTitles] as Array<String>;
+
+    // one-shot, same parts
+    IndexCache.clear();
+    IndexCache.buildStep(100);
+    var ot = IndexCache.get()[:titles] as Array<String>;
+
+    IndexStore.wipeAll();
+    InstallState.reset();
+    IndexCache.clear();
+    logger.debug("ticks=" + ticks + " slicedN=" + st.size() + " oneN=" + ot.size());
+    return ticks >= 2
+        && st.size() == 4 && ot.size() == 4
+        && st[2].equals("שלום") && st[3].equals("תורה")
+        && sn[1].equals(Search.normalize("שב\"ק"))
+        && _idxTitlesEq(st, ot);
+}
+
+function _idxTitlesEq(a as Array<String>, b as Array<String>) as Boolean {
+    if (a.size() != b.size()) { return false; }
+    for (var i = 0; i < a.size(); i++) {
+        if (!a[i].equals(b[i])) { return false; }
+    }
+    return true;
+}
+
+(:test)
 function indexCache_respectsInstalledCountCap(logger as Logger) as Boolean {
     // M9.5 (C) cap carries into the cache: a partial install caps the searchable
     // index to installedCount.

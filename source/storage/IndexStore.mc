@@ -36,6 +36,14 @@ module IndexStore {
         return true;
     }
 
+    // M10.5: the raw String-keyed part array straight from Storage (null if not
+    // written), with NO Symbol-dict conversion. Lets IndexCache's sliced build
+    // read one part per tick cheaply (the conversion getPart does is what made
+    // the one-shot loadCompact too heavy for one handler at a large corpus).
+    function rawPart(k as Number) as Array? {
+        return Application.Storage.getValue(KEY_PREFIX + k.toString()) as Array?;
+    }
+
     // Read one part back; null if not yet written.
     function getPart(k as Number) as Array<Dictionary>? {
         var raw = Application.Storage.getValue(KEY_PREFIX + k.toString()) as Array?;

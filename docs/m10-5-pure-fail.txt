@@ -1,0 +1,11 @@
+M10.5 — TDD RED (before fix): IndexCache.buildStep stubbed to commit an empty
+index. scripts/test.ps1 (venu2, --unit-test)
+
+indexCache_loadsOnceAndCachesAcrossWipe                FAIL
+indexCache_normTitlesPrecomputed                       ERROR  (norm[0] on empty index)
+indexCache_buildStepSlicedMatchesOneShot               FAIL   (ticks=0, size 0)
+indexCache_respectsInstalledCountCap                   FAIL
+(indexCache_clearForcesReload stays PASS — it asserts the empty case.)
+
+Ran 367 tests
+FAILED (passed=363, failed=3, errors=1)

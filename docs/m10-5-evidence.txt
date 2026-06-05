@@ -1,0 +1,29 @@
+M10.5 evidence — sliced index load (watchdog-safe at large corpus).
+
+=== R1 unit (scripts/test.ps1, venu2) ===
+GREEN:
+  indexCache_buildStepSlicedMatchesOneShot   PASS   (ticks>=2; sliced == one-shot)
+  indexCache_loadsOnceAndCachesAcrossWipe     PASS
+  indexCache_clearForcesReload                PASS
+  indexCache_normTitlesPrecomputed            PASS
+  indexCache_respectsInstalledCountCap        PASS
+  Ran 367 tests
+  PASSED (passed=367, failed=0, errors=0)
+(RED before fix — IndexCache.buildStep stubbed to commit empty — see docs/m10-5-pure-fail.txt.)
+
+=== R2 sim (scripts/indexload-check.ps1, venu2, monkeydo app-run) ===
+Seeds a 1800-article synthetic index (bigger than the old 1200 cap), force-opens
+the keyboard with a pre-filled query, asserts the index loads ACROSS TICKS (sliced)
+and search works on the loaded index, no crash:
+  M5 rank: buf='כות' top=[] more=0 total=0           (during load — index empty)
+  M10.5 index loaded: n=1800 ticks=7                  (loaded across 7 ticks — SLICED)
+  M5 rank: buf='כות' top=[כותרת0,כותרת1] more=48 total=200   (search works after load)
+  INDEXCHECK PASS: 1800-article index loaded sliced across ticks (n=1800 ticks=7),
+  search works, no crash.
+  exit=0
+
+NOTE: the sim does not enforce the watchdog (only the real watch does), so this
+proves the load is STRUCTURALLY sliced + correct. Final watchdog proof at a big
+corpus is on-device (the v0.M10.5 tag), per the project's watchdog-gate convention.
+The corpus itself stays at the current 1200 here (binary-only milestone); the bump
+to ~2800 read-ranked articles is M10.6.
