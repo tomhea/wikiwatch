@@ -9,6 +9,15 @@ new PRs against this list; if a PR introduces a warning not listed here, R8 fail
    `manifest.xml: No supported languages are defined. Language-specific resources will be ignored unless language support is added to the manifest file.`
    - Will be resolved when we add Hebrew support in M2.
 
+2. **Baked compression model resource is large (> 8 KB).** _(--unit-test build only)_
+   `resources/jsonData/jsonResources.xml: The serialized form of the <jsonData> record compModel is large (> 8kb).`
+   - Emitted only by the `--unit-test` build (`scripts/test.ps1`); the release build
+     (`scripts/build.ps1`, the shipped artifact) does NOT emit it. The byte-level-BPE
+     + Huffman model is baked into the `.prg` as a base64 `jsonData` resource
+     (~48.6 KB; the model.bin is 36 KB) — intentional and unavoidable for a baked
+     model (CIQ has no raw-binary resource type). Accepted; not a defect. Present
+     since the M10.0 model bake; documented here in M10.1.
+
 ## Resolved
 
 - ~~**Launcher icon size mismatch (24x24 vs 70x70 for venu2).**~~ Resolved in

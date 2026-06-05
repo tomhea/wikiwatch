@@ -24,7 +24,7 @@ module Manifest {
     function load() as Dictionary {
         var v = Application.Storage.getValue(KEY) as Dictionary?;
         if (v == null) {
-            return { :version => 1, :articles => [] };
+            return { :version => 1, :articles => [], :bodyCodec => "plain", :modelVersion => 0 };
         }
         return _fromStorageDict(v);
     }
@@ -105,9 +105,17 @@ module Manifest {
                 });
             }
         }
+        // M10.1: persist the body codec + model version so the read path knows,
+        // offline, whether stored bodies are plain text or BPE+Huffman blobs.
+        var bodyCodec = m[:bodyCodec];
+        if (bodyCodec == null) { bodyCodec = "plain"; }
+        var modelVersion = m[:modelVersion];
+        if (modelVersion == null) { modelVersion = 0; }
         return {
             "version" => m[:version],
-            "articles" => storageArts
+            "articles" => storageArts,
+            "bodyCodec" => bodyCodec,
+            "modelVersion" => modelVersion
         };
     }
 
@@ -125,9 +133,16 @@ module Manifest {
                 });
             }
         }
+        // M10.1: default for manifests stored before M10.1 (no codec keys) → plain.
+        var bodyCodec = v["bodyCodec"];
+        if (bodyCodec == null) { bodyCodec = "plain"; }
+        var modelVersion = v["modelVersion"];
+        if (modelVersion == null) { modelVersion = 0; }
         return {
-            :version  => v["version"],
-            :articles => memArts
+            :version      => v["version"],
+            :articles     => memArts,
+            :bodyCodec    => bodyCodec,
+            :modelVersion => modelVersion
         };
     }
 }

@@ -139,3 +139,31 @@ function manifest_wipeArticlesOnEmpty(logger as Logger) as Boolean {
     logger.debug("wipeArticles on empty = " + deleted);
     return deleted == 0;
 }
+
+// --- M10.1: bodyCodec / modelVersion persistence ---
+
+(:test)
+function manifest_persistsCodecFields(logger as Logger) as Boolean {
+    Application.Storage.deleteValue("manifest");
+    var saved = Manifest.save({
+        :version => 16, :articles => [],
+        :bodyCodec => "bpe-huff-1", :modelVersion => 1
+    });
+    var loaded = Manifest.load();
+    Application.Storage.deleteValue("manifest");
+    logger.debug("persist codec=" + loaded[:bodyCodec] + " mv=" + loaded[:modelVersion]);
+    return saved
+        && (loaded[:bodyCodec] as String).equals("bpe-huff-1")
+        && (loaded[:modelVersion] as Number) == 1;
+}
+
+(:test)
+function manifest_loadDefaultsCodecForOldStored(logger as Logger) as Boolean {
+    // A manifest stored before M10.1 (String-keyed, no codec keys) -> plain / 0.
+    Application.Storage.deleteValue("manifest");
+    Application.Storage.setValue("manifest", { "version" => 15, "articles" => [] });
+    var loaded = Manifest.load();
+    Application.Storage.deleteValue("manifest");
+    logger.debug("old-stored codec=" + loaded[:bodyCodec] + " mv=" + loaded[:modelVersion]);
+    return (loaded[:bodyCodec] as String).equals("plain") && (loaded[:modelVersion] as Number) == 0;
+}

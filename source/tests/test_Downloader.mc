@@ -223,3 +223,27 @@ function downloader_parseManifestM9NoArticlesArray(logger as Logger) as Boolean 
     logger.debug("M9 no-articles parse: ok=" + r[:ok]);
     return r[:ok] == true;
 }
+
+// --- M10.1: bodyCodec / modelVersion parsing ---
+
+(:test)
+function downloader_manifestDefaultsToPlainCodec(logger as Logger) as Boolean {
+    // pre-M10.1 manifest (no codec fields) -> plain / version 0.
+    var data = { "version" => 15, "chunkCount" => 254, "indexCount" => 8 };
+    var r = Downloader.parseManifestResponse(200, data);
+    var m = r[:manifest] as Dictionary;
+    logger.debug("default codec=" + m[:bodyCodec] + " mv=" + m[:modelVersion]);
+    return (m[:bodyCodec] as String).equals("plain") && (m[:modelVersion] as Number) == 0;
+}
+
+(:test)
+function downloader_manifestParsesCodecFields(logger as Logger) as Boolean {
+    var data = {
+        "version" => 16, "chunkCount" => 90, "indexCount" => 8,
+        "bodyCodec" => "bpe-huff-1", "modelVersion" => 1
+    };
+    var r = Downloader.parseManifestResponse(200, data);
+    var m = r[:manifest] as Dictionary;
+    logger.debug("parsed codec=" + m[:bodyCodec] + " mv=" + m[:modelVersion]);
+    return (m[:bodyCodec] as String).equals("bpe-huff-1") && (m[:modelVersion] as Number) == 1;
+}
