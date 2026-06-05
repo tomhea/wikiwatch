@@ -1,0 +1,32 @@
+M10.4 evidence — recently-read list.
+
+=== R1 unit (scripts/test.ps1, venu2) ===
+
+RED (Recents.add stubbed -> []):
+recents_addToEmptyPutsEntryFirst                       FAIL
+recents_addMovesExistingToFrontNoDup                   FAIL
+recents_capsToOldestDropped                            FAIL
+recentsStore_recordLoadRoundtrip                       FAIL
+recentsStore_dedupAndClear                             FAIL
+(recentsStore_loadEmptyWhenUnset stays PASS — it asserts the empty case)
+Ran 366 tests
+FAILED (passed=361, failed=5, errors=0)
+
+GREEN (implemented):
+recents_addToEmptyPutsEntryFirst                       PASS
+recents_addMovesExistingToFrontNoDup                   PASS
+recents_capsToOldestDropped                            PASS
+recentsStore_recordLoadRoundtrip                       PASS
+recentsStore_dedupAndClear                             PASS
+recentsStore_loadEmptyWhenUnset                        PASS
+Ran 366 tests
+PASSED (passed=366, failed=0, errors=0)
+TESTS OK
+
+=== R2 sim (scripts/recents-check.ps1, venu2, monkeydo app-run) ===
+Seeds two recents, force-opens the keyboard, asserts they surface on the empty
+buffer (most-recent first) with no watchdog:
+  M10.4 recents: n=2 top=[torah,shalom]
+  RECENTSCHECK PASS: 2 seeded recents surfaced on the keyboard's empty buffer,
+  no watchdog.
+  exit=0

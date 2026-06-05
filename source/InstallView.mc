@@ -193,6 +193,7 @@ class InstallView extends WatchUi.View {
         Manifest.save(manifest);
         IndexStore.wipeAll();   // M9: clear stale index parts
         IndexCache.clear();     // M9.6: drop the shared compact-index cache
+        RecentsStore.clear();   // M10.4: stale recents ids may not map to the new corpus
         InstallState.begin(version);
     }
 

@@ -1,0 +1,12 @@
+M10.4 — TDD RED (before fix): Recents.add stubbed to return [].
+scripts/test.ps1 (venu2, --unit-test)
+
+recents_addToEmptyPutsEntryFirst                       FAIL
+recents_addMovesExistingToFrontNoDup                   FAIL
+recents_capsToOldestDropped                            FAIL
+recentsStore_recordLoadRoundtrip                       FAIL
+recentsStore_dedupAndClear                             FAIL
+(recentsStore_loadEmptyWhenUnset stays PASS — it asserts the empty case.)
+
+Ran 366 tests
+FAILED (passed=361, failed=5, errors=0)

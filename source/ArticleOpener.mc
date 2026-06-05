@@ -15,18 +15,23 @@ import Toybox.WatchUi;
 // Impure (WatchUi/System) so it lives in source/, not models/. The routing
 // decision itself is the pure BodyCodec.readAction.
 module ArticleOpener {
-    function open(stored as String, id as String) as Void {
+    function open(stored as String, id as String, title as String) as Void {
         var man = Manifest.load();
         var codec = man[:bodyCodec] as String?;
         // Plain corpus / pre-M10.1: never touches the model.
         if (codec == null || codec.equals(BodyCodec.PLAIN)) {
+            RecentsStore.record(id, title);   // M10.4: recently-read list
             _pushReader(stored, id);
             return;
         }
         var action = BodyCodec.readAction(codec, man[:modelVersion] as Number?, CompModel.bakedVersion());
         if (action != :decompress) {
-            return;   // :unavailable — compressed corpus this binary can't decode
+            return;   // :unavailable — compressed corpus this binary can't decode (not recorded)
         }
+        // Openable compressed article — record it before opening. The callers have
+        // already passed the MemGuard (150 KB) gate, so the decode guards below
+        // won't abort; recording here matches "actually opened".
+        RecentsStore.record(id, title);   // M10.4: recently-read list
         // Already laid out (re-open) → reader adopts the cached layout, no decode.
         if (ArticleLayoutCache.get(id) != null) {
             _pushReader("", id);
