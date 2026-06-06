@@ -34,6 +34,12 @@ class InstallView extends WatchUi.View {
     // System.getSystemStats() isn't free; see plan "Battery monitoring").
     private const BATTERY_CHECK_EVERY = 10;
 
+    // M10.6: Communications returns this rc when its BLE request queue is full
+    // (too many concurrent requests for the watch's stack). It's transient — the
+    // chunk is re-queued without burning a retry attempt and the in-flight
+    // ceiling steps down — NOT a real download failure.
+    private const BLE_QUEUE_FULL = -101;
+
     private var _resuming as Boolean;
     private var _ctrl as InstallController?;
     private var _pattern as String;
@@ -59,6 +65,12 @@ class InstallView extends WatchUi.View {
     // against overflowing the invisible flash quota, which crashes uncatchably.
     private var _bytesWritten as Number;
     private var _budgetStopped as Boolean;
+    // M10.6: adaptive in-flight ceiling for the body-chunk stream. Starts
+    // optimistic (MAX_IN_FLIGHT) and ratchets down by one on every rc=-101
+    // (BLE queue full), never below MIN_IN_FLIGHT. It caps the memory-derived
+    // concurrency each tick so the back-off isn't undone by the per-chunk
+    // maxInFlightForMemory re-evaluation.
+    private var _backoffCeiling as Number;
 
     function initialize(resuming as Boolean) {
         View.initialize();
@@ -78,6 +90,7 @@ class InstallView extends WatchUi.View {
         _indexArticleTotal = 0;
         _bytesWritten = 0;
         _budgetStopped = false;
+        _backoffCeiling = InstallPlan.MAX_IN_FLIGHT;
     }
 
     function onShow() as Void {
@@ -312,6 +325,13 @@ class InstallView extends WatchUi.View {
                 System.println("M8 install: chunk " + n + " missing articles dict");
                 ctrl.onFailure(n);
             }
+        } else if (rc == BLE_QUEUE_FULL) {
+            // Queue full: re-queue WITHOUT counting an attempt and ratchet the
+            // ceiling down so we stop over-driving the BLE stack.
+            _backoffCeiling = InstallPlan.backoffMaxInFlight(_backoffCeiling);
+            System.println("M10.6 install: chunk " + n + " rc=-101 queue-full — requeue, ceiling="
+                + _backoffCeiling);
+            ctrl.markRequeue(n);
         } else {
             System.println("M8 install: chunk " + n + " FAILED rc=" + rc
                 + " attempt=" + (ctrl.attemptsFor(n) + 1));
@@ -321,9 +341,13 @@ class InstallView extends WatchUi.View {
         // doesn't compound across in-flight chunks.
         data = null;
 
-        // Self-regulate concurrency on current free memory.
+        // Self-regulate concurrency on current free memory, capped by the
+        // adaptive back-off ceiling (a memory-recovery tick must not re-raise
+        // concurrency past what the BLE stack proved it can sustain this install).
         var freeMem = System.getSystemStats().freeMemory;
-        ctrl.setMaxInFlight(InstallPlan.maxInFlightForMemory(freeMem));
+        var target = InstallPlan.maxInFlightForMemory(freeMem);
+        if (target > _backoffCeiling) { target = _backoffCeiling; }
+        ctrl.setMaxInFlight(target);
         System.println("fm:" + freeMem);
 
         // Periodic battery check — pause (preserving state) if critically low.

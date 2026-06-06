@@ -192,3 +192,35 @@ function install_resumeSeedsReceivedChunks(logger as Logger) as Boolean {
     logger.debug("resume fire = " + fire + " receivedCount=" + c.receivedCount());
     return c.receivedCount() == 3 && fire.size() == 2 && fire[0] == 2 && fire[1] == 3;
 }
+
+// --- M10.6: -101 (BLE queue full) re-queue WITHOUT burning a retry attempt ---
+
+(:test)
+function install_requeueDoesNotBurnRetryBudget(logger as Logger) as Boolean {
+    // rc=-101 is queue-full, not a real failure. At 4-in-flight a queue-full
+    // storm must NOT exhaust MAX_ATTEMPTS (which would drop a chunk -> a MISSING
+    // article). markRequeue re-arms the chunk leaving its attempt count at 0, so
+    // it can be re-queued indefinitely and never permanently fails.
+    var c = new InstallController(1, [] as Array<Number>, 4);
+    for (var i = 0; i < 10; i++) {
+        var f = c.nextToFire();
+        if (f.size() == 0) { return false; }   // must always be re-offered
+        c.markRequeue(f[0]);
+    }
+    logger.debug("after 10 requeues attempts=" + c.attemptsFor(0)
+        + " complete=" + c.isComplete());
+    return c.attemptsFor(0) == 0 && c.isComplete() == false;
+}
+
+(:test)
+function install_requeueClearsInFlightAndReoffers(logger as Logger) as Boolean {
+    // markRequeue releases the in-flight slot and makes the chunk eligible again
+    // (lowest-first), unlike onFailure which counts an attempt.
+    var c = new InstallController(2, [] as Array<Number>, 4);
+    c.nextToFire();              // [0,1] in flight
+    c.markRequeue(0);            // 0 re-armed; inFlight back to 1
+    logger.debug("after requeue inFlight=" + c.inFlightCount());
+    var f = c.nextToFire();      // 0 re-offered
+    return c.inFlightCount() == 2 && f.size() == 1 && f[0] == 0
+        && c.attemptsFor(0) == 0;
+}

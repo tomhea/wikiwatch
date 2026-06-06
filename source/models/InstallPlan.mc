@@ -12,6 +12,20 @@ module InstallPlan {
     // drops to a single concurrent chunk request (see maxInFlightForMemory).
     const MEM_PRESSURE_BYTES = 400 * 1024;
 
+    // M10.6: with this much free heap (or more) the install goes optimistic and
+    // fires up to MAX_IN_FLIGHT concurrent chunk requests — fewer BLE round-trips,
+    // much faster download. Venu 2 launches the install with ~600-700 KB free, so
+    // 4-in-flight engages at the start and the -101 back-off / memory step-down
+    // trim it automatically as parse buffers grow. Tunable against the sim
+    // install-check + the on-device BLE behaviour.
+    const MEM_AMPLE_BYTES = 550 * 1024;
+
+    // M10.6: optimistic concurrency ceiling and the floor the -101 back-off
+    // ratchets toward (keeps a little parallelism even when the BLE stack is
+    // returning queue-full).
+    const MAX_IN_FLIGHT = 4;
+    const MIN_IN_FLIGHT = 2;
+
     // M9.5: hard cap on how much article-body data we write to Application.Storage
     // (flash) during an install. The Venu 2 flash quota is invisible to the API
     // (System.getSystemStats reports only RAM), and overflowing it crashes the
@@ -22,13 +36,16 @@ module InstallPlan {
     // full while staying below the catastrophic 9.2 MB point.
     const STORAGE_BUDGET_BYTES = 9000000;
 
-    // Estimate the UTF-8 byte size of a body from its character length. Hebrew
-    // code points are 2 bytes in UTF-8; most corpus text is Hebrew, so ~2x chars
-    // is a reasonable (slightly conservative for mixed ASCII) estimate. Used to
-    // accumulate install bytes against STORAGE_BUDGET_BYTES without allocating a
-    // UTF-8 array per body in the install hot path.
+    // Estimate the UTF-8 byte size of a STORED body from its character length.
+    // Since M10.1 the corpus is compressed: bodies are stored as base64 (ASCII,
+    // 1 byte/char), so the stored UTF-8 byte count equals the char count. (Before
+    // compression, plain-Hebrew bodies were ~2 bytes/char and this returned 2x —
+    // but on the compressed corpus 2x over-counts and falsely trips
+    // STORAGE_BUDGET_BYTES at ~half a large corpus.) Used to accumulate install
+    // bytes against the budget without allocating a UTF-8 array per body in the
+    // install hot path.
     function estimateBytes(charLen as Number) as Number {
-        return charLen * 2;
+        return charLen;
     }
 
     // True once the running install byte total has reached the storage budget —
@@ -107,7 +124,17 @@ module InstallPlan {
     // request (peak ~190 KB) instead of 2 (peak ~270 KB). Pure so the
     // threshold is unit-testable; the view passes System freeMemory.
     function maxInFlightForMemory(freeBytes as Number) as Number {
-        return freeBytes < MEM_PRESSURE_BYTES ? 1 : 2;
+        if (freeBytes < MEM_PRESSURE_BYTES) { return 1; }
+        if (freeBytes < MEM_AMPLE_BYTES) { return 2; }
+        return MAX_IN_FLIGHT;
+    }
+
+    // M10.6: adaptive back-off. On a -101 (BLE_QUEUE_FULL) the install lowers
+    // its in-flight ceiling by one (4 -> 3 -> 2), never below MIN_IN_FLIGHT, so
+    // concurrency self-tunes to whatever the watch's BLE stack can sustain.
+    function backoffMaxInFlight(current as Number) as Number {
+        var n = current - 1;
+        return n < MIN_IN_FLIGHT ? MIN_IN_FLIGHT : n;
     }
 
     // M8.3 self-heal: up to `n` evenly-spaced indices in [0, count) for spot-

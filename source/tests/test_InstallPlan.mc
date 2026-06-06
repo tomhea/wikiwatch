@@ -153,7 +153,50 @@ function installPlan_storageBudgetStop(logger as Logger) as Boolean {
 
 (:test)
 function installPlan_estimateBytesFromChars(logger as Logger) as Boolean {
-    // Hebrew ~2 bytes/char in UTF-8.
+    // M10.6: the install stores COMPRESSED bodies — base64 (ASCII, 1 byte/char),
+    // not raw 2-byte Hebrew. The install-budget byte estimate must therefore be
+    // 1x the stored-string length. At 2x it over-counts and falsely trips
+    // STORAGE_BUDGET_BYTES at ~half the corpus (the sim install stalled at
+    // 1447/2800 with budgetStopped=true before this fix).
     return InstallPlan.estimateBytes(0) == 0
-        && InstallPlan.estimateBytes(100) == 200;
+        && InstallPlan.estimateBytes(100) == 100;
+}
+
+// --- M10.6: concurrency 4 when memory is plentiful + adaptive -101 back-off ---
+
+(:test)
+function installPlan_maxInFlightFourWhenPlentiful(logger as Logger) as Boolean {
+    // At/above MEM_AMPLE_BYTES (550 KB) we go optimistic with 4 concurrent
+    // chunk requests — fewer BLE round-trips. The -101 back-off + memory
+    // step-down degrade it automatically when the watch can't keep up.
+    var a = InstallPlan.maxInFlightForMemory(550 * 1024);  // boundary
+    var b = InstallPlan.maxInFlightForMemory(700 * 1024);  // plentiful
+    logger.debug("maxInFlight(550KB)=" + a + " (700KB)=" + b);
+    return a == 4 && b == 4;
+}
+
+(:test)
+function installPlan_maxInFlightTwoJustBelowAmple(logger as Logger) as Boolean {
+    // Just under the ample threshold stays at the comfortable 2 (the existing
+    // 500KB->2 band is unchanged).
+    var r = InstallPlan.maxInFlightForMemory(549 * 1024);
+    logger.debug("maxInFlight(549KB) = " + r);
+    return r == 2;
+}
+
+(:test)
+function installPlan_backoffRatchetsDownByOne(logger as Logger) as Boolean {
+    // On a -101 (BLE queue full) the in-flight ceiling drops by one.
+    var r = InstallPlan.backoffMaxInFlight(4);
+    logger.debug("backoff(4) = " + r);
+    return r == 3;
+}
+
+(:test)
+function installPlan_backoffFloorsAtTwo(logger as Logger) as Boolean {
+    // The ceiling never falls below 2 — the install keeps a little parallelism.
+    var a = InstallPlan.backoffMaxInFlight(3);
+    var b = InstallPlan.backoffMaxInFlight(2);
+    logger.debug("backoff(3)=" + a + " backoff(2)=" + b);
+    return a == 2 && b == 2;
 }

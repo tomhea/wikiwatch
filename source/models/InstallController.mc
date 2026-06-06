@@ -115,6 +115,20 @@ class InstallController {
         }
     }
 
+    // M10.6: re-queue a chunk WITHOUT counting an attempt. Used for rc=-101
+    // (BLE queue full) — a transient "try again", not a real failure. Releases
+    // the in-flight slot and re-arms the chunk as eligible, leaving its attempt
+    // count untouched so a queue-full storm can't exhaust MAX_ATTEMPTS.
+    function markRequeue(n as Number) as Void {
+        if (n < 0 || n >= _chunkCount) { return; }
+        if (_state[n] == ST_INFLIGHT) { _inFlightCount--; }
+        // Re-arm only if not already terminal — a received/failed chunk stays put.
+        if (_state[n] != ST_RECEIVED && _state[n] != ST_FAILED) {
+            _state[n] = ST_ELIGIBLE;
+        }
+        // NOTE: _attempts deliberately untouched — a -101 is not a real failure.
+    }
+
     // Every chunk has reached a terminal state (received or permanently
     // failed) and nothing is still in flight.
     function isComplete() as Boolean {
