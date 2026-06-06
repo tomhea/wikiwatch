@@ -17,6 +17,20 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
 
     function onTap(event as WatchUi.ClickEvent) as Boolean {
         var coords = event.getCoordinates() as Array<Number>;
+
+        // M10.8: while the "Close app?" modal is up, tap-in-button exits, tap
+        // elsewhere cancels (physical back also cancels).
+        if (_view.isCloseQuery()) {
+            var s = System.getDeviceSettings();
+            if (CloseQuery.buttonHit(coords[0], coords[1], s.screenWidth, s.screenHeight)) {
+                System.println("M10.8: close app confirmed (results) — exiting");
+                System.exit();
+            } else {
+                _view.setCloseQuery(false);
+            }
+            return true;
+        }
+
         var hit = _view.rowAt(coords[0], coords[1]);
         if (hit != null) {
             // M9.6: low-memory gate — don't open the reader (uncatchable OOM risk).
@@ -39,6 +53,7 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onDrag(event as WatchUi.DragEvent) as Boolean {
+        if (_view.isCloseQuery()) { return true; }   // M10.8: no scroll behind the modal
         var coords = event.getCoordinates() as Array<Number>;
         var currentY = coords[1];
         var type = event.getType();
@@ -64,16 +79,33 @@ class ResultsDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onNextPage() as Boolean {
+        if (_view.isCloseQuery()) { return true; }
         _view.scrollBy(60);
         return true;
     }
 
     function onPreviousPage() as Boolean {
+        if (_view.isCloseQuery()) { return true; }
         _view.scrollBy(-60);
         return true;
     }
 
+    // M10.8: long-press back (KEY_MENU on the Venu 2) -> "Close app?" modal.
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_MENU) {
+            System.println("M10.8: long-press BACK (MENU) in results — close-app query");
+            _view.setCloseQuery(true);
+            return true;
+        }
+        return false;
+    }
+
     function onBack() as Boolean {
+        // M10.8: short back cancels the modal if up; otherwise pop (return false).
+        if (_view.isCloseQuery()) {
+            _view.setCloseQuery(false);
+            return true;
+        }
         return false;
     }
 }

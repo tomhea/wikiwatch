@@ -92,6 +92,10 @@ class wikiwatchView extends WatchUi.View {
     private var _decodeState as Dictionary?;
     private var _model as Dictionary?;
     private var _decodeDone as Boolean;
+    // M10.8: "Close app?" modal — long-pressing the physical back button
+    // (delivered as KEY_MENU on the Venu 2) sets it from the delegate. Same
+    // behaviour as the keyboard's modal, now available while reading an article.
+    private var _closeQuery as Boolean;
 
     function initialize(body as String, cacheKey as String) {
         View.initialize();
@@ -118,6 +122,18 @@ class wikiwatchView extends WatchUi.View {
         _decodeState = null;
         _model = null;
         _decodeDone = true;
+        _closeQuery = false;
+    }
+
+    // M10.8: "Close app?" modal toggles (driven by wikiwatchDelegate — KEY_MENU
+    // shows it, a tap inside the button exits, back/elsewhere cancels).
+    function setCloseQuery(b as Boolean) as Void {
+        _closeQuery = b;
+        WatchUi.requestUpdate();
+    }
+
+    function isCloseQuery() as Boolean {
+        return _closeQuery;
     }
 
     // M10.2: enter streaming-decode mode for a compressed article. Called right
@@ -146,6 +162,13 @@ class wikiwatchView extends WatchUi.View {
     function onUpdate(dc as Dc) as Void {
         _screenHeight = dc.getHeight();
         _screenWidth = dc.getWidth();
+
+        // M10.8: "Close app?" modal takes over the whole screen and skips the
+        // reader's layout/decode work entirely while it's up.
+        if (_closeQuery) {
+            CloseQueryUi.draw(dc);
+            return;
+        }
 
         // Lazy init on first onUpdate (we need dc to compute middleWidth).
         if (_lines == null) {

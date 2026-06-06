@@ -200,3 +200,18 @@ function installPlan_backoffFloorsAtTwo(logger as Logger) as Boolean {
     logger.debug("backoff(3)=" + a + " backoff(2)=" + b);
     return a == 2 && b == 2;
 }
+
+// --- M10.8: effective concurrency = min(memory tier, back-off ceiling) ---
+
+(:test)
+function installPlan_effectiveMaxInFlightIsMin(logger as Logger) as Boolean {
+    // The install's live concurrency is the lower of the memory-derived tier and
+    // the persistent -101 back-off ceiling, so neither a memory-recovery tick nor
+    // a high memory tier can re-raise concurrency past what the BLE stack proved.
+    var a = InstallPlan.effectiveMaxInFlight(4, 4);   // both 4
+    var b = InstallPlan.effectiveMaxInFlight(4, 2);   // ceiling caps -> 2
+    var c = InstallPlan.effectiveMaxInFlight(2, 4);   // memory caps -> 2
+    var d = InstallPlan.effectiveMaxInFlight(1, 3);   // memory pressure -> 1
+    logger.debug("eff: " + a + " " + b + " " + c + " " + d);
+    return a == 4 && b == 2 && c == 2 && d == 1;
+}
