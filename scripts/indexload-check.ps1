@@ -1,7 +1,7 @@
 # M10.5 sliced index-load gate.
 #
-# Seeds a LARGE synthetic search index (~1800 articles, bigger than the old 1200
-# cap) into Storage, force-opens the keyboard with a pre-filled query, and asserts
+# Seeds a LARGE synthetic search index (2800 articles — the M10.6 corpus size,
+# 2.3x the old 1200) into Storage, force-opens the keyboard with a pre-filled query, and asserts
 # the index loads ACROSS MULTIPLE TICKS (sliced, not one watchdog-tripping handler)
 # and that typed search works on the fully-loaded index, with no crash.
 #
@@ -11,9 +11,9 @@
 #
 # Injects a force-open into wikiwatchApp.getInitialView (backed up + restored).
 param(
-    [int]$WaitSeconds = 14,
+    [int]$WaitSeconds = 16,
     [string]$Device = "venu2",
-    [int]$N = 1800
+    [int]$N = 2800
 )
 $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\sdk.ps1"

@@ -15,8 +15,7 @@
 # Precondition: the simulator is running (the script starts it if not).
 param(
     [int]$WaitSeconds = 22,
-    [string]$Device = "venu2",
-    [string]$GoldenId = "1143"   # the largest article in golden.json (worst case)
+    [string]$Device = "venu2"
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,12 +25,25 @@ $proj    = Resolve-Path "$PSScriptRoot\.."
 $app     = Join-Path $proj "source\wikiwatchApp.mc"
 $prg     = Join-Path $proj "bin\wikiwatch-wdcheck.prg"
 $log     = Join-Path $proj "bin\wdcheck.log"
-$golden  = Join-Path $proj "scripts\m10-compress\golden.json"
+$chunkDir = Join-Path $proj "docs\server\chunk"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null
 
-# 1. Pull the worst-case blob + its expected char length out of golden.json.
-$blob = & python -c "import json,sys; g=json.load(open(r'$golden',encoding='utf-8')); v=[x for x in g if x['id']=='$GoldenId'][0]; sys.stdout.write(v['blob_b64'])"
-if (-not $blob) { Write-Error "could not read golden blob id=$GoldenId"; exit 2 }
+# 1. M10.6: pick the worst-case blob = the LARGEST compressed body in the SHIPPED
+#    corpus (docs/server/chunk). The v1 model is unchanged, so any shipped blob
+#    decodes; the largest compressed body is the heaviest decode+render path. (Was
+#    hard-pinned to the old golden id=1143; the new 2,800 corpus has different ids.)
+$pick = & python -c @"
+import json, glob, os, sys
+best_id, best_b64 = None, ''
+for p in glob.glob(os.path.join(r'$chunkDir', '*.json')):
+    for aid, b64 in json.load(open(p, encoding='utf-8'))['articles'].items():
+        if len(b64) > len(best_b64):
+            best_id, best_b64 = aid, b64
+sys.stderr.write('worst-case id=%s b64len=%d\n' % (best_id, len(best_b64)))
+sys.stdout.write(best_b64)
+"@
+$blob = $pick
+if (-not $blob) { Write-Error "could not find a worst-case blob in $chunkDir"; exit 2 }
 
 # 2. Make sure the simulator is up.
 if (-not (Get-Process -Name "simulator","connectiq" -ErrorAction SilentlyContinue)) {
