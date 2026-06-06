@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 
 $proj = Resolve-Path "$PSScriptRoot\.."
 $app  = Join-Path $proj "source\wikiwatchApp.mc"
-$prg  = Join-Path $proj "bin\wikiwatch-recentscheck.prg"
+$prg  = Join-Path $buildDir "wikiwatch-recentscheck.prg"
 $log  = Join-Path $proj "bin\recentscheck.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null
 

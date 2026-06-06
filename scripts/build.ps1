@@ -1,4 +1,6 @@
-# Build the release .prg into bin/wikiwatch.prg.
+# Build the release .prg into $buildDir\wikiwatch.prg (C:\Temp — see sdk.ps1 for
+# why monkeyc output can't go under the repo tree). Copy it into versions/ from
+# there when archiving a milestone.
 # Exit 0 on success, non-zero on any monkeyc warning or error (-w).
 param(
     [string]$Device = "venu2"
@@ -8,7 +10,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\sdk.ps1"
 
 $proj = Resolve-Path "$PSScriptRoot\.."
-$out  = Join-Path $proj "bin\wikiwatch.prg"
+$out  = Join-Path $buildDir "wikiwatch.prg"
 New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
 
 Push-Location $proj

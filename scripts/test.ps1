@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\sdk.ps1"
 
 $proj    = Resolve-Path "$PSScriptRoot\.."
-$prg     = Join-Path $proj "bin\wikiwatch-test.prg"
+$prg     = Join-Path $buildDir "wikiwatch-test.prg"
 $logPath = Join-Path $proj "bin\test-output.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null
 

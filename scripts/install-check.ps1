@@ -39,7 +39,7 @@ $proj   = Resolve-Path "$PSScriptRoot\.."
 $app    = Join-Path $proj "source\wikiwatchApp.mc"
 $dload  = Join-Path $proj "source\net\Downloader.mc"
 $server = Join-Path $proj "docs\server"
-$prg    = Join-Path $proj "bin\wikiwatch-installcheck.prg"
+$prg    = Join-Path $buildDir "wikiwatch-installcheck.prg"
 $log    = Join-Path $proj "bin\installcheck.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null
 
