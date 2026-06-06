@@ -153,9 +153,13 @@ function installPlan_storageBudgetStop(logger as Logger) as Boolean {
 
 (:test)
 function installPlan_estimateBytesFromChars(logger as Logger) as Boolean {
-    // Hebrew ~2 bytes/char in UTF-8.
+    // M10.6: the install stores COMPRESSED bodies — base64 (ASCII, 1 byte/char),
+    // not raw 2-byte Hebrew. The install-budget byte estimate must therefore be
+    // 1x the stored-string length. At 2x it over-counts and falsely trips
+    // STORAGE_BUDGET_BYTES at ~half the corpus (the sim install stalled at
+    // 1447/2800 with budgetStopped=true before this fix).
     return InstallPlan.estimateBytes(0) == 0
-        && InstallPlan.estimateBytes(100) == 200;
+        && InstallPlan.estimateBytes(100) == 100;
 }
 
 // --- M10.6: concurrency 4 when memory is plentiful + adaptive -101 back-off ---

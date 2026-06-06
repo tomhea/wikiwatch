@@ -36,13 +36,16 @@ module InstallPlan {
     // full while staying below the catastrophic 9.2 MB point.
     const STORAGE_BUDGET_BYTES = 9000000;
 
-    // Estimate the UTF-8 byte size of a body from its character length. Hebrew
-    // code points are 2 bytes in UTF-8; most corpus text is Hebrew, so ~2x chars
-    // is a reasonable (slightly conservative for mixed ASCII) estimate. Used to
-    // accumulate install bytes against STORAGE_BUDGET_BYTES without allocating a
-    // UTF-8 array per body in the install hot path.
+    // Estimate the UTF-8 byte size of a STORED body from its character length.
+    // Since M10.1 the corpus is compressed: bodies are stored as base64 (ASCII,
+    // 1 byte/char), so the stored UTF-8 byte count equals the char count. (Before
+    // compression, plain-Hebrew bodies were ~2 bytes/char and this returned 2x —
+    // but on the compressed corpus 2x over-counts and falsely trips
+    // STORAGE_BUDGET_BYTES at ~half a large corpus.) Used to accumulate install
+    // bytes against the budget without allocating a UTF-8 array per body in the
+    // install hot path.
     function estimateBytes(charLen as Number) as Number {
-        return charLen * 2;
+        return charLen;
     }
 
     // True once the running install byte total has reached the storage budget —
