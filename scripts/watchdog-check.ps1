@@ -23,7 +23,7 @@ $ErrorActionPreference = "Stop"
 
 $proj    = Resolve-Path "$PSScriptRoot\.."
 $app     = Join-Path $proj "source\wikiwatchApp.mc"
-$prg     = Join-Path $proj "bin\wikiwatch-wdcheck.prg"
+$prg     = Join-Path $buildDir "wikiwatch-wdcheck.prg"
 $log     = Join-Path $proj "bin\wdcheck.log"
 $chunkDir = Join-Path $proj "docs\server\chunk"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null

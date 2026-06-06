@@ -20,3 +20,12 @@ if ($null -eq $keyPath) {
     exit 1
 }
 $script:devKey = $keyPath.Path
+
+# Build-output dir. monkeyc's PRG + bitmap-cache writes FAIL under the repo tree
+# (C:\Users\...\Documents\Garmin\) — a background scanner/indexer locks the
+# freshly-written binary mid-write ("Access is denied" / "The system cannot find
+# the file specified", exit 100) — while writes to C:\Temp are clean. So all
+# monkeyc -o output goes here; logs + the versions/ artifact archival stay in the
+# repo (plain file writes there are unaffected). See reference_toolchain memory.
+$script:buildDir = "C:\Temp\wikiwatch-build"
+if (-not (Test-Path $buildDir)) { New-Item -ItemType Directory -Force -Path $buildDir | Out-Null }

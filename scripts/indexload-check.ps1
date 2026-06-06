@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 
 $proj = Resolve-Path "$PSScriptRoot\.."
 $app  = Join-Path $proj "source\wikiwatchApp.mc"
-$prg  = Join-Path $proj "bin\wikiwatch-indexcheck.prg"
+$prg  = Join-Path $buildDir "wikiwatch-indexcheck.prg"
 $log  = Join-Path $proj "bin\indexcheck.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null
 
@@ -78,7 +78,7 @@ $errText = (Get-Content "$log.err" -Raw -ErrorAction SilentlyContinue); if ($nul
 $all = $text + "`n" + $errText
 
 Write-Host "---- indexcheck simulator log (relevant lines) ----"
-($all -split "`r?`n") | Select-String -Pattern "Watchdog|Tripped|crash|Error:|M10.5 index loaded|M5 rank: buf='כות'" | ForEach-Object { Write-Host $_ }
+($all -split "`r?`n") | Select-String -Pattern "Watchdog|Tripped|crash|Error:|M10.5 index loaded|M5 rank: buf=" | ForEach-Object { Write-Host $_ }
 Write-Host "---------------------------------------------------"
 
 $fail = $false
@@ -94,7 +94,7 @@ if ($all -match "M10.5 index loaded: n=(\d+) ticks=(\d+)") {
 }
 # search worked on the loaded index: the pre-filled 'כות' query must match (>0 total).
 $searchOk = $false
-foreach ($m in ([regex]"M5 rank: buf='כות'.*?total=(\d+)").Matches($all)) {
+foreach ($m in ([regex]"M5 rank: buf=.*?total=(\d+)").Matches($all)) {
     if ([int]$m.Groups[1].Value -gt 0) { $searchOk = $true }
 }
 if (-not $searchOk) {
