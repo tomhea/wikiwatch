@@ -138,7 +138,9 @@ def _chunk_bytes(chunk_idx, articles):
     return len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
 
 
-def pack_pass(target_bytes, write=True):
+def pack_pass(target_bytes, write=True, out_chunk_dir=None, out_packed=None):
+    chunk_dir = out_chunk_dir or CHUNK_DIR
+    packed = out_packed or PACKED
     rows = read_compressed()
     chunks = []          # list of dict{id:b64}
     cur = {}
@@ -166,18 +168,18 @@ def pack_pass(target_bytes, write=True):
         "total_bytes": sum(sizes),
     }
     if write:
-        if os.path.isdir(CHUNK_DIR):
-            for p in glob.glob(os.path.join(CHUNK_DIR, "*.json")):
+        if os.path.isdir(chunk_dir):
+            for p in glob.glob(os.path.join(chunk_dir, "*.json")):
                 os.remove(p)
         else:
-            os.makedirs(CHUNK_DIR)
+            os.makedirs(chunk_dir)
         for i, c in enumerate(chunks):
             obj = {"chunk": i, "articles": c}
-            with open(os.path.join(CHUNK_DIR, "%d.json" % i), "w",
+            with open(os.path.join(chunk_dir, "%d.json" % i), "w",
                       encoding="utf-8", newline="\n") as f:
                 f.write(json.dumps(obj, separators=(",", ":"), ensure_ascii=False))
         # packed.tsv for pack-index.ps1 (numId, title, pop) in id order.
-        with open(PACKED, "w", encoding="utf-8", newline="\n") as f:
+        with open(packed, "w", encoding="utf-8", newline="\n") as f:
             f.write("id\ttitle\tpopularity\n")
             for num_id, title, pop, _ in rows:
                 f.write("%d\t%s\t%s\n" % (num_id, title, pop))
@@ -191,6 +193,9 @@ def main():
                     help="force the compress pass even if compressed.tsv is fresh")
     ap.add_argument("--report-only", action="store_true",
                     help="don't write chunks; print a chunk-count table across targets")
+    ap.add_argument("--out-dir", default=None,
+                    help="write chunks here (+ packed.tsv alongside) instead of docs/server/chunk; "
+                         "for building a sim-safe temp fixture without touching the shipped corpus")
     args = ap.parse_args()
 
     fresh = (os.path.exists(COMPRESSED)
@@ -209,12 +214,14 @@ def main():
                      s["median_bytes"] / 1024.0, s["min_arts"], s["max_arts"]))
         return
 
-    s = pack_pass(args.target_bytes, write=True)
+    out_chunk_dir = args.out_dir
+    out_packed = os.path.join(args.out_dir, "packed.tsv") if args.out_dir else None
+    s = pack_pass(args.target_bytes, write=True, out_chunk_dir=out_chunk_dir, out_packed=out_packed)
     print("\npack: target=%d B -> %d chunks (max=%.1f KB, median=%.1f KB, %d..%d arts/chunk)"
           % (args.target_bytes, s["chunks"], s["max_bytes"] / 1024.0,
              s["median_bytes"] / 1024.0, s["min_arts"], s["max_arts"]))
     print("pack: total chunk bytes=%d (%.2f MB) -> %s"
-          % (s["total_bytes"], s["total_bytes"] / 1e6, CHUNK_DIR))
+          % (s["total_bytes"], s["total_bytes"] / 1e6, out_chunk_dir or CHUNK_DIR))
 
 
 if __name__ == "__main__":

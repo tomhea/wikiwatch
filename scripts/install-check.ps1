@@ -22,7 +22,14 @@ param(
     # Point the install at this base URL instead of the local fixture (e.g. the
     # real https://wikiwatch.tomhe.app for a connectivity probe, or a GitHub-raw
     # branch URL). Empty = local HTTPS fixture serving docs/server/.
-    [string]$BaseUrl = ""
+    [string]$BaseUrl = "",
+    # The sim's makeWebRequest response cap is ~16 KB — BELOW the real watch's
+    # (CapProbe: 48 KB OK, 64 KB -402). When the shipped corpus packs chunks
+    # bigger than the sim can fetch, set this to re-pack a sim-safe temp fixture
+    # (same bodies + same index parts) into bin/sim-server, so the install
+    # MACHINERY is still proven green in the sim; the shipped (bigger) chunk size
+    # is validated on-device. 0 = serve docs/server as-is.
+    [int]$SimPackKB = 0
 )
 $UseFixture = [string]::IsNullOrEmpty($BaseUrl)
 $ErrorActionPreference = "Stop"
@@ -36,8 +43,33 @@ $prg    = Join-Path $proj "bin\wikiwatch-installcheck.prg"
 $log    = Join-Path $proj "bin\installcheck.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $prg) | Out-Null
 
+# Optionally build a sim-safe temp fixture (smaller chunks) from the same bodies +
+# the shipped index parts, leaving docs/server untouched.
+if ($SimPackKB -gt 0 -and $UseFixture) {
+    $simRoot = Join-Path $proj "bin\sim-server"
+    $simChunk = Join-Path $simRoot "chunk"
+    Write-Host "sim-pack: re-packing chunks at $SimPackKB KB into $simRoot (shipped corpus untouched)"
+    New-Item -ItemType Directory -Force -Path $simChunk | Out-Null
+    python (Join-Path $PSScriptRoot "m10-compress\dense_pack.py") --target-bytes ($SimPackKB * 1024) --out-dir $simChunk | Select-Object -Last 1
+    if ($LASTEXITCODE) { Write-Error "sim-pack dense_pack failed"; exit 1 }
+    # Reuse the shipped index parts verbatim (index is chunk-packing-independent, <=9.6 KB).
+    if (Test-Path (Join-Path $simRoot "index")) { Remove-Item (Join-Path $simRoot "index") -Recurse -Force }
+    Copy-Item (Join-Path $server "index") (Join-Path $simRoot "index") -Recurse
+    # Temp manifest: shipped version/codec, but chunkCount from the re-packed chunks.
+    $shipMan = Get-Content (Join-Path $server "manifest.json") -Raw | ConvertFrom-Json
+    $simChunkCount = @(Get-ChildItem $simChunk -Filter *.json).Count
+    $simMan = [ordered]@{
+        version = $shipMan.version; totalBytes = 0; chunkCount = $simChunkCount
+        chunkUriPattern = "/chunk/{n}.json"; indexCount = $shipMan.indexCount
+        indexUriPattern = "/index/{n}.json"; bodyCodec = $shipMan.bodyCodec; modelVersion = $shipMan.modelVersion
+    }
+    ($simMan | ConvertTo-Json -Compress) | Out-File (Join-Path $simRoot "manifest.json") -Encoding ascii -NoNewline
+    $server = $simRoot
+    Write-Host "sim-pack: serving $simChunkCount chunks @ $SimPackKB KB (machinery proof; shipped corpus is bigger)"
+}
+
 if (-not (Test-Path (Join-Path $server "manifest.json"))) {
-    Write-Error "no docs/server/manifest.json — generate the v17 corpus first"; exit 1
+    Write-Error "no manifest.json under $server — generate the corpus first"; exit 1
 }
 $manifest   = Get-Content (Join-Path $server "manifest.json") -Raw | ConvertFrom-Json
 $chunkCount = $manifest.chunkCount
