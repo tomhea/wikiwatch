@@ -71,6 +71,11 @@ class InstallView extends WatchUi.View {
     // concurrency each tick so the back-off isn't undone by the per-chunk
     // maxInFlightForMemory re-evaluation.
     private var _backoffCeiling as Number;
+    // M10.8: download telemetry to diagnose slow installs on-device (no stdout on
+    // the watch). _installStartMs is set when the view is created; _lastInFlight is
+    // the effective concurrency applied after the most recent chunk result.
+    private var _installStartMs as Number;
+    private var _lastInFlight as Number;
 
     function initialize(resuming as Boolean) {
         View.initialize();
@@ -91,6 +96,8 @@ class InstallView extends WatchUi.View {
         _bytesWritten = 0;
         _budgetStopped = false;
         _backoffCeiling = InstallPlan.MAX_IN_FLIGHT;
+        _installStartMs = System.getTimer();
+        _lastInFlight = 0;
     }
 
     function onShow() as Void {
@@ -345,10 +352,11 @@ class InstallView extends WatchUi.View {
         // adaptive back-off ceiling (a memory-recovery tick must not re-raise
         // concurrency past what the BLE stack proved it can sustain this install).
         var freeMem = System.getSystemStats().freeMemory;
-        var target = InstallPlan.maxInFlightForMemory(freeMem);
-        if (target > _backoffCeiling) { target = _backoffCeiling; }
+        var target = InstallPlan.effectiveMaxInFlight(
+            InstallPlan.maxInFlightForMemory(freeMem), _backoffCeiling);
         ctrl.setMaxInFlight(target);
-        System.println("fm:" + freeMem);
+        _lastInFlight = target;   // M10.8 telemetry
+        System.println("fm:" + freeMem + " inflight:" + target);
 
         // Periodic battery check — pause (preserving state) if critically low.
         _chunksUntilBatteryCheck--;
@@ -457,6 +465,13 @@ class InstallView extends WatchUi.View {
     // index-phase + chunk-phase progress paints.
     private function _drawMemHud(dc as Dc, w as Number, h as Number) as Void {
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        // M10.8: download telemetry — elapsed seconds + effective in-flight
+        // concurrency, so a slow install on the watch is diagnosable (is it
+        // running 4-wide, or did memory/-101 step it down to 2?).
+        var elapsedS = (System.getTimer() - _installStartMs) / 1000;
+        dc.drawText(w / 2, h - 36, Graphics.FONT_XTINY,
+                    elapsedS.toString() + "s  x" + _lastInFlight.toString(),
+                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.drawText(w / 2, h - 18, Graphics.FONT_XTINY,
                     MemHud.line(System.getSystemStats().freeMemory),
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);

@@ -38,6 +38,9 @@ class ResultsView extends WatchUi.View {
     private var _visibleHeight as Number;
     private var _blocks as Array<Dictionary>?;
     private var _contentHeight as Number;
+    // M10.8: "Close app?" modal (long-press back -> KEY_MENU), same as the
+    // keyboard + reader. Set from ResultsDelegate.
+    private var _closeQuery as Boolean;
 
     function initialize(ranked as Array<Dictionary>, totalMatches as Number) {
         View.initialize();
@@ -50,11 +53,29 @@ class ResultsView extends WatchUi.View {
         _visibleHeight = 0;
         _blocks = null;
         _contentHeight = 0;
+        _closeQuery = false;
+    }
+
+    // M10.8: "Close app?" modal toggles (driven by ResultsDelegate).
+    function setCloseQuery(b as Boolean) as Void {
+        _closeQuery = b;
+        WatchUi.requestUpdate();
+    }
+
+    function isCloseQuery() as Boolean {
+        return _closeQuery;
     }
 
     function onUpdate(dc as Dc) as Void {
         _screenWidth = dc.getWidth();
         _screenHeight = dc.getHeight();
+
+        // M10.8: the "Close app?" modal takes over the whole screen.
+        if (_closeQuery) {
+            CloseQueryUi.draw(dc);
+            return;
+        }
+
         _visibleTop = _screenHeight * _TOP_PAD_PCT / 100;
         var bottomPad = _screenHeight * _BOTTOM_PAD_PCT / 100;
         _visibleHeight = _screenHeight - _visibleTop - bottomPad;

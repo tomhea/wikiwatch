@@ -137,6 +137,13 @@ module InstallPlan {
         return n < MIN_IN_FLIGHT ? MIN_IN_FLIGHT : n;
     }
 
+    // M10.8: the install's live in-flight ceiling — the lower of the memory tier
+    // and the persistent -101 back-off ceiling. Pure so InstallView can apply it
+    // each tick AND show the effective concurrency on the telemetry HUD.
+    function effectiveMaxInFlight(memoryMax as Number, backoffCeiling as Number) as Number {
+        return memoryMax < backoffCeiling ? memoryMax : backoffCeiling;
+    }
+
     // M8.3 self-heal: up to `n` evenly-spaced indices in [0, count) for spot-
     // checking that the installed corpus actually has bodies (cheap O(1)
     // integrity probe at launch — full count would be too many getValue calls).

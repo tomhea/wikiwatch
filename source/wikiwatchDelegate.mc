@@ -25,6 +25,7 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
     // CONTINUE event we forward the delta to the view so the article moves
     // with the finger instead of waiting for release.
     function onDrag(event as WatchUi.DragEvent) as Boolean {
+        if (_view.isCloseQuery()) { return true; }   // M10.8: no scroll behind the modal
         var coords = event.getCoordinates() as Array<Number>;
         var currentY = coords[1];
         var type = event.getType();
@@ -58,6 +59,20 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
     function onTap(event as WatchUi.ClickEvent) as Boolean {
         var coords = event.getCoordinates() as Array<Number>;
         var y = coords[1];
+
+        // M10.8: while the "Close app?" modal is up, a tap inside the button exits
+        // the app; a tap elsewhere cancels. (Physical back also cancels — onBack.)
+        if (_view.isCloseQuery()) {
+            var s = System.getDeviceSettings();
+            if (CloseQuery.buttonHit(coords[0], y, s.screenWidth, s.screenHeight)) {
+                System.println("M10.8: close app confirmed (reader) — exiting");
+                System.exit();
+            } else {
+                _view.setCloseQuery(false);
+            }
+            return true;
+        }
+
         var now = System.getTimer();
         var isDouble = DoubleTap.isDoubleTap(_lastTapMs, _lastTapY,
                                              now, y,
@@ -90,6 +105,7 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
     // .onHold fires on the Venu 2 touchscreen (the project's "pending
     // spike" from the handoff).
     function onHold(event as WatchUi.ClickEvent) as Boolean {
+        if (_view.isCloseQuery()) { return true; }   // M10.8: ignore long-press behind the modal
         var coords = event.getCoordinates() as Array<Number>;
         var x = coords[0];
         var y = coords[1];
@@ -105,12 +121,36 @@ class wikiwatchDelegate extends WatchUi.BehaviorDelegate {
 
     // Page/button fallback for accessibility and discrete steps.
     function onNextPage() as Boolean {
+        if (_view.isCloseQuery()) { return true; }
         _view.scrollBy(60);
         return true;
     }
 
     function onPreviousPage() as Boolean {
+        if (_view.isCloseQuery()) { return true; }
         _view.scrollBy(-60);
         return true;
+    }
+
+    // M10.8: long-press the PHYSICAL back button -> "Close app?" modal. The Venu 2
+    // firmware delivers a HELD back as KEY_MENU (a short back is KEY_ESC -> onBack).
+    // Same mechanism the keyboard uses (M9.7) — now available in the reader.
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_MENU) {
+            System.println("M10.8: long-press BACK (MENU) in reader — close-app query");
+            _view.setCloseQuery(true);
+            return true;
+        }
+        return false;
+    }
+
+    // A short back press cancels the modal if it's up; otherwise fall through
+    // (return false) so CIQ pops the reader back to the previous view as before.
+    function onBack() as Boolean {
+        if (_view.isCloseQuery()) {
+            _view.setCloseQuery(false);
+            return true;
+        }
+        return false;
     }
 }
