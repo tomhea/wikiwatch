@@ -1,1 +1,5 @@
 project.manifest = manifest.xml
+# Compile ONLY the app's source/ — NOT the self-contained diagnostic apps under
+# probes/ (each is a separate CIQ app with its own entry point; without this the
+# default source glob pulls probes/**/*.mc in and clashes — e.g. duplicate getApp).
+base.sourcePath = source
